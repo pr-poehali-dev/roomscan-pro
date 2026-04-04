@@ -76,15 +76,25 @@ export default function Index() {
         }`}
       >
         <div className="p-5 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-primary rounded-sm flex items-center justify-center">
-              <Icon name="ScanLine" size={18} className="text-primary-foreground" />
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <Icon name="ScanLine" size={17} className="text-primary-foreground" />
             </div>
             <div>
-              <p className="font-black text-foreground text-base tracking-tight">PlanScan</p>
-              <p className="text-xs text-muted-foreground font-mono">v3.1 Pro</p>
+              <p className="font-black text-foreground text-base tracking-tight">RoomScan AI</p>
+              <p className="text-xs text-muted-foreground font-mono">roomscan-ai.ru</p>
             </div>
           </div>
+          <a
+            href="https://avangard-ai.ru"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-colors"
+          >
+            <Icon name="Zap" size={11} className="text-primary" />
+            <span>Экосистема <span className="font-semibold text-primary">АВАНГАРД</span></span>
+            <Icon name="ExternalLink" size={10} className="ml-auto opacity-50" />
+          </a>
         </div>
 
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
@@ -92,7 +102,7 @@ export default function Index() {
             <button
               key={item.id}
               onClick={() => { setActive(item.id); setSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm transition-all ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
                 active === item.id
                   ? "bg-primary/10 text-primary font-semibold border-l-2 border-primary"
                   : "text-muted-foreground hover:bg-secondary hover:text-foreground"
@@ -106,12 +116,12 @@ export default function Index() {
 
         <div className="p-4 border-t border-border">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-secondary rounded-sm flex items-center justify-center shrink-0">
-              <Icon name="User" size={15} className="text-muted-foreground" />
+            <div className="w-8 h-8 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-center shrink-0">
+              <Icon name="User" size={15} className="text-primary" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-foreground truncate">{user.name}</p>
-              <p className="text-xs text-muted-foreground font-mono">{user.email}</p>
+              <p className="text-xs text-muted-foreground font-mono truncate">{user.email}</p>
             </div>
             <button onClick={logout} title="Выйти" className="text-muted-foreground hover:text-destructive transition-colors shrink-0">
               <Icon name="LogOut" size={15} />
@@ -136,7 +146,12 @@ export default function Index() {
             <Icon name="Menu" size={22} />
           </button>
           <div className="hidden lg:flex items-center gap-2 text-xs font-mono text-muted-foreground">
-            <span>PlanScan</span>
+            <a href="https://avangard-ai.ru" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors flex items-center gap-1">
+              <Icon name="Zap" size={11} className="text-primary" />
+              АВАНГАРД
+            </a>
+            <span className="text-border">/</span>
+            <span className="text-muted-foreground">RoomScan AI</span>
             <span className="text-border">/</span>
             <span className="text-foreground">{navItems.find((n) => n.id === active)?.label}</span>
           </div>
