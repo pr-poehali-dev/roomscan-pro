@@ -1,0 +1,39 @@
+{
+  "tests": [
+    {
+      "name": "Регистрация нового пользователя",
+      "method": "POST",
+      "path": "/?action=register",
+      "body": {"email": "test_planscan_99@example.com", "password": "secret123", "name": "Тест Юзер"},
+      "expectedStatus": 200,
+      "expectedBody": {"token": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Вход с верными данными",
+      "method": "POST",
+      "path": "/?action=login",
+      "body": {"email": "test_planscan_99@example.com", "password": "secret123"},
+      "expectedStatus": 200,
+      "expectedBody": {"token": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Вход с неверным паролем",
+      "method": "POST",
+      "path": "/?action=login",
+      "body": {"email": "test_planscan_99@example.com", "password": "wrongpass"},
+      "expectedStatus": 401,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Верификация без токена — 401",
+      "method": "GET",
+      "path": "/?action=verify",
+      "expectedStatus": 401,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

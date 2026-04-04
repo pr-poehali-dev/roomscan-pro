@@ -1,5 +1,140 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Icon from "@/components/ui/icon";
+
+const AUTH_URL = "https://functions.poehali.dev/6ba50afb-d26a-4f86-ac87-cacbfb57c359";
+const PROJECTS_URL = "https://functions.poehali.dev/648d87c2-171e-4729-b3e2-2cafa6015a40";
+
+interface User { id: number; name: string; email: string; role: string; }
+interface Project { id: number; name: string; rooms: number; area: string; status: string; updated: string; }
+
+function getToken() { return localStorage.getItem("planscan_token") || ""; }
+function setToken(t: string) { localStorage.setItem("planscan_token", t); }
+function clearToken() { localStorage.removeItem("planscan_token"); }
+
+async function apiFetch(url: string, options: RequestInit = {}) {
+  const token = getToken();
+  const res = await fetch(url, {
+    ...options,
+    headers: { "Content-Type": "application/json", "X-Auth-Token": token, ...(options.headers || {}) },
+  });
+  const text = await res.text();
+  try { return { status: res.status, data: JSON.parse(text) }; }
+  catch { return { status: res.status, data: text }; }
+}
+
+function AuthScreen({ onAuth }: { onAuth: (user: User) => void }) {
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(""); setLoading(true);
+    const action = mode;
+    const body: Record<string, string> = { email, password };
+    if (action === "register") body.name = name;
+    const { status, data } = await apiFetch(`${AUTH_URL}?action=${action}`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    setLoading(false);
+    if (status === 200 && data.token) {
+      setToken(data.token);
+      onAuth(data.user);
+    } else {
+      setError(data.error || "Ошибка. Попробуйте снова");
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center font-golos p-4"
+      style={{
+        backgroundImage: "linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)",
+        backgroundSize: "60px 60px"
+      }}
+    >
+      <div className="w-full max-w-sm animate-fade-in">
+        <div className="text-center mb-8">
+          <div className="w-12 h-12 bg-primary rounded-sm flex items-center justify-center mx-auto mb-4">
+            <Icon name="ScanLine" size={24} className="text-primary-foreground" />
+          </div>
+          <h1 className="text-2xl font-black text-foreground tracking-tight">PlanScan</h1>
+          <p className="text-muted-foreground text-sm font-mono mt-1">Профессиональная планировка</p>
+        </div>
+
+        <div className="bg-card border border-border rounded-sm p-6">
+          <div className="flex gap-1 mb-6 bg-secondary rounded-sm p-1">
+            {(["login", "register"] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => { setMode(m); setError(""); }}
+                className={`flex-1 text-sm py-1.5 rounded-sm transition-colors font-semibold ${
+                  mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {m === "login" ? "Вход" : "Регистрация"}
+              </button>
+            ))}
+          </div>
+
+          <form onSubmit={submit} className="space-y-3">
+            {mode === "register" && (
+              <div>
+                <label className="text-xs font-mono uppercase tracking-widest text-muted-foreground block mb-1.5">Имя</label>
+                <input
+                  type="text" value={name} onChange={(e) => setName(e.target.value)}
+                  placeholder="Александр Петров"
+                  className="w-full bg-secondary border border-border rounded-sm px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+                  required
+                />
+              </div>
+            )}
+            <div>
+              <label className="text-xs font-mono uppercase tracking-widest text-muted-foreground block mb-1.5">Email</label>
+              <input
+                type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="w-full bg-secondary border border-border rounded-sm px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-xs font-mono uppercase tracking-widest text-muted-foreground block mb-1.5">Пароль</label>
+              <input
+                type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                placeholder="Минимум 6 символов"
+                className="w-full bg-secondary border border-border rounded-sm px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+                required minLength={6}
+              />
+            </div>
+
+            {error && (
+              <div className="bg-destructive/10 border border-destructive/30 rounded-sm px-3 py-2 text-xs text-destructive flex items-center gap-2">
+                <Icon name="AlertCircle" size={14} />
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit" disabled={loading}
+              className="w-full bg-primary text-primary-foreground font-bold py-2.5 rounded-sm hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
+            >
+              {loading ? <Icon name="Loader2" size={16} className="animate-spin" /> : <Icon name="ArrowRight" size={16} />}
+              {loading ? "Загрузка..." : mode === "login" ? "Войти" : "Создать аккаунт"}
+            </button>
+          </form>
+        </div>
+
+        <p className="text-center text-xs text-muted-foreground mt-4 font-mono">
+          PlanScan v3.1 · LiDAR Platform
+        </p>
+      </div>
+    </div>
+  );
+}
 
 type Section =
   | "scan"
@@ -177,7 +312,37 @@ function ScanSection() {
   );
 }
 
-function ProjectsSection() {
+function ProjectsSection({ token: _token }: { token: string }) {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [showForm, setShowForm] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data } = await apiFetch(PROJECTS_URL);
+    if (data.projects) setProjects(data.projects);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const createProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName.trim()) return;
+    setCreating(true);
+    const { data } = await apiFetch(PROJECTS_URL, {
+      method: "POST",
+      body: JSON.stringify({ name: newName.trim() }),
+    });
+    if (data.project) {
+      setProjects((prev) => [data.project, ...prev]);
+      setNewName(""); setShowForm(false);
+    }
+    setCreating(false);
+  };
+
   return (
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-8">
@@ -185,47 +350,76 @@ function ProjectsSection() {
           <p className="text-muted-foreground text-sm font-mono uppercase tracking-widest mb-1">Workspace</p>
           <h2 className="text-3xl font-bold">Мои проекты</h2>
         </div>
-        <button className="bg-primary text-primary-foreground font-semibold text-sm py-2.5 px-5 rounded-sm hover:opacity-90 transition-opacity flex items-center gap-2">
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="bg-primary text-primary-foreground font-semibold text-sm py-2.5 px-5 rounded-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+        >
           <Icon name="Plus" size={16} />
           Новый проект
         </button>
       </div>
 
-      <div className="space-y-3">
-        {projects.map((p) => (
-          <div
-            key={p.id}
-            className="bg-card border border-border rounded-sm p-5 flex items-center gap-5 hover:border-primary/40 transition-colors cursor-pointer group"
+      {showForm && (
+        <form onSubmit={createProject} className="mb-5 bg-card border border-primary/30 rounded-sm p-4 flex gap-3 animate-fade-in">
+          <input
+            autoFocus
+            value={newName} onChange={(e) => setNewName(e.target.value)}
+            placeholder="Название проекта..."
+            className="flex-1 bg-secondary border border-border rounded-sm px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+          />
+          <button type="submit" disabled={creating}
+            className="bg-primary text-primary-foreground text-sm px-4 py-2 rounded-sm hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
           >
-            <div className="w-12 h-12 bg-secondary rounded-sm flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
-              <Icon name="Home" size={22} className="text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-foreground truncate">{p.name}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {p.rooms} комнаты · {p.area} · обновлён {p.updated}
-              </p>
-            </div>
-            <div className="flex items-center gap-3 shrink-0">
-              <span
-                className={`text-xs font-mono px-2.5 py-1 rounded-sm ${
-                  p.status === "active"
-                    ? "bg-primary/10 text-primary"
-                    : "bg-border text-muted-foreground"
-                }`}
-              >
-                {p.status === "active" ? "В работе" : "Завершён"}
-              </span>
-              <Icon name="ChevronRight" size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
-            </div>
-          </div>
-        ))}
-      </div>
+            {creating ? <Icon name="Loader2" size={14} className="animate-spin" /> : <Icon name="Check" size={14} />}
+            Создать
+          </button>
+          <button type="button" onClick={() => setShowForm(false)}
+            className="bg-secondary text-muted-foreground text-sm px-3 py-2 rounded-sm hover:bg-border transition-colors"
+          >
+            <Icon name="X" size={14} />
+          </button>
+        </form>
+      )}
 
-      <div className="mt-6 border border-dashed border-border rounded-sm p-8 text-center hover:border-primary/30 transition-colors cursor-pointer">
-        <Icon name="Plus" size={24} className="text-muted-foreground mx-auto mb-2" />
-        <p className="text-sm text-muted-foreground">Создать новый проект</p>
-      </div>
+      {loading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-card border border-border rounded-sm p-5 h-20 animate-pulse" />
+          ))}
+        </div>
+      ) : projects.length === 0 ? (
+        <div className="border border-dashed border-border rounded-sm p-12 text-center">
+          <Icon name="FolderOpen" size={32} className="text-border mx-auto mb-3" />
+          <p className="text-muted-foreground text-sm">Нет проектов. Создайте первый!</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {projects.map((p) => (
+            <div
+              key={p.id}
+              className="bg-card border border-border rounded-sm p-5 flex items-center gap-5 hover:border-primary/40 transition-colors cursor-pointer group"
+            >
+              <div className="w-12 h-12 bg-secondary rounded-sm flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
+                <Icon name="Home" size={22} className="text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-foreground truncate">{p.name}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {p.rooms > 0 ? `${p.rooms} комнат · ` : ""}{p.area !== "0 м2" ? `${p.area} · ` : ""}обновлён {p.updated}
+                </p>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <span className={`text-xs font-mono px-2.5 py-1 rounded-sm ${
+                  p.status === "active" ? "bg-primary/10 text-primary" : "bg-border text-muted-foreground"
+                }`}>
+                  {p.status === "active" ? "В работе" : "Завершён"}
+                </span>
+                <Icon name="ChevronRight" size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -492,7 +686,7 @@ function ExportSection() {
   );
 }
 
-function ProfileSection() {
+function ProfileSection({ user, onLogout }: { user: User; onLogout: () => void }) {
   return (
     <div className="animate-fade-in">
       <div className="mb-8">
@@ -505,9 +699,9 @@ function ProfileSection() {
           <div className="w-20 h-20 rounded-sm bg-primary/10 border-2 border-primary/30 flex items-center justify-center mx-auto mb-4">
             <Icon name="User" size={36} className="text-primary" />
           </div>
-          <p className="font-bold text-foreground text-lg">Александр Петров</p>
-          <p className="text-muted-foreground text-sm mt-1">Дизайнер интерьеров</p>
-          <p className="text-xs font-mono text-muted-foreground mt-1">a.petrov@studio.ru</p>
+          <p className="font-bold text-foreground text-lg">{user.name}</p>
+          <p className="text-muted-foreground text-sm mt-1">{user.role === "designer" ? "Дизайнер" : user.role}</p>
+          <p className="text-xs font-mono text-muted-foreground mt-1">{user.email}</p>
           <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 gap-3 text-center">
             <div>
               <p className="text-2xl font-black text-primary font-mono">12</p>
@@ -554,6 +748,14 @@ function ProfileSection() {
               </div>
             </div>
           ))}
+
+          <button
+            onClick={onLogout}
+            className="w-full bg-destructive/10 border border-destructive/30 text-destructive text-sm py-3 rounded-sm hover:bg-destructive/20 transition-colors flex items-center justify-center gap-2 font-semibold"
+          >
+            <Icon name="LogOut" size={16} />
+            Выйти из аккаунта
+          </button>
         </div>
       </div>
     </div>
@@ -613,22 +815,47 @@ function HelpSection() {
   );
 }
 
-const sectionComponents: Record<Section, () => JSX.Element> = {
-  scan: ScanSection,
-  projects: ProjectsSection,
-  planner: PlannerSection,
-  catalog: CatalogSection,
-  calc: CalcSection,
-  export: ExportSection,
-  profile: ProfileSection,
-  help: HelpSection,
-};
-
 export default function Index() {
   const [active, setActive] = useState<Section>("scan");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
-  const ActiveComponent = sectionComponents[active];
+  useEffect(() => {
+    const token = getToken();
+    if (!token) { setAuthChecked(true); return; }
+    apiFetch(`${AUTH_URL}?action=verify`).then(({ status, data }) => {
+      if (status === 200 && data.user) setUser(data.user);
+      else clearToken();
+      setAuthChecked(true);
+    });
+  }, []);
+
+  const logout = () => { clearToken(); setUser(null); setActive("scan"); };
+
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Icon name="Loader2" size={28} className="text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) return <AuthScreen onAuth={setUser} />;
+
+  const renderSection = () => {
+    switch (active) {
+      case "projects": return <ProjectsSection token={getToken()} />;
+      case "scan": return <ScanSection />;
+      case "planner": return <PlannerSection />;
+      case "catalog": return <CatalogSection />;
+      case "calc": return <CalcSection />;
+      case "export": return <ExportSection />;
+      case "profile": return <ProfileSection user={user} onLogout={logout} />;
+      case "help": return <HelpSection />;
+      default: return <ScanSection />;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex font-golos">
@@ -668,14 +895,16 @@ export default function Index() {
 
         <div className="p-4 border-t border-border">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-secondary rounded-sm flex items-center justify-center">
+            <div className="w-8 h-8 bg-secondary rounded-sm flex items-center justify-center shrink-0">
               <Icon name="User" size={15} className="text-muted-foreground" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground truncate">А. Петров</p>
-              <p className="text-xs text-muted-foreground font-mono">PRO</p>
+              <p className="text-sm font-semibold text-foreground truncate">{user.name}</p>
+              <p className="text-xs text-muted-foreground font-mono">{user.email}</p>
             </div>
-            <div className="w-2 h-2 bg-primary rounded-full pulse-dot" />
+            <button onClick={logout} title="Выйти" className="text-muted-foreground hover:text-destructive transition-colors shrink-0">
+              <Icon name="LogOut" size={15} />
+            </button>
           </div>
         </div>
       </aside>
@@ -705,14 +934,14 @@ export default function Index() {
               <Icon name="Bell" size={20} />
               <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full" />
             </button>
-            <button className="text-muted-foreground hover:text-foreground transition-colors">
-              <Icon name="Settings" size={20} />
+            <button onClick={logout} className="text-muted-foreground hover:text-destructive transition-colors" title="Выйти">
+              <Icon name="LogOut" size={20} />
             </button>
           </div>
         </header>
 
         <div className="flex-1 p-6 lg:p-8 overflow-y-auto">
-          <ActiveComponent />
+          {renderSection()}
         </div>
       </main>
     </div>

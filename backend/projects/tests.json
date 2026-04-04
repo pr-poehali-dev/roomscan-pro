@@ -1,0 +1,12 @@
+{
+  "tests": [
+    {
+      "name": "Список проектов без токена — 401",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 401,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
