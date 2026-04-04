@@ -1,0 +1,12 @@
+{
+  "tests": [
+    {
+      "name": "Status check",
+      "method": "GET",
+      "path": "/?action=status",
+      "expectedStatus": 200,
+      "expectedBody": {"ok": true},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
