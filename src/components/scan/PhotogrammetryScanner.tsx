@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import Icon from "@/components/ui/icon";
-import { apiFetch, getToken } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
+import PointCloud3D, { type Point3D, type RoomBox } from "./PointCloud3D";
 
 const PHOTO_URL = "https://functions.poehali.dev/aa224ee6-cbee-45f1-bcf6-92dbb5ecd974";
 
@@ -31,6 +32,7 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
   const [framesCount, setFramesCount] = useState(0);
   const [uploadedCount, setUploadedCount] = useState(0);
   const [result, setResult] = useState<ScanResult | null>(null);
+  const [points3D, setPoints3D] = useState<Point3D[]>([]);
   const [error, setError] = useState("");
   const [tip, setTip] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -144,6 +146,16 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
       setResult(data.result);
       setPhase("done");
       onComplete(data.result);
+
+      // Загружаем point_cloud_data из БД для 3D-визуализации
+      const statusRes = await apiFetch(`${PHOTO_URL}?action=status&scan_id=${scanId}`);
+      const cloudRaw: number[][] = statusRes.data?.scan?.point_cloud?.points ?? [];
+      if (cloudRaw.length > 0) {
+        const pts3D: Point3D[] = cloudRaw.slice(0, 3000).map(([x, y, z]) => ({
+          x, y, z, intensity: y / (data.result.height || 2.7),
+        }));
+        setPoints3D(pts3D);
+      }
     } else {
       setError(data.error || "Ошибка обработки");
       setPhase("error");
@@ -157,6 +169,7 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
     setUploadedCount(0);
     setScanId(null);
     setResult(null);
+    setPoints3D([]);
     setError("");
   }, []);
 
@@ -311,6 +324,27 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
             <span>Кадров: {result.frames_used}</span>
             <span>Точек облака: {result.point_cloud_points.toLocaleString()}</span>
           </div>
+        </div>
+      )}
+
+      {/* 3D Point Cloud */}
+      {points3D.length > 0 && result && (
+        <div className="animate-fade-in space-y-2">
+          <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground px-1">
+            3D-визуализация облака точек
+          </p>
+          <PointCloud3D
+            points={points3D}
+            room={{
+              width: result.width,
+              depth: result.length,
+              height: result.height,
+              area: result.area,
+            } satisfies RoomBox}
+            height={320}
+            showRoom
+            showLabels
+          />
         </div>
       )}
     </div>

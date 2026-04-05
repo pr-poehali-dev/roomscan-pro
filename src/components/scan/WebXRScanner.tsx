@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Icon from "@/components/ui/icon";
+import PointCloud3D, { type Point3D, type RoomBox } from "./PointCloud3D";
 
 interface DepthPoint { x: number; y: number; depth: number; }
 interface RoomMeasurement { width: number; height: number; depth: number; area: number; }
@@ -23,11 +24,13 @@ export default function WebXRScanner({ onComplete }: { onComplete: (data: RoomMe
   const [progress, setProgress] = useState(0);
   const [depthPoints, setDepthPoints] = useState<DepthPoint[]>([]);
   const [measurement, setMeasurement] = useState<RoomMeasurement | null>(null);
+  const [points3D, setPoints3D] = useState<Point3D[]>([]);
   const [error, setError] = useState("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sessionRef = useRef<XRSession | null>(null);
   const frameCountRef = useRef(0);
   const allDepthsRef = useRef<number[]>([]);
+  const rawPoints3DRef = useRef<Point3D[]>([]);
 
   useEffect(() => {
     if (!navigator.xr) { setSupported("no"); return; }
@@ -77,6 +80,7 @@ export default function WebXRScanner({ onComplete }: { onComplete: (data: RoomMe
     setPhase("scanning");
     setProgress(0);
     allDepthsRef.current = [];
+    rawPoints3DRef.current = [];
     frameCountRef.current = 0;
 
     try {
@@ -110,6 +114,15 @@ export default function WebXRScanner({ onComplete }: { onComplete: (data: RoomMe
                   if (d > 0.1 && d < 10) {
                     allDepthsRef.current.push(d);
                     pts.push({ x: px / depthInfo.width, y: py / depthInfo.height, depth: d });
+                    // Строим 3D-точку: X/Y из NDC * depth, Z = -depth
+                    const nx = (px / depthInfo.width) * 2 - 1;
+                    const ny = 1 - (py / depthInfo.height) * 2;
+                    rawPoints3DRef.current.push({
+                      x: nx * d * 0.7,
+                      y: ny * d * 0.4,
+                      z: -d,
+                      intensity: Math.min(1, d / 5),
+                    });
                   }
                 }
               }
@@ -130,6 +143,9 @@ export default function WebXRScanner({ onComplete }: { onComplete: (data: RoomMe
             setTimeout(() => {
               const m = computeMeasurements(allDepthsRef.current);
               setMeasurement(m);
+              // Сэмплируем не более 3000 точек для рендера
+              const sampled = rawPoints3DRef.current.filter((_, i) => i % 3 === 0).slice(0, 3000);
+              setPoints3D(sampled);
               setPhase("done");
               onComplete(m);
             }, 800);
@@ -298,6 +314,27 @@ export default function WebXRScanner({ onComplete }: { onComplete: (data: RoomMe
           <p className="text-xs text-muted-foreground mt-3 font-mono">
             Точек глубины собрано: {allDepthsRef.current.length.toLocaleString()}
           </p>
+        </div>
+      )}
+
+      {/* 3D Point Cloud */}
+      {points3D.length > 0 && measurement && (
+        <div className="animate-fade-in space-y-2">
+          <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground px-1">
+            3D-визуализация облака точек
+          </p>
+          <PointCloud3D
+            points={points3D}
+            room={{
+              width: measurement.width,
+              depth: measurement.depth,
+              height: measurement.height,
+              area: measurement.area,
+            }}
+            height={320}
+            showRoom
+            showLabels
+          />
         </div>
       )}
     </div>
