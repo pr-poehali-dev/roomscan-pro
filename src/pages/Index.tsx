@@ -139,12 +139,17 @@ export default function Index() {
 
       <main className="flex-1 flex flex-col min-w-0">
         <header className="border-b border-border px-6 py-4 flex items-center justify-between bg-card/50 backdrop-blur-sm sticky top-0 z-30">
-          <button
-            className="lg:hidden text-muted-foreground hover:text-foreground"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Icon name="Menu" size={22} />
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              className="lg:hidden text-muted-foreground hover:text-foreground"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Icon name="Menu" size={22} />
+            </button>
+            <span className="lg:hidden text-sm font-semibold text-foreground">
+              {navItems.find((n) => n.id === active)?.label}
+            </span>
+          </div>
           <div className="hidden lg:flex items-center gap-2 text-xs font-mono text-muted-foreground">
             <a href="https://avangard-ai.ru" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors flex items-center gap-1">
               <Icon name="Zap" size={11} className="text-primary" />
