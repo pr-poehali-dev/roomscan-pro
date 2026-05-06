@@ -44,54 +44,121 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
 
   const startCamera = useCallback(async () => {
     setError("");
+
+    // Диагностика 1: HTTPS обязателен для getUserMedia
+    if (typeof window !== "undefined" && window.location.protocol !== "https:" && window.location.hostname !== "localhost") {
+      setError("Камера работает только по HTTPS. Откройте сайт по защищённому соединению.");
+      setPhase("error");
+      return;
+    }
+
+    // Диагностика 2: проверяем поддержку API
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setError("Браузер не поддерживает доступ к камере. Используйте Chrome 90+ или Safari 14+.");
+      setPhase("error");
+      return;
+    }
+
+    // Шаг 1: получаем камеру
+    let stream: MediaStream;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
       });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+    } catch (e: unknown) {
+      const err = e as { name?: string; message?: string };
+      let msg = "Не удалось получить доступ к камере.";
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+        msg = "Доступ к камере запрещён. Разрешите камеру в настройках браузера и перезагрузите страницу.";
+      } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+        msg = "Камера не найдена. Проверьте, что устройство имеет камеру.";
+      } else if (err.name === "NotReadableError") {
+        msg = "Камера занята другим приложением. Закройте Skype/Zoom/другие камеры и попробуйте снова.";
+      } else if (err.name === "OverconstrainedError") {
+        // фолбек на любую камеру
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          msg = "";
+        } catch {
+          msg = "Не удалось настроить камеру с нужным разрешением.";
+        }
+        if (msg) {
+          setError(msg);
+          setPhase("error");
+          return;
+        }
+      } else {
+        msg = `Ошибка камеры: ${err.message || err.name || "неизвестная"}`;
       }
+      if (msg) {
+        setError(msg);
+        setPhase("error");
+        return;
+      }
+      stream = null as unknown as MediaStream;
+    }
 
-      const { data } = await apiFetch(`${PHOTO_URL}?action=start`, {
+    streamRef.current = stream;
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+      try {
+        await videoRef.current.play();
+      } catch {
+        // некоторые браузеры требуют user gesture — игнорируем, видео всё равно стартует
+      }
+    }
+
+    // Шаг 2: создаём scan_id на бэке
+    let scanIdData: { scan_id?: string | number; error?: string };
+    try {
+      const { status, data } = await apiFetch(`${PHOTO_URL}?action=start`, {
         method: "POST",
         body: JSON.stringify({}),
       });
-      if (!data.scan_id) throw new Error(data.error || "Не удалось создать сканирование");
-      setScanId(data.scan_id);
-      setFramesCount(0);
-      framesRef.current = [];
-      recordingRef.current = true;
-      setPhase("recording");
-
-      let tipIdx = 0;
-      let frameIdx = 0;
-
-      captureIntervalRef.current = setInterval(() => {
-        if (!recordingRef.current || !videoRef.current) return;
-
-        tipIdx = (tipIdx + 1) % TIPS.length;
-        setTip(tipIdx);
-
-        const canvas = document.createElement("canvas");
-        canvas.width = 640;
-        canvas.height = 480;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-        ctx.drawImage(videoRef.current, 0, 0, 640, 480);
-        canvas.toBlob((blob) => {
-          if (blob) {
-            framesRef.current.push(blob);
-            frameIdx += 1;
-            setFramesCount(frameIdx);
-          }
-        }, "image/jpeg", 0.75);
-      }, 500);
+      scanIdData = data;
+      if (status !== 200 || !data.scan_id) {
+        throw new Error(data.error || `Сервер вернул статус ${status}`);
+      }
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Нет доступа к камере");
+      // если бэк не доступен — освобождаем камеру
+      stream.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+      setError("Не удалось создать сканирование. " + (e instanceof Error ? e.message : ""));
       setPhase("error");
+      return;
     }
+
+    setScanId(scanIdData.scan_id!);
+    setFramesCount(0);
+    framesRef.current = [];
+    recordingRef.current = true;
+    setPhase("recording");
+
+    let tipIdx = 0;
+    let frameIdx = 0;
+
+    captureIntervalRef.current = setInterval(() => {
+      if (!recordingRef.current || !videoRef.current) return;
+      // Проверяем, что видео реально играет
+      if (videoRef.current.readyState < 2 || videoRef.current.videoWidth === 0) return;
+
+      tipIdx = (tipIdx + 1) % TIPS.length;
+      setTip(tipIdx);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = 640;
+      canvas.height = 480;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.drawImage(videoRef.current, 0, 0, 640, 480);
+      canvas.toBlob((blob) => {
+        if (blob) {
+          framesRef.current.push(blob);
+          frameIdx += 1;
+          setFramesCount(frameIdx);
+        }
+      }, "image/jpeg", 0.75);
+    }, 500);
   }, [TIPS.length]);
 
   const stopAndProcess = useCallback(async () => {
@@ -107,8 +174,8 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
     }
 
     const frames = framesRef.current;
-    if (frames.length < 5) {
-      setError("Слишком мало кадров. Нужно минимум 10 секунд съёмки.");
+    if (frames.length < 10) {
+      setError(`Слишком мало кадров (${frames.length}/10). Нужно минимум 10 секунд съёмки. Попробуйте сканировать дольше и медленнее.`);
       setPhase("error");
       return;
     }
@@ -116,24 +183,55 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
     setPhase("uploading");
     setUploadedCount(0);
 
+    // Загрузка кадров с обработкой ошибок и повторами
+    let uploadFailed = 0;
     const BATCH = 5;
     for (let i = 0; i < frames.length; i += BATCH) {
       const batch = frames.slice(i, i + BATCH);
       const b64s = await Promise.all(batch.map((b) => toBase64(b)));
       for (let j = 0; j < b64s.length; j++) {
-        await apiFetch(`${PHOTO_URL}?action=frame`, {
-          method: "POST",
-          body: JSON.stringify({ scan_id: scanId, frame: b64s[j], frame_index: i + j }),
-        });
+        try {
+          const { status, data } = await apiFetch(`${PHOTO_URL}?action=frame`, {
+            method: "POST",
+            body: JSON.stringify({ scan_id: scanId, frame: b64s[j], frame_index: i + j }),
+          });
+          if (status >= 400) {
+            uploadFailed += 1;
+            console.warn("Frame upload failed:", status, data);
+          }
+        } catch (e) {
+          uploadFailed += 1;
+          console.warn("Frame upload exception:", e);
+        }
         setUploadedCount(i + j + 1);
       }
     }
 
+    // Если упал каждый второй кадр — дальше нет смысла
+    if (uploadFailed > frames.length / 2) {
+      setError(`Не удалось загрузить кадры на сервер (${uploadFailed} ошибок из ${frames.length}). Проверьте интернет-соединение.`);
+      setPhase("error");
+      return;
+    }
+
     setPhase("processing");
-    const { data } = await apiFetch(`${PHOTO_URL}?action=process`, {
-      method: "POST",
-      body: JSON.stringify({ scan_id: scanId }),
-    });
+    let data: { result?: ScanResult; error?: string };
+    try {
+      const r = await apiFetch(`${PHOTO_URL}?action=process`, {
+        method: "POST",
+        body: JSON.stringify({ scan_id: scanId }),
+      });
+      data = r.data;
+      if (r.status >= 400) {
+        setError(data.error || `Сервер вернул статус ${r.status}`);
+        setPhase("error");
+        return;
+      }
+    } catch (e) {
+      setError("Сервер обработки не ответил. " + (e instanceof Error ? e.message : ""));
+      setPhase("error");
+      return;
+    }
 
     if (data.result) {
       setResult(data.result);

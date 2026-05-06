@@ -30,12 +30,15 @@ export default function ScannerViewport({
       />
 
       {phase === "idle" && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
           <div className="w-16 h-16 bg-primary/10 border-2 border-primary/30 rounded-full flex items-center justify-center">
             <Icon name="Camera" size={28} className="text-primary" />
           </div>
           <p className="text-muted-foreground text-sm">Медленно снимайте все стены помещения</p>
-          <p className="text-xs text-muted-foreground font-mono">Рекомендуется 30–60 секунд съёмки</p>
+          <p className="text-xs text-muted-foreground font-mono">Минимум 10 секунд · рекомендуется 30–60 секунд</p>
+          <p className="text-[10px] text-muted-foreground/70 font-mono mt-2">
+            При первом запуске разрешите доступ к камере во всплывающем окне
+          </p>
         </div>
       )}
 
@@ -91,9 +94,19 @@ export default function ScannerViewport({
       )}
 
       {phase === "error" && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 bg-background/90">
-          <Icon name="AlertCircle" size={32} className="text-destructive" />
-          <p className="text-destructive font-semibold text-center text-sm">{error}</p>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 bg-background/95 overflow-y-auto">
+          <Icon name="AlertCircle" size={32} className="text-destructive shrink-0" />
+          <p className="text-destructive font-semibold text-center text-sm max-w-md">{error}</p>
+          <div className="bg-secondary/40 rounded-md p-3 text-xs text-muted-foreground max-w-md text-left">
+            <p className="font-semibold text-foreground mb-1.5">Что попробовать:</p>
+            <ul className="space-y-1 list-disc list-inside">
+              <li>Перезагрузите страницу и нажмите «Разрешить» для камеры</li>
+              <li>Откройте сайт по HTTPS (не HTTP)</li>
+              <li>Проверьте, что камеру не использует другое приложение</li>
+              <li>Используйте Chrome 90+ на Android или Safari 14+ на iOS</li>
+              <li>В настройках браузера: разрешения → камера → разрешить</li>
+            </ul>
+          </div>
         </div>
       )}
     </div>
