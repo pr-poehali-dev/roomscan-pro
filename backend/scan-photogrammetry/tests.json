@@ -1,9 +1,23 @@
 {
   "tests": [
     {
-      "name": "Статус без токена — 401",
+      "name": "Гостевой start — 200",
+      "method": "POST",
+      "path": "/?action=start",
+      "body": {},
+      "expectedStatus": 200
+    },
+    {
+      "name": "Гостевой status без scan_id — 400",
       "method": "GET",
       "path": "/?action=status",
+      "expectedStatus": 400
+    },
+    {
+      "name": "Авторизованный с невалидным токеном — 401",
+      "method": "GET",
+      "path": "/?action=status",
+      "headers": { "X-Auth-Token": "invalid_token_xxx" },
       "expectedStatus": 401
     }
   ]

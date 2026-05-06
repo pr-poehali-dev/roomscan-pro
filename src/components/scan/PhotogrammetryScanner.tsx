@@ -5,6 +5,7 @@ import PointCloud3D, { type Point3D, type RoomBox } from "./PointCloud3D";
 import ScannerViewport from "./photogrammetry/ScannerViewport";
 import ScannerControls from "./photogrammetry/ScannerControls";
 import ScanResultPanel from "./photogrammetry/ScanResultPanel";
+import ProcessingTimeline from "./photogrammetry/ProcessingTimeline";
 import type { ScanResult, Phase } from "./photogrammetry/types";
 
 const PHOTO_URL = "https://functions.poehali.dev/aa224ee6-cbee-45f1-bcf6-92dbb5ecd974";
@@ -20,7 +21,7 @@ function toBase64(blob: Blob): Promise<string> {
 
 export default function PhotogrammetryScanner({ onComplete }: { onComplete: (result: ScanResult) => void }) {
   const [phase, setPhase] = useState<Phase>("idle");
-  const [scanId, setScanId] = useState<number | null>(null);
+  const [scanId, setScanId] = useState<number | string | null>(null);
   const [framesCount, setFramesCount] = useState(0);
   const [uploadedCount, setUploadedCount] = useState(0);
   const [result, setResult] = useState<ScanResult | null>(null);
@@ -202,6 +203,8 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
         onStop={stopAndProcess}
         onReset={reset}
       />
+
+      {phase === "processing" && <ProcessingTimeline />}
 
       {result && <ScanResultPanel result={result} />}
 

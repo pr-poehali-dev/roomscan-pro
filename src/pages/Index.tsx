@@ -5,6 +5,7 @@ import AuthScreen from "@/components/AuthScreen";
 import { ScanSection, PlannerSection, CatalogSection, CalcSection, ExportSection, HelpSection } from "@/components/sections/ContentSections";
 import { ProjectsSection, ProfileSection } from "@/components/sections/UserSections";
 import UseCasesSection from "@/components/sections/UseCasesSection";
+import StylesSection from "@/components/sections/StylesSection";
 
 type Section =
   | "scan"
@@ -12,6 +13,7 @@ type Section =
   | "projects"
   | "planner"
   | "catalog"
+  | "styles"
   | "calc"
   | "export"
   | "profile"
@@ -23,6 +25,7 @@ const navItemsAll: { id: Section; label: string; icon: string; hideInGuest?: boo
   { id: "projects", label: "Мои проекты", icon: "FolderOpen", hideInGuest: true },
   { id: "planner", label: "Планировщик", icon: "LayoutGrid" },
   { id: "catalog", label: "Каталог мебели", icon: "Sofa" },
+  { id: "styles", label: "AI-стили", icon: "Wand2" },
   { id: "calc", label: "Расчёты", icon: "Calculator" },
   { id: "export", label: "Экспорт", icon: "Share2" },
   { id: "profile", label: "Профиль", icon: "User", hideInGuest: true },
@@ -82,6 +85,7 @@ export default function Index() {
       case "usecases": return <UseCasesSection />;
       case "planner": return <PlannerSection />;
       case "catalog": return <CatalogSection />;
+      case "styles": return <StylesSection />;
       case "calc": return <CalcSection />;
       case "export": return <ExportSection />;
       case "profile": return <ProfileSection user={user} onLogout={logout} />;

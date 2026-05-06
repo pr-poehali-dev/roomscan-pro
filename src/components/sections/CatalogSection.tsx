@@ -1,5 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Icon from "@/components/ui/icon";
+import { saveCart, getCart, type CartItemRef } from "@/lib/scanStore";
 
 const furnitureItems = [
   { id: 1, name: "Диван угловой Loft", brand: "Arredo", size: "280×170 см", price: "89 400 ₽", priceNum: 89400, category: "Диваны", icon: "Sofa", w: 280, d: 170 },
@@ -19,6 +20,24 @@ export default function CatalogSection() {
   const [added, setAdded] = useState<number | null>(null);
   const categories = ["Все", "Диваны", "Столы", "Кресла", "Шкафы", "Кровати", "ТВ-зоны"];
   const filtered = filter === "Все" ? furnitureItems : furnitureItems.filter((f) => f.category === filter);
+
+  // Восстановление корзины из store при монтировании
+  useEffect(() => {
+    const stored = getCart();
+    if (stored.length > 0) setCart(stored.map((c) => c.id));
+  }, []);
+
+  // Синхронизация корзины со store при изменениях
+  useEffect(() => {
+    const items: CartItemRef[] = cart
+      .map((id) => furnitureItems.find((f) => f.id === id))
+      .filter((f): f is typeof furnitureItems[number] => Boolean(f))
+      .map((f) => ({
+        id: f.id, name: f.name, icon: f.icon, w: f.w, d: f.d,
+        priceNum: f.priceNum, category: f.category,
+      }));
+    saveCart(items);
+  }, [cart]);
 
   const addToCart = useCallback((id: number) => {
     setCart((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);

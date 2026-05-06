@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
-import { getLastScan, type LastScan, type DetectedOpening } from "@/lib/scanStore";
+import { getLastScan, getCart, type LastScan, type DetectedOpening, type CartItemRef } from "@/lib/scanStore";
 
 const furnitureItems = [
   { id: 1, name: "Диван угловой Loft", brand: "Arredo", size: "280×170 см", price: "89 400 ₽", priceNum: 89400, category: "Диваны", icon: "Sofa", w: 280, d: 170 },
@@ -33,10 +33,37 @@ export default function PlannerSection({ cartItems }: { cartItems?: typeof furni
   const [selectedItem, setSelectedItem] = useState<number | null>(null);
   const [showHint, setShowHint] = useState(true);
   const [lastScan, setLastScan] = useState<LastScan | null>(null);
+  const [cartItemsList, setCartItemsList] = useState<CartItemRef[]>([]);
 
   useEffect(() => {
-    setLastScan(getLastScan());
+    const sync = () => {
+      setLastScan(getLastScan());
+      setCartItemsList(getCart());
+    };
+    sync();
+    window.addEventListener("roomscan:lastScan:changed", sync);
+    window.addEventListener("roomscan:cart:changed", sync);
+    return () => {
+      window.removeEventListener("roomscan:lastScan:changed", sync);
+      window.removeEventListener("roomscan:cart:changed", sync);
+    };
   }, []);
+
+  const importFromCart = () => {
+    if (cartItemsList.length === 0) return;
+    const startX = 30;
+    const startY = 30;
+    const items: PlacedItem[] = cartItemsList.map((c, i) => ({
+      id: Date.now() + i,
+      name: c.name,
+      icon: c.icon,
+      x: startX + (i % 3) * 50,
+      y: startY + Math.floor(i / 3) * 30,
+      w: Math.min(c.w / 5, 60),
+      h: Math.min(c.d / 5, 40),
+    }));
+    setPlaced((prev) => [...prev, ...items]);
+  };
 
   const tools = [
     { id: "select", icon: "MousePointer2", label: "Выбор" },
@@ -72,6 +99,16 @@ export default function PlannerSection({ cartItems }: { cartItems?: typeof furni
           <h2 className="text-3xl font-bold">Планировщик</h2>
         </div>
         <div className="flex items-center gap-2">
+          {cartItemsList.length > 0 && (
+            <button
+              onClick={importFromCart}
+              className="text-xs font-semibold px-3 py-2 rounded-lg border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-1.5"
+              title="Перенести мебель из корзины на план"
+            >
+              <Icon name="ShoppingCart" size={13} />
+              + из корзины ({cartItemsList.length})
+            </button>
+          )}
           {(["2D", "3D"] as const).map((v) => (
             <button key={v} onClick={() => setView(v)}
               className={`text-sm font-mono px-4 py-2 rounded-lg border transition-colors ${
