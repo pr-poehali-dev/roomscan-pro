@@ -36,6 +36,8 @@ export default function ARFurnitureView({ item, onClose }: Props) {
   const [status, setStatus] = useState<Status>("checking");
   const [error, setError] = useState("");
   const [placedCount, setPlacedCount] = useState(0);
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [gestureMode, setGestureMode] = useState<"place" | "edit">("place");
 
   // Рефы для XR-объектов
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -44,6 +46,23 @@ export default function ARFurnitureView({ item, onClose }: Props) {
   const hitTestSourceRef = useRef<XRHitTestSource | null>(null);
   const sessionRef = useRef<XRSession | null>(null);
   const placedMeshesRef = useRef<THREE.Mesh[]>([]);
+
+  // Touch gesture state
+  const touchStateRef = useRef<{
+    mode: "idle" | "drag" | "rotate";
+    startX: number;
+    startY: number;
+    startAngle: number;
+    startMeshRotY: number;
+    startMeshPos: THREE.Vector3 | null;
+    activeIdx: number | null;
+  }>({ mode: "idle", startX: 0, startY: 0, startAngle: 0, startMeshRotY: 0, startMeshPos: null, activeIdx: null });
+  const selectedIdxRef = useRef<number | null>(null);
+  const gestureModeRef = useRef<"place" | "edit">("place");
+
+  // Синхронизируем рефы со стейтом
+  useEffect(() => { selectedIdxRef.current = selectedIdx; }, [selectedIdx]);
+  useEffect(() => { gestureModeRef.current = gestureMode; }, [gestureMode]);
 
   // Проверяем поддержку
   useEffect(() => {
@@ -121,28 +140,107 @@ export default function ARFurnitureView({ item, onClose }: Props) {
       // @ts-expect-error — local reference space, not in default DOM lib
       const localSpace = await session.requestReferenceSpace("local");
 
-      // Тап → ставим мебель в позицию reticle
+      // Тап (XR select) → ставим мебель только в режиме "place"
       const onSelect = () => {
+        if (gestureModeRef.current === "edit") return; // в редакторе не ставим новые
         const r = reticleRef.current;
         if (!r || !r.visible || !sceneRef.current) return;
         const mesh = createFurnitureMesh(item);
-        // Позиционируем по матрице reticle
         mesh.position.setFromMatrixPosition(r.matrix);
         const yEuler = new THREE.Euler();
         yEuler.setFromRotationMatrix(r.matrix);
         mesh.rotation.y = yEuler.y;
         sceneRef.current.add(mesh);
         placedMeshesRef.current.push(mesh);
+        const newIdx = placedMeshesRef.current.length - 1;
         setPlacedCount((c) => c + 1);
+        // Авто-выбираем последнюю поставленную → можно сразу таскать
+        setSelectedIdx(newIdx);
       };
       session.addEventListener("select", onSelect);
+
+      // ─── Touch жесты для drag/rotate ────────────────────────────────────
+      const overlay = containerRef.current;
+      if (overlay) {
+        const onTouchStart = (e: TouchEvent) => {
+          if (gestureModeRef.current !== "edit") return;
+          const idx = selectedIdxRef.current;
+          if (idx == null) return;
+          const mesh = placedMeshesRef.current[idx];
+          if (!mesh) return;
+          const ts = touchStateRef.current;
+          ts.activeIdx = idx;
+          ts.startMeshPos = mesh.position.clone();
+          ts.startMeshRotY = mesh.rotation.y;
+
+          if (e.touches.length === 1) {
+            ts.mode = "drag";
+            ts.startX = e.touches[0].clientX;
+            ts.startY = e.touches[0].clientY;
+          } else if (e.touches.length === 2) {
+            ts.mode = "rotate";
+            const dx = e.touches[1].clientX - e.touches[0].clientX;
+            const dy = e.touches[1].clientY - e.touches[0].clientY;
+            ts.startAngle = Math.atan2(dy, dx);
+          }
+          e.preventDefault();
+        };
+
+        const onTouchMove = (e: TouchEvent) => {
+          if (gestureModeRef.current !== "edit") return;
+          const ts = touchStateRef.current;
+          if (ts.mode === "idle" || ts.activeIdx == null) return;
+          const mesh = placedMeshesRef.current[ts.activeIdx];
+          if (!mesh) return;
+
+          if (ts.mode === "drag" && e.touches.length === 1 && ts.startMeshPos) {
+            // Перемещение по плоскости пола (XZ).
+            // Используем простой коэффициент: 1 пиксель ≈ 0.003 м на расстоянии руки.
+            const dx = e.touches[0].clientX - ts.startX;
+            const dy = e.touches[0].clientY - ts.startY;
+            const k = 0.003;
+            mesh.position.x = ts.startMeshPos.x + dx * k;
+            mesh.position.z = ts.startMeshPos.z + dy * k;
+            // Y не трогаем — мебель остаётся на полу
+          } else if (ts.mode === "rotate" && e.touches.length === 2) {
+            const dx = e.touches[1].clientX - e.touches[0].clientX;
+            const dy = e.touches[1].clientY - e.touches[0].clientY;
+            const ang = Math.atan2(dy, dx);
+            mesh.rotation.y = ts.startMeshRotY + (ang - ts.startAngle);
+          }
+          e.preventDefault();
+        };
+
+        const onTouchEnd = (e: TouchEvent) => {
+          const ts = touchStateRef.current;
+          // переход 2→1 — оставляем drag на оставшемся пальце
+          if (e.touches.length === 1 && ts.mode === "rotate" && ts.activeIdx != null) {
+            const mesh = placedMeshesRef.current[ts.activeIdx];
+            if (mesh) {
+              ts.mode = "drag";
+              ts.startX = e.touches[0].clientX;
+              ts.startY = e.touches[0].clientY;
+              ts.startMeshPos = mesh.position.clone();
+            }
+          } else if (e.touches.length === 0) {
+            ts.mode = "idle";
+            ts.activeIdx = null;
+          }
+        };
+
+        overlay.addEventListener("touchstart", onTouchStart, { passive: false });
+        overlay.addEventListener("touchmove",  onTouchMove,  { passive: false });
+        overlay.addEventListener("touchend",   onTouchEnd);
+        overlay.addEventListener("touchcancel", onTouchEnd);
+      }
 
       // Render loop
       renderer.setAnimationLoop((_t, frame) => {
         if (!frame) return;
         const hits = (frame as XRFrame).getHitTestResults(hitTestSource as XRHitTestSource);
         const ret = reticleRef.current;
-        if (hits.length > 0 && ret) {
+        // Reticle виден только в режиме установки
+        if (gestureModeRef.current === "place" && hits.length > 0 && ret) {
           const pose = hits[0].getPose(localSpace as unknown as XRReferenceSpace);
           if (pose) {
             ret.visible = true;
@@ -151,6 +249,19 @@ export default function ARFurnitureView({ item, onClose }: Props) {
         } else if (ret) {
           ret.visible = false;
         }
+
+        // Подсветка выбранного объекта: яркие edges
+        const selected = selectedIdxRef.current;
+        placedMeshesRef.current.forEach((m, idx) => {
+          const wire = m.children[0] as THREE.LineSegments | undefined;
+          if (wire && wire.material instanceof THREE.LineBasicMaterial) {
+            wire.material.color.set(idx === selected ? 0xfb923c : 0x16a34a);
+          }
+          if (m.material instanceof THREE.MeshStandardMaterial) {
+            m.material.opacity = idx === selected ? 0.75 : 0.55;
+          }
+        });
+
         renderer.render(scene, camera);
       });
 
@@ -179,6 +290,8 @@ export default function ARFurnitureView({ item, onClose }: Props) {
     placedMeshesRef.current = [];
     setStatus("ready");
     setPlacedCount(0);
+    setSelectedIdx(null);
+    setGestureMode("place");
   };
 
   const stopAR = async () => {
@@ -193,6 +306,7 @@ export default function ARFurnitureView({ item, onClose }: Props) {
     placedMeshesRef.current.forEach((m) => sceneRef.current?.remove(m));
     placedMeshesRef.current = [];
     setPlacedCount(0);
+    setSelectedIdx(null);
   };
 
   useEffect(() => {
@@ -321,9 +435,126 @@ export default function ARFurnitureView({ item, onClose }: Props) {
                   Поставлено: {placedCount}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Тапайте на экран в позиции зелёного кружка — мебель появится в реальном масштабе.
-              </p>
+
+              {/* Режим */}
+              <div className="grid grid-cols-2 gap-2 bg-secondary/30 rounded-lg p-1">
+                {(["place", "edit"] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => {
+                      setGestureMode(m);
+                      if (m === "place") setSelectedIdx(null);
+                    }}
+                    className={`text-xs font-semibold py-2 rounded-md transition-all flex items-center justify-center gap-1.5 ${
+                      gestureMode === m
+                        ? "bg-primary text-primary-foreground shadow"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Icon name={m === "place" ? "MousePointerClick" : "Move3d"} size={12} />
+                    {m === "place" ? "Установка" : "Редактор"}
+                  </button>
+                ))}
+              </div>
+
+              {gestureMode === "place" ? (
+                <p className="text-xs text-muted-foreground">
+                  Тапайте на экран в позиции зелёного кружка — мебель появится в реальном масштабе.
+                </p>
+              ) : placedCount === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Сначала поставьте хотя бы один предмет в режиме «Установка».
+                </p>
+              ) : (
+                <>
+                  <div className="bg-secondary/40 rounded-lg p-3 space-y-2">
+                    <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                      Жесты в режиме редактора
+                    </p>
+                    <div className="text-xs space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Icon name="Hand" size={12} className="text-primary" />
+                        <span className="text-foreground">1 палец — перемещение по полу</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Icon name="RotateCw" size={12} className="text-primary" />
+                        <span className="text-foreground">2 пальца — вращение</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Селектор объекта */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setSelectedIdx((i) => {
+                        const n = placedMeshesRef.current.length;
+                        if (n === 0) return null;
+                        return i == null ? n - 1 : (i - 1 + n) % n;
+                      })}
+                      className="w-9 h-9 rounded-md bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center"
+                    >
+                      <Icon name="ChevronLeft" size={14} />
+                    </button>
+                    <div className="flex-1 text-center bg-secondary/40 rounded-md py-2">
+                      <p className="text-xs font-mono text-foreground font-semibold">
+                        {selectedIdx == null ? "Выберите объект" : `Объект ${selectedIdx + 1} из ${placedCount}`}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setSelectedIdx((i) => {
+                        const n = placedMeshesRef.current.length;
+                        if (n === 0) return null;
+                        return i == null ? 0 : (i + 1) % n;
+                      })}
+                      className="w-9 h-9 rounded-md bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center"
+                    >
+                      <Icon name="ChevronRight" size={14} />
+                    </button>
+                  </div>
+
+                  {/* Быстрые действия с выбранным */}
+                  {selectedIdx != null && (
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        onClick={() => {
+                          const mesh = placedMeshesRef.current[selectedIdx];
+                          if (mesh) mesh.rotation.y -= Math.PI / 2;
+                        }}
+                        className="bg-secondary py-2 rounded-md text-xs font-semibold flex items-center justify-center gap-1 hover:bg-border transition-colors"
+                      >
+                        <Icon name="RotateCcw" size={12} />
+                        −90°
+                      </button>
+                      <button
+                        onClick={() => {
+                          const mesh = placedMeshesRef.current[selectedIdx];
+                          if (mesh) mesh.rotation.y += Math.PI / 2;
+                        }}
+                        className="bg-secondary py-2 rounded-md text-xs font-semibold flex items-center justify-center gap-1 hover:bg-border transition-colors"
+                      >
+                        <Icon name="RotateCw" size={12} />
+                        +90°
+                      </button>
+                      <button
+                        onClick={() => {
+                          const mesh = placedMeshesRef.current[selectedIdx];
+                          if (mesh && sceneRef.current) {
+                            sceneRef.current.remove(mesh);
+                            placedMeshesRef.current.splice(selectedIdx, 1);
+                            setPlacedCount(placedMeshesRef.current.length);
+                            setSelectedIdx(null);
+                          }
+                        }}
+                        className="bg-destructive/10 text-destructive py-2 rounded-md text-xs font-semibold flex items-center justify-center gap-1 hover:bg-destructive/20 transition-colors"
+                      >
+                        <Icon name="Trash2" size={12} />
+                        Удалить
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+
               <div className="flex gap-2">
                 {placedCount > 0 && (
                   <button

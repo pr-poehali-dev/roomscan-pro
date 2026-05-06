@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import { getLastScan, getCart, saveCart, type CartItemRef, type LastScan } from "@/lib/scanStore";
+import { getFurnitureById } from "@/lib/furnitureCatalog";
 
 interface Style {
   id: string;
@@ -87,23 +88,13 @@ export default function StylesSection() {
   })();
 
   const applyStyle = () => {
-    // Импортируем furnitureItems прямо здесь без cyclic deps
-    // — берём recommended IDs и добавляем в корзину
-    const FURNITURE: CartItemRef[] = [
-      { id: 1, name: "Диван угловой Loft",     icon: "Sofa",     w: 280, d: 170, priceNum: 89400, category: "Диваны" },
-      { id: 2, name: "Обеденный стол Solid",   icon: "Table2",   w: 160, d: 80,  priceNum: 34200, category: "Столы" },
-      { id: 3, name: "Кресло Arc",             icon: "Armchair", w: 85,  d: 90,  priceNum: 22800, category: "Кресла" },
-      { id: 4, name: "Шкаф-купе Forma",        icon: "Package",  w: 240, d: 60,  priceNum: 67600, category: "Шкафы" },
-      { id: 5, name: "Кровать Frame",          icon: "BedDouble",w: 200, d: 160, priceNum: 58000, category: "Кровати" },
-      { id: 6, name: "Тумба TV Unit",          icon: "Tv",       w: 180, d: 40,  priceNum: 18500, category: "ТВ-зоны" },
-      { id: 7, name: "Стеллаж Open",           icon: "BookOpen", w: 120, d: 30,  priceNum: 12900, category: "Шкафы" },
-      { id: 8, name: "Пуф Round",              icon: "Circle",   w: 60,  d: 60,  priceNum: 8400,  category: "Кресла" },
-      { id: 9, name: "Журнальный столик Neo",  icon: "Table",    w: 100, d: 50,  priceNum: 14200, category: "Столы" },
-    ];
-
-    const additions = style.recommended
-      .map((id) => FURNITURE.find((f) => f.id === id))
-      .filter((f): f is CartItemRef => Boolean(f));
+    const additions: CartItemRef[] = style.recommended
+      .map((id) => getFurnitureById(id))
+      .filter((f) => Boolean(f))
+      .map((f) => ({
+        id: f!.id, name: f!.name, icon: f!.icon, w: f!.w, d: f!.d,
+        priceNum: f!.priceNum, category: f!.category,
+      }));
 
     const merged = [...cart];
     additions.forEach((a) => {
@@ -117,8 +108,8 @@ export default function StylesSection() {
 
   const totalPrice = cart.reduce((s, c) => s + c.priceNum, 0);
   const styleTotalPrice = style.recommended.reduce((s, id) => {
-    const FURNITURE: Record<number, number> = { 1: 89400, 2: 34200, 3: 22800, 4: 67600, 5: 58000, 6: 18500, 7: 12900, 8: 8400, 9: 14200 };
-    return s + (FURNITURE[id] || 0);
+    const f = getFurnitureById(id);
+    return s + (f?.priceNum ?? 0);
   }, 0);
 
   return (
@@ -232,18 +223,8 @@ export default function StylesSection() {
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {style.recommended.map((id) => {
-              const FURNITURE: Record<number, { name: string; icon: string; price: number }> = {
-                1: { name: "Диван Loft", icon: "Sofa", price: 89400 },
-                2: { name: "Стол Solid", icon: "Table2", price: 34200 },
-                3: { name: "Кресло Arc", icon: "Armchair", price: 22800 },
-                4: { name: "Шкаф Forma", icon: "Package", price: 67600 },
-                5: { name: "Кровать Frame", icon: "BedDouble", price: 58000 },
-                6: { name: "Тумба TV Unit", icon: "Tv", price: 18500 },
-                7: { name: "Стеллаж Open", icon: "BookOpen", price: 12900 },
-                8: { name: "Пуф Round", icon: "Circle", price: 8400 },
-                9: { name: "Столик Neo", icon: "Table", price: 14200 },
-              };
-              const it = FURNITURE[id];
+              const f = getFurnitureById(id);
+              const it = f ? { name: f.name, icon: f.icon, price: f.priceNum } : null;
               if (!it) return null;
               return (
                 <div key={id} className="bg-secondary/40 rounded-md px-3 py-2 flex items-center gap-2">

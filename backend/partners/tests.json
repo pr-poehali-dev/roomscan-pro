@@ -1,0 +1,41 @@
+{
+  "tests": [
+    {
+      "name": "GET /stats — 200",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "POST без тела — 400",
+      "method": "POST",
+      "path": "/",
+      "body": {},
+      "expectedStatus": 400
+    },
+    {
+      "name": "POST с неверным email — 400",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "company_name": "ТестКомпания",
+        "contact_name": "Иван",
+        "email": "not-an-email",
+        "partnership_type": "catalog"
+      },
+      "expectedStatus": 400
+    },
+    {
+      "name": "POST с неверным типом — 400",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "company_name": "ТестКомпания",
+        "contact_name": "Иван",
+        "email": "test@example.com",
+        "partnership_type": "wrong_type"
+      },
+      "expectedStatus": 400
+    }
+  ]
+}

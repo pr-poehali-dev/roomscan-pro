@@ -2,35 +2,17 @@ import { useState, useCallback, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import { saveCart, getCart, type CartItemRef } from "@/lib/scanStore";
 import ARFurnitureView, { type ARFurniture } from "@/components/ar/ARFurnitureView";
+import { FURNITURE_CATALOG, CATEGORIES, type Category } from "@/lib/furnitureCatalog";
 
-const furnitureItems = [
-  { id: 1, name: "Диван угловой Loft", brand: "Arredo", size: "280×170 см", price: "89 400 ₽", priceNum: 89400, category: "Диваны", icon: "Sofa", w: 280, d: 170 },
-  { id: 2, name: "Обеденный стол Solid", brand: "Nord", size: "160×80 см", price: "34 200 ₽", priceNum: 34200, category: "Столы", icon: "Table2", w: 160, d: 80 },
-  { id: 3, name: "Кресло Arc", brand: "Arredo", size: "85×90 см", price: "22 800 ₽", priceNum: 22800, category: "Кресла", icon: "Armchair", w: 85, d: 90 },
-  { id: 4, name: "Шкаф-купе Forma", brand: "Space", size: "240×60 см", price: "67 600 ₽", priceNum: 67600, category: "Шкафы", icon: "Package", w: 240, d: 60 },
-  { id: 5, name: "Кровать Frame", brand: "Nord", size: "200×160 см", price: "58 000 ₽", priceNum: 58000, category: "Кровати", icon: "BedDouble", w: 200, d: 160 },
-  { id: 6, name: "Тумба TV Unit", brand: "Space", size: "180×40 см", price: "18 500 ₽", priceNum: 18500, category: "ТВ-зоны", icon: "Tv", w: 180, d: 40 },
-  { id: 7, name: "Стеллаж Open", brand: "Nord", size: "120×30 см", price: "12 900 ₽", priceNum: 12900, category: "Шкафы", icon: "BookOpen", w: 120, d: 30 },
-  { id: 8, name: "Пуф Round", brand: "Arredo", size: "60×60 см", price: "8 400 ₽", priceNum: 8400, category: "Кресла", icon: "Circle", w: 60, d: 60 },
-  { id: 9, name: "Журнальный столик Neo", brand: "Space", size: "100×50 см", price: "14 200 ₽", priceNum: 14200, category: "Столы", icon: "Table", w: 100, d: 50 },
-];
-
-// Приблизительные высоты мебели по категориям (метры) — для AR-bbox
-const HEIGHT_BY_CATEGORY: Record<string, number> = {
-  "Диваны":    0.85,
-  "Столы":     0.75,
-  "Кресла":    0.95,
-  "Шкафы":     2.10,
-  "Кровати":   0.55,
-  "ТВ-зоны":   0.50,
-};
+// Алиас для обратной совместимости с локальным кодом
+const furnitureItems = FURNITURE_CATALOG;
 
 export default function CatalogSection() {
-  const [filter, setFilter] = useState("Все");
+  const [filter, setFilter] = useState<"Все" | Category>("Все");
   const [cart, setCart] = useState<number[]>([]);
   const [added, setAdded] = useState<number | null>(null);
   const [arItem, setArItem] = useState<ARFurniture | null>(null);
-  const categories = ["Все", "Диваны", "Столы", "Кресла", "Шкафы", "Кровати", "ТВ-зоны"];
+  const categories: ("Все" | Category)[] = ["Все", ...CATEGORIES];
   const filtered = filter === "Все" ? furnitureItems : furnitureItems.filter((f) => f.category === filter);
 
   // Восстановление корзины из store при монтировании
@@ -120,7 +102,7 @@ export default function CatalogSection() {
                         name: item.name,
                         width: item.w / 100,
                         depth: item.d / 100,
-                        height: HEIGHT_BY_CATEGORY[item.category] ?? 0.8,
+                        height: item.h / 100,
                       })}
                       title="Посмотреть в AR (Android Chrome)"
                       className="text-xs px-2 py-1.5 rounded-lg flex items-center gap-1 font-semibold border border-border text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
