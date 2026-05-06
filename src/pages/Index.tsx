@@ -4,9 +4,11 @@ import { AUTH_URL, User, getToken, clearToken, apiFetch } from "@/lib/api";
 import AuthScreen from "@/components/AuthScreen";
 import { ScanSection, PlannerSection, CatalogSection, CalcSection, ExportSection, HelpSection } from "@/components/sections/ContentSections";
 import { ProjectsSection, ProfileSection } from "@/components/sections/UserSections";
+import UseCasesSection from "@/components/sections/UseCasesSection";
 
 type Section =
   | "scan"
+  | "usecases"
   | "projects"
   | "planner"
   | "catalog"
@@ -17,6 +19,7 @@ type Section =
 
 const navItems: { id: Section; label: string; icon: string }[] = [
   { id: "scan", label: "Сканирование", icon: "ScanLine" },
+  { id: "usecases", label: "Сценарии", icon: "Target" },
   { id: "projects", label: "Мои проекты", icon: "FolderOpen" },
   { id: "planner", label: "Планировщик", icon: "LayoutGrid" },
   { id: "catalog", label: "Каталог мебели", icon: "Sofa" },
@@ -58,6 +61,7 @@ export default function Index() {
     switch (active) {
       case "projects": return <ProjectsSection token={getToken()} />;
       case "scan": return <ScanSection />;
+      case "usecases": return <UseCasesSection />;
       case "planner": return <PlannerSection />;
       case "catalog": return <CatalogSection />;
       case "calc": return <CalcSection />;
