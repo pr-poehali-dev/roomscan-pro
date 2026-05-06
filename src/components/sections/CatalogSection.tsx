@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import { saveCart, getCart, type CartItemRef } from "@/lib/scanStore";
+import ARFurnitureView, { type ARFurniture } from "@/components/ar/ARFurnitureView";
 
 const furnitureItems = [
   { id: 1, name: "Диван угловой Loft", brand: "Arredo", size: "280×170 см", price: "89 400 ₽", priceNum: 89400, category: "Диваны", icon: "Sofa", w: 280, d: 170 },
@@ -14,10 +15,21 @@ const furnitureItems = [
   { id: 9, name: "Журнальный столик Neo", brand: "Space", size: "100×50 см", price: "14 200 ₽", priceNum: 14200, category: "Столы", icon: "Table", w: 100, d: 50 },
 ];
 
+// Приблизительные высоты мебели по категориям (метры) — для AR-bbox
+const HEIGHT_BY_CATEGORY: Record<string, number> = {
+  "Диваны":    0.85,
+  "Столы":     0.75,
+  "Кресла":    0.95,
+  "Шкафы":     2.10,
+  "Кровати":   0.55,
+  "ТВ-зоны":   0.50,
+};
+
 export default function CatalogSection() {
   const [filter, setFilter] = useState("Все");
   const [cart, setCart] = useState<number[]>([]);
   const [added, setAdded] = useState<number | null>(null);
+  const [arItem, setArItem] = useState<ARFurniture | null>(null);
   const categories = ["Все", "Диваны", "Столы", "Кресла", "Шкафы", "Кровати", "ТВ-зоны"];
   const filtered = filter === "Все" ? furnitureItems : furnitureItems.filter((f) => f.category === filter);
 
@@ -99,20 +111,36 @@ export default function CatalogSection() {
                 <p className="text-xs text-muted-foreground font-mono mb-1">{item.brand} · {item.category}</p>
                 <p className="font-semibold text-foreground mb-1">{item.name}</p>
                 <p className="text-xs text-muted-foreground mb-3">{item.size}</p>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-primary font-bold">{item.price}</span>
-                  <button
-                    onClick={() => addToCart(item.id)}
-                    className={`text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-semibold transition-all ${
-                      justAdded
-                        ? "bg-primary text-primary-foreground scale-95"
-                        : inCart
-                        ? "bg-primary/10 text-primary border border-primary/30 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
-                        : "bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground"
-                    }`}>
-                    <Icon name={inCart ? "Check" : "Plus"} size={12} />
-                    {justAdded ? "Добавлено!" : inCart ? "В плане" : "В план"}
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setArItem({
+                        id: item.id,
+                        name: item.name,
+                        width: item.w / 100,
+                        depth: item.d / 100,
+                        height: HEIGHT_BY_CATEGORY[item.category] ?? 0.8,
+                      })}
+                      title="Посмотреть в AR (Android Chrome)"
+                      className="text-xs px-2 py-1.5 rounded-lg flex items-center gap-1 font-semibold border border-border text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
+                    >
+                      <Icon name="View" size={12} />
+                      AR
+                    </button>
+                    <button
+                      onClick={() => addToCart(item.id)}
+                      className={`text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-semibold transition-all ${
+                        justAdded
+                          ? "bg-primary text-primary-foreground scale-95"
+                          : inCart
+                          ? "bg-primary/10 text-primary border border-primary/30 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
+                          : "bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground"
+                      }`}>
+                      <Icon name={inCart ? "Check" : "Plus"} size={12} />
+                      {justAdded ? "Добавлено!" : inCart ? "В плане" : "В план"}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -145,6 +173,10 @@ export default function CatalogSection() {
             <span className="text-xl font-black text-primary font-mono">{totalPrice.toLocaleString("ru-RU")} ₽</span>
           </div>
         </div>
+      )}
+
+      {arItem && (
+        <ARFurnitureView item={arItem} onClose={() => setArItem(null)} />
       )}
     </div>
   );

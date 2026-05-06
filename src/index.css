@@ -4,44 +4,44 @@
 
 @layer base {
   :root {
-    /* Авангард: #1a1a2e фон, #16a34a зелёный акцент */
-    --background: 240 28% 14%;
-    --foreground: 210 20% 92%;
+    /* Светлая тема: чистый, тёплый фон с зелёным акцентом */
+    --background: 210 25% 98%;
+    --foreground: 222 30% 15%;
 
-    --card: 240 24% 17%;
-    --card-foreground: 210 20% 92%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 30% 15%;
 
-    --popover: 240 24% 17%;
-    --popover-foreground: 210 20% 92%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 30% 15%;
 
     --primary: 142 70% 36%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 20% 22%;
-    --secondary-foreground: 210 20% 80%;
+    --secondary: 210 20% 94%;
+    --secondary-foreground: 222 25% 25%;
 
-    --muted: 240 20% 20%;
-    --muted-foreground: 210 12% 50%;
+    --muted: 210 20% 95%;
+    --muted-foreground: 222 12% 45%;
 
-    --accent: 142 70% 36%;
+    --accent: 142 65% 45%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 240 18% 24%;
-    --input: 240 18% 24%;
+    --border: 215 20% 88%;
+    --input: 215 20% 88%;
     --ring: 142 70% 36%;
 
     --radius: 0.375rem;
 
-    --sidebar-background: 240 28% 14%;
-    --sidebar-foreground: 210 20% 92%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 30% 15%;
     --sidebar-primary: 142 70% 36%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 20% 20%;
-    --sidebar-accent-foreground: 210 20% 80%;
-    --sidebar-border: 240 18% 24%;
+    --sidebar-accent: 210 20% 95%;
+    --sidebar-accent-foreground: 222 25% 25%;
+    --sidebar-border: 215 20% 88%;
     --sidebar-ring: 142 70% 36%;
   }
 }
@@ -71,10 +71,10 @@
     font-family: "IBM Plex Mono", monospace;
   }
 
-  /* Авангард: зелёная подсветка текста выделения */
+  /* Зелёная подсветка текста выделения */
   ::selection {
-    background: hsl(142 70% 36% / 0.3);
-    color: #fff;
+    background: hsl(142 70% 36% / 0.25);
+    color: hsl(222 30% 15%);
   }
 }
 
@@ -89,8 +89,8 @@
 
   .grid-pattern {
     background-image:
-      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
     background-size: 40px 40px;
   }
 

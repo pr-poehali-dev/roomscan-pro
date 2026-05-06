@@ -177,7 +177,7 @@ export default function PlannerSection({ cartItems }: { cartItems?: typeof furni
           <div className="bg-card border-x border-b border-border rounded-b-lg overflow-hidden relative" style={{ height: 360 }}>
             <div className="absolute inset-0"
               style={{
-                backgroundImage: "linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)",
+                backgroundImage: "linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px)",
                 backgroundSize: "40px 40px"
               }} />
 
@@ -189,11 +189,11 @@ export default function PlannerSection({ cartItems }: { cartItems?: typeof furni
                   return (
                     <g key={r.label} onClick={() => handleRoomClick(r.label)} style={{ cursor: "pointer" }}>
                       <rect x={r.x} y={r.y} width={r.w} height={r.h}
-                        fill={isSelected ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.03)"}
-                        stroke={isSelected ? "rgba(34,197,94,0.7)" : "rgba(255,255,255,0.15)"}
+                        fill={isSelected ? "rgba(34,197,94,0.12)" : "rgba(0,0,0,0.03)"}
+                        stroke={isSelected ? "rgba(34,197,94,0.7)" : "rgba(0,0,0,0.25)"}
                         strokeWidth={isSelected ? "2" : "1.5"} rx="1" />
                       <text x={r.x + r.w / 2} y={r.y + r.h / 2 - 6}
-                        textAnchor="middle" fill={isSelected ? "hsl(142,70%,50%)" : "rgba(255,255,255,0.5)"}
+                        textAnchor="middle" fill={isSelected ? "hsl(142,70%,40%)" : "rgba(0,0,0,0.55)"}
                         fontSize="8" fontFamily="IBM Plex Mono">{r.label}</text>
                       <text x={r.x + r.w / 2} y={r.y + r.h / 2 + 8}
                         textAnchor="middle" fill="hsl(35,90%,55%)" fontSize="7" fontFamily="IBM Plex Mono">{r.area}</text>
@@ -419,7 +419,7 @@ function ScannedRoomPlan({ scan }: { scan: LastScan }) {
           {/* фон-сетка */}
           <defs>
             <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="0.5" />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#grid)" />
@@ -427,8 +427,8 @@ function ScannedRoomPlan({ scan }: { scan: LastScan }) {
           {/* стены комнаты */}
           <rect
             x={ox} y={oy} width={roomW} height={roomL}
-            fill="rgba(34,197,94,0.05)"
-            stroke="rgba(255,255,255,0.4)"
+            fill="rgba(34,197,94,0.06)"
+            stroke="rgba(0,0,0,0.55)"
             strokeWidth="3"
             rx="1"
           />
@@ -449,11 +449,11 @@ function ScannedRoomPlan({ scan }: { scan: LastScan }) {
 
           {/* подпись комнаты */}
           <text x={ox + roomW / 2} y={oy + roomL / 2} textAnchor="middle"
-                fontSize="11" fontFamily="IBM Plex Mono" fill="rgba(255,255,255,0.4)" fontWeight="600">
+                fontSize="11" fontFamily="IBM Plex Mono" fill="rgba(0,0,0,0.45)" fontWeight="600">
             Комната
           </text>
           <text x={ox + roomW / 2} y={oy + roomL / 2 + 14} textAnchor="middle"
-                fontSize="9" fontFamily="IBM Plex Mono" fill="rgba(255,255,255,0.3)">
+                fontSize="9" fontFamily="IBM Plex Mono" fill="rgba(0,0,0,0.35)">
             {scan.area} м²
           </text>
         </svg>
