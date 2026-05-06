@@ -8,6 +8,8 @@ import UseCasesSection from "@/components/sections/UseCasesSection";
 import StylesSection from "@/components/sections/StylesSection";
 import PartnersSection from "@/components/sections/PartnersSection";
 import AdminSection from "@/components/sections/AdminSection";
+import ScenarioRunner from "@/components/ScenarioRunner";
+import type { ScenarioSection } from "@/lib/scenarios";
 
 type Section =
   | "scan"
@@ -94,7 +96,7 @@ export default function Index() {
     switch (active) {
       case "projects": return <ProjectsSection token={getToken()} />;
       case "scan": return <ScanSection />;
-      case "usecases": return <UseCasesSection />;
+      case "usecases": return <UseCasesSection onNavigate={(s) => setActive(s as Section)} />;
       case "planner": return <PlannerSection />;
       case "catalog": return <CatalogSection />;
       case "styles": return <StylesSection />;
@@ -235,6 +237,11 @@ export default function Index() {
           {renderSection()}
         </div>
       </main>
+
+      <ScenarioRunner
+        activeSection={active}
+        onNavigate={(s: ScenarioSection) => setActive(s as Section)}
+      />
     </div>
   );
 }
