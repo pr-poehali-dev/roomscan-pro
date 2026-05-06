@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import Icon from "@/components/ui/icon";
 import { apiFetch } from "@/lib/api";
+import { saveLastScan } from "@/lib/scanStore";
 import PointCloud3D, { type Point3D, type RoomBox } from "./PointCloud3D";
 
 const PHOTO_URL = "https://functions.poehali.dev/aa224ee6-cbee-45f1-bcf6-92dbb5ecd974";
@@ -167,6 +168,17 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
       setResult(data.result);
       setPhase("done");
       onComplete(data.result);
+
+      // Сохраняем в общий store для Планировщика
+      saveLastScan({
+        width:  data.result.width,
+        length: data.result.length,
+        height: data.result.height,
+        area:   data.result.area,
+        doors:    data.result.doors,
+        windows:  data.result.windows,
+        openings: data.result.openings,
+      });
 
       // Загружаем point_cloud_data из БД для 3D-визуализации
       const statusRes = await apiFetch(`${PHOTO_URL}?action=status&scan_id=${scanId}`);
