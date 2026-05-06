@@ -93,22 +93,53 @@ export default function ScannerViewport({
         </div>
       )}
 
-      {phase === "error" && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 bg-background/95 overflow-y-auto">
-          <Icon name="AlertCircle" size={32} className="text-destructive shrink-0" />
-          <p className="text-destructive font-semibold text-center text-sm max-w-md">{error}</p>
-          <div className="bg-secondary/40 rounded-md p-3 text-xs text-muted-foreground max-w-md text-left">
-            <p className="font-semibold text-foreground mb-1.5">Что попробовать:</p>
-            <ul className="space-y-1 list-disc list-inside">
-              <li>Перезагрузите страницу и нажмите «Разрешить» для камеры</li>
-              <li>Откройте сайт по HTTPS (не HTTP)</li>
-              <li>Проверьте, что камеру не использует другое приложение</li>
-              <li>Используйте Chrome 90+ на Android или Safari 14+ на iOS</li>
-              <li>В настройках браузера: разрешения → камера → разрешить</li>
-            </ul>
+      {phase === "error" && (() => {
+        const inIframe = typeof window !== "undefined" && window.self !== window.top;
+        const isPermissionError = /камер|разреш|политик|iframe|предпросмотр/i.test(error);
+        // Прямая ссылка на сайт (без preview-- префикса)
+        const directUrl = typeof window !== "undefined"
+          ? window.location.href.replace(/^(https?:\/\/)preview--/, "$1")
+          : "";
+
+        return (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-5 bg-background/95 overflow-y-auto">
+            <Icon name="AlertCircle" size={28} className="text-destructive shrink-0" />
+            <p className="text-destructive font-semibold text-center text-sm max-w-md">{error}</p>
+
+            {inIframe && isPermissionError && (
+              <div className="bg-primary/10 border border-primary/30 rounded-md p-3 max-w-md w-full">
+                <p className="text-xs font-semibold text-primary mb-2 flex items-center gap-1.5">
+                  <Icon name="ExternalLink" size={12} />
+                  Откройте сайт в отдельной вкладке
+                </p>
+                <a
+                  href={directUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block bg-primary text-primary-foreground text-center font-bold py-2 rounded-md hover:opacity-90 transition-opacity text-sm"
+                >
+                  Открыть проект →
+                </a>
+                <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
+                  Камера не работает в предпросмотре редактора из-за политики безопасности iframe.
+                  В отдельной вкладке браузер спросит разрешение и всё заработает.
+                </p>
+              </div>
+            )}
+
+            <div className="bg-secondary/40 rounded-md p-3 text-xs text-muted-foreground max-w-md text-left w-full">
+              <p className="font-semibold text-foreground mb-1.5">Что ещё попробовать:</p>
+              <ul className="space-y-1 list-disc list-inside">
+                <li>Открыть сайт в отдельной вкладке (не в редакторе)</li>
+                <li>Иконка замка в адресной строке → Камера → Разрешить</li>
+                <li>Закрыть Skype / Zoom / другие приложения с камерой</li>
+                <li>Chrome 90+ на Android или Safari 14+ на iOS</li>
+                <li>Перезагрузить страницу после смены настроек</li>
+              </ul>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

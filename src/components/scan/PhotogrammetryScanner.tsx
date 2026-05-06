@@ -45,6 +45,27 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
   const startCamera = useCallback(async () => {
     setError("");
 
+    // Диагностика 0: проверка iframe и Permissions Policy
+    const inIframe = typeof window !== "undefined" && window.self !== window.top;
+    let permissionPolicyBlocked = false;
+    try {
+      if (inIframe && document.featurePolicy?.allowsFeature) {
+        permissionPolicyBlocked = !document.featurePolicy.allowsFeature("camera");
+      }
+    } catch {
+      // featurePolicy не поддерживается — игнорируем
+    }
+
+    if (permissionPolicyBlocked) {
+      const directUrl = window.location.href.replace(/^https?:\/\/preview--/, "https://");
+      setError(
+        `Камера заблокирована политикой разрешений iframe предпросмотра. ` +
+        `Откройте сайт напрямую (не в редакторе): ${directUrl}`
+      );
+      setPhase("error");
+      return;
+    }
+
     // Диагностика 1: HTTPS обязателен для getUserMedia
     if (typeof window !== "undefined" && window.location.protocol !== "https:" && window.location.hostname !== "localhost") {
       setError("Камера работает только по HTTPS. Откройте сайт по защищённому соединению.");
@@ -59,6 +80,24 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
       return;
     }
 
+    // Диагностика 3: предварительная проверка статуса разрешения
+    try {
+      if (navigator.permissions?.query) {
+        const status = await navigator.permissions.query({ name: "camera" as PermissionName });
+        if (status.state === "denied") {
+          setError(
+            "Камера заблокирована для этого сайта. " +
+            "Нажмите на иконку замка слева от адреса → Разрешения сайта → Камера → Разрешить, " +
+            "затем перезагрузите страницу."
+          );
+          setPhase("error");
+          return;
+        }
+      }
+    } catch {
+      // permissions API не поддерживается — пропускаем
+    }
+
     // Шаг 1: получаем камеру
     let stream: MediaStream;
     try {
@@ -69,7 +108,16 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
       const err = e as { name?: string; message?: string };
       let msg = "Не удалось получить доступ к камере.";
       if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-        msg = "Доступ к камере запрещён. Разрешите камеру в настройках браузера и перезагрузите страницу.";
+        if (inIframe) {
+          msg =
+            "Доступ к камере запрещён внутри окна предпросмотра. " +
+            "Откройте сайт в отдельной вкладке (кнопка «Открыть» вверху редактора или прямая ссылка вашего проекта), " +
+            "и тогда браузер спросит разрешение на камеру.";
+        } else {
+          msg =
+            "Доступ к камере запрещён. " +
+            "Нажмите на иконку замка/камеры в адресной строке → разрешите камеру → перезагрузите страницу.";
+        }
       } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
         msg = "Камера не найдена. Проверьте, что устройство имеет камеру.";
       } else if (err.name === "NotReadableError") {
