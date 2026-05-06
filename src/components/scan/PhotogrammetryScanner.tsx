@@ -18,6 +18,12 @@ interface ScanResult {
   inliers_pct?: number;
   vanishing_points?: number;
   wall_planes?: number;
+  frames_input?: number;
+  frames_blurred?: number;
+  frames_duplicates?: number;
+  outliers_removed?: number;
+  confidence?: number;
+  confidence_label?: string;
 }
 
 type Phase = "idle" | "recording" | "uploading" | "processing" | "done" | "error";
@@ -329,6 +335,48 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
             <span>Кадров: {result.frames_used}</span>
             <span>Точек облака: {result.point_cloud_points.toLocaleString()}</span>
           </div>
+
+          {/* Data quality (Confidence) */}
+          {result.confidence !== undefined && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                  <Icon name="ShieldCheck" size={11} className="text-primary" />
+                  Качество данных
+                </p>
+                <span className={`text-xs font-mono font-bold ${
+                  (result.confidence ?? 0) >= 0.75 ? "text-primary"
+                  : (result.confidence ?? 0) >= 0.5 ? "text-yellow-500"
+                  : "text-destructive"
+                }`}>
+                  {result.confidence_label} · {Math.round((result.confidence ?? 0) * 100)}%
+                </span>
+              </div>
+              <div className="h-1.5 bg-border rounded-full overflow-hidden mb-2">
+                <div className={`h-full transition-all ${
+                  (result.confidence ?? 0) >= 0.75 ? "bg-primary"
+                  : (result.confidence ?? 0) >= 0.5 ? "bg-yellow-500"
+                  : "bg-destructive"
+                }`} style={{ width: `${(result.confidence ?? 0) * 100}%` }} />
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] font-mono">
+                {[
+                  { label: "Принято", val: `${result.frames_used}/${result.frames_input ?? "—"}`, icon: "CheckCircle2" },
+                  { label: "Размытых", val: `${result.frames_blurred ?? 0}`, icon: "Frown" },
+                  { label: "Дубликатов", val: `${result.frames_duplicates ?? 0}`, icon: "Copy" },
+                  { label: "Выбросов 3D", val: `${result.outliers_removed ?? 0}`, icon: "Filter" },
+                ].map((m) => (
+                  <div key={m.label} className="bg-secondary/50 rounded-md px-2 py-1 flex items-center gap-1.5">
+                    <Icon name={m.icon} size={10} className="text-muted-foreground shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-foreground font-semibold truncate">{m.val}</p>
+                      <p className="text-muted-foreground truncate">{m.label}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* CV-метрики реального pipeline */}
           {(result.features_total ?? 0) > 0 && (

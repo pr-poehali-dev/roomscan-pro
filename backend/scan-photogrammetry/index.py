@@ -255,6 +255,12 @@ def process_scan(event: dict, user_id: int, cur, conn) -> dict:
             "point_cloud_points": len(point_cloud["points"]),
             "vanishing_points": cv_result["vanishing_points"],
             "wall_planes": cv_result["wall_planes"],
+            "frames_input": cv_result["frames_input"],
+            "frames_blurred": cv_result["frames_blurred"],
+            "frames_duplicates": cv_result["frames_duplicates"],
+            "outliers_removed": cv_result["outliers_removed"],
+            "confidence": cv_result["confidence"],
+            "confidence_label": cv_result["confidence_label"],
         }
     })
 
