@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import { getLastScan, getCart, type LastScan, type DetectedOpening, type CartItemRef } from "@/lib/scanStore";
+import { exportPlanToPDF } from "@/lib/planExporter";
 
 const furnitureItems = [
   { id: 1, name: "Диван угловой Loft", brand: "Arredo", size: "280×170 см", price: "89 400 ₽", priceNum: 89400, category: "Диваны", icon: "Sofa", w: 280, d: 170 },
@@ -107,6 +108,21 @@ export default function PlannerSection({ cartItems }: { cartItems?: typeof furni
             >
               <Icon name="ShoppingCart" size={13} />
               + из корзины ({cartItemsList.length})
+            </button>
+          )}
+          {lastScan && (
+            <button
+              onClick={() => exportPlanToPDF({
+                scan: lastScan,
+                cart: cartItemsList,
+                placed: placed.map((p) => ({ id: p.id, name: p.name, x: p.x, y: p.y, w: p.w, h: p.h })),
+                title: "RoomScan AI · План помещения",
+              }, `roomscan-plan-${Date.now()}.pdf`)}
+              className="text-xs font-semibold px-3 py-2 rounded-lg border border-border text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors flex items-center gap-1.5"
+              title="Скачать план в PDF (A4)"
+            >
+              <Icon name="FileDown" size={13} />
+              PDF
             </button>
           )}
           {(["2D", "3D"] as const).map((v) => (

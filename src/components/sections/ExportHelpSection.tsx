@@ -1,23 +1,60 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
+import { getLastScan, getCart, type LastScan, type CartItemRef } from "@/lib/scanStore";
+import { exportPlanToPDF, exportPlanToPNG } from "@/lib/planExporter";
 
 // ─── ExportSection ────────────────────────────────────────────────────────────
 export function ExportSection() {
   const [downloading, setDownloading] = useState<string | null>(null);
   const [done, setDone] = useState<string[]>([]);
+  const [scan, setScan] = useState<LastScan | null>(null);
+  const [cart, setCart] = useState<CartItemRef[]>([]);
 
-  const demoData = {
-    project: "Квартира · демо-план",
-    rooms: [
-      { name: "Гостиная", area: 28.4, width: 16, length: 12, height: 2.8 },
-      { name: "Спальня", area: 18.2, width: 10, length: 10, height: 2.8 },
-      { name: "Кухня", area: 12.1, width: 8, length: 8, height: 2.8 },
-      { name: "Ванная", area: 7.8, width: 8, length: 6, height: 2.5 },
-      { name: "Коридор", area: 8.6, width: 6, length: 10, height: 2.8 },
-    ],
-    total_area: 75.1,
-    generated: new Date().toISOString(),
-  };
+  useEffect(() => {
+    const sync = () => {
+      setScan(getLastScan());
+      setCart(getCart());
+    };
+    sync();
+    window.addEventListener("roomscan:lastScan:changed", sync);
+    window.addEventListener("roomscan:cart:changed", sync);
+    return () => {
+      window.removeEventListener("roomscan:lastScan:changed", sync);
+      window.removeEventListener("roomscan:cart:changed", sync);
+    };
+  }, []);
+
+  // Если есть реальный скан — используем его, иначе демо
+  const demoData = scan
+    ? {
+        project: "Моё помещение",
+        rooms: [{
+          name: "Комната",
+          area: scan.area,
+          width: scan.width,
+          length: scan.length,
+          height: scan.height,
+        }],
+        doors: scan.doors ?? 0,
+        windows: scan.windows ?? 0,
+        openings: scan.openings ?? [],
+        total_area: scan.area,
+        cart: cart.map((c) => ({ name: c.name, size: `${c.w}×${c.d} см`, price: c.priceNum })),
+        cart_total: cart.reduce((s, c) => s + c.priceNum, 0),
+        generated: new Date().toISOString(),
+      }
+    : {
+        project: "Квартира · демо-план",
+        rooms: [
+          { name: "Гостиная", area: 28.4, width: 16, length: 12, height: 2.8 },
+          { name: "Спальня", area: 18.2, width: 10, length: 10, height: 2.8 },
+          { name: "Кухня", area: 12.1, width: 8, length: 8, height: 2.8 },
+          { name: "Ванная", area: 7.8, width: 8, length: 6, height: 2.5 },
+          { name: "Коридор", area: 8.6, width: 6, length: 10, height: 2.8 },
+        ],
+        total_area: 75.1,
+        generated: new Date().toISOString(),
+      };
 
   const handleDownload = (label: string, action: () => void) => {
     setDownloading(label);
@@ -65,6 +102,14 @@ export function ExportSection() {
     URL.revokeObjectURL(url);
   };
 
+  const downloadPNG = () => {
+    exportPlanToPNG({ scan, cart }, `roomscan-plan-${Date.now()}.png`);
+  };
+
+  const downloadPDF = () => {
+    exportPlanToPDF({ scan, cart }, `roomscan-plan-${Date.now()}.pdf`);
+  };
+
   const formats = [
     {
       icon: "FileJson", label: "JSON", desc: "Структурированные данные для разработчиков и интеграций",
@@ -79,12 +124,12 @@ export function ExportSection() {
       badge: "Реально", action: downloadTXT,
     },
     {
-      icon: "FileImage", label: "PNG / JPEG", desc: "Изображение плана в высоком разрешении",
-      badge: "Скоро", action: null,
+      icon: "FileImage", label: "PNG", desc: "Изображение плана с проёмами и мебелью в высоком разрешении",
+      badge: "Реально", action: downloadPNG,
     },
     {
-      icon: "File", label: "PDF", desc: "Полный документ с планом и спецификацией",
-      badge: "Скоро", action: null,
+      icon: "File", label: "PDF", desc: "A4 landscape · план комнаты + спецификация мебели",
+      badge: "Реально", action: downloadPDF,
     },
     {
       icon: "Box", label: "DWG / DXF", desc: "Файл AutoCAD для подрядчиков и проектировщиков",
