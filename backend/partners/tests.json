@@ -36,6 +36,20 @@
         "partnership_type": "wrong_type"
       },
       "expectedStatus": 400
+    },
+    {
+      "name": "Admin list без токена — 401",
+      "method": "GET",
+      "path": "/?action=list",
+      "expectedStatus": 401
+    },
+    {
+      "name": "Admin update с неверным токеном — 401",
+      "method": "POST",
+      "path": "/?action=update",
+      "headers": { "X-Admin-Token": "wrong_token_here" },
+      "body": { "id": 1, "status": "approved" },
+      "expectedStatus": 401
     }
   ]
 }

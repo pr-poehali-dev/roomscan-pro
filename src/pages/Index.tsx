@@ -7,6 +7,7 @@ import { ProjectsSection, ProfileSection } from "@/components/sections/UserSecti
 import UseCasesSection from "@/components/sections/UseCasesSection";
 import StylesSection from "@/components/sections/StylesSection";
 import PartnersSection from "@/components/sections/PartnersSection";
+import AdminSection from "@/components/sections/AdminSection";
 
 type Section =
   | "scan"
@@ -18,10 +19,11 @@ type Section =
   | "calc"
   | "export"
   | "partners"
+  | "admin"
   | "profile"
   | "help";
 
-const navItemsAll: { id: Section; label: string; icon: string; hideInGuest?: boolean }[] = [
+const navItemsAll: { id: Section; label: string; icon: string; hideInGuest?: boolean; adminOnly?: boolean }[] = [
   { id: "scan", label: "Сканирование", icon: "ScanLine" },
   { id: "usecases", label: "Сценарии", icon: "Target" },
   { id: "projects", label: "Мои проекты", icon: "FolderOpen", hideInGuest: true },
@@ -31,6 +33,7 @@ const navItemsAll: { id: Section; label: string; icon: string; hideInGuest?: boo
   { id: "calc", label: "Расчёты", icon: "Calculator" },
   { id: "export", label: "Экспорт", icon: "Share2" },
   { id: "partners", label: "Партнёрам", icon: "Handshake" },
+  { id: "admin", label: "Админ", icon: "ShieldCheck", adminOnly: true },
   { id: "profile", label: "Профиль", icon: "User", hideInGuest: true },
   { id: "help", label: "Помощь", icon: "LifeBuoy" },
 ];
@@ -77,9 +80,15 @@ export default function Index() {
 
   if (!user) return <AuthScreen onAuth={setUser} />;
 
-  const navItems = GUEST_MODE
+  // Админский пункт меню видим только если есть токен в localStorage
+  // или если URL имеет hash #admin (для первичного входа).
+  const hasAdminToken = typeof window !== "undefined" &&
+    (!!localStorage.getItem("roomscan:admin_token") || window.location.hash === "#admin");
+
+  let navItems = GUEST_MODE
     ? navItemsAll.filter((n) => !n.hideInGuest)
     : navItemsAll;
+  if (!hasAdminToken) navItems = navItems.filter((n) => !n.adminOnly);
 
   const renderSection = () => {
     switch (active) {
@@ -92,6 +101,7 @@ export default function Index() {
       case "calc": return <CalcSection />;
       case "export": return <ExportSection />;
       case "partners": return <PartnersSection />;
+      case "admin": return <AdminSection />;
       case "profile": return <ProfileSection user={user} onLogout={logout} />;
       case "help": return <HelpSection />;
       default: return <ScanSection />;

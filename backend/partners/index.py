@@ -1,10 +1,16 @@
 """
-Приём заявок от партнёров (производителей мебели, магазинов).
+Приём заявок от партнёров + админ-панель.
 
-POST /  — отправка заявки. Без авторизации, гостевой эндпоинт.
-GET  /  — публичная статистика (число партнёров, без персданных).
+Публичные:
+POST /                     — отправка заявки.
+GET  /                     — публичная статистика (без персданных).
 
-Тело POST:
+Админ (требует X-Admin-Token, сравнивается с env ADMIN_TOKEN):
+GET  /?action=list         — список всех заявок
+POST /?action=update       — обновить статус заявки
+                             body: { "id": 1, "status": "approved" }
+
+Тело POST для отправки заявки:
 {
   "company_name": "...",
   "contact_name": "...",
@@ -19,6 +25,7 @@ GET  /  — публичная статистика (число партнёро
 import json
 import os
 import re
+import hmac
 import psycopg2
 
 SCHEMA = "t_p79259893_roomscan_pro"
@@ -26,10 +33,11 @@ SCHEMA = "t_p79259893_roomscan_pro"
 CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, X-Admin-Token",
 }
 
 ALLOWED_TYPES = {"catalog", "api", "branded", "enterprise"}
+ALLOWED_STATUSES = {"new", "review", "approved", "rejected"}
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
@@ -41,13 +49,38 @@ def get_conn():
     return psycopg2.connect(os.environ["DATABASE_URL"])
 
 
+def is_admin(event: dict) -> bool:
+    """Проверка X-Admin-Token через постоянное сравнение."""
+    expected = os.environ.get("ADMIN_TOKEN", "")
+    if not expected:
+        return False
+    headers = event.get("headers") or {}
+    token = headers.get("x-admin-token") or headers.get("X-Admin-Token") or ""
+    if not token:
+        return False
+    return hmac.compare_digest(token, expected)
+
+
 def handler(event: dict, context) -> dict:
-    """Точка входа Cloud Function. POST — заявка, GET — публичная статистика."""
+    """Точка входа Cloud Function. POST — заявка, GET — публичная статистика, action= админ-команды."""
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": ""}
 
     method = event.get("httpMethod", "GET")
+    qs = event.get("queryStringParameters") or {}
+    action = qs.get("action", "")
 
+    # Админ-эндпоинты
+    if action in ("list", "update"):
+        if not is_admin(event):
+            return resp(401, {"error": "Требуется админ-токен"})
+        if action == "list" and method == "GET":
+            return admin_list()
+        if action == "update" and method == "POST":
+            return admin_update(event)
+        return resp(405, {"error": "Метод не поддерживается"})
+
+    # Публичные
     if method == "POST":
         return submit_application(event)
     elif method == "GET":
@@ -141,3 +174,83 @@ def get_stats() -> dict:
         "pending": int(row[1] or 0),
         "total": int(row[2] or 0),
     })
+
+
+# ─── Админ-эндпоинты ─────────────────────────────────────────────────────────
+
+def admin_list() -> dict:
+    """Возвращает все заявки в обратном хронологическом порядке."""
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(f"""
+        SELECT id, company_name, contact_name, email, phone, website,
+               partnership_type, catalog_size, description, status,
+               TO_CHAR(created_at, 'DD Mon YYYY HH24:MI') as created,
+               TO_CHAR(updated_at, 'DD Mon YYYY HH24:MI') as updated
+        FROM {SCHEMA}.partner_applications
+        ORDER BY created_at DESC
+        LIMIT 500
+    """)
+    rows = cur.fetchall()
+    cur.close(); conn.close()
+
+    apps = [
+        {
+            "id": r[0],
+            "company_name": r[1],
+            "contact_name": r[2],
+            "email": r[3],
+            "phone": r[4],
+            "website": r[5],
+            "partnership_type": r[6],
+            "catalog_size": r[7],
+            "description": r[8],
+            "status": r[9],
+            "created": r[10],
+            "updated": r[11],
+        }
+        for r in rows
+    ]
+
+    # Сводка по статусам
+    by_status = {"new": 0, "review": 0, "approved": 0, "rejected": 0}
+    by_type = {"catalog": 0, "api": 0, "branded": 0, "enterprise": 0}
+    for a in apps:
+        by_status[a["status"]] = by_status.get(a["status"], 0) + 1
+        by_type[a["partnership_type"]] = by_type.get(a["partnership_type"], 0) + 1
+
+    return resp(200, {
+        "applications": apps,
+        "total": len(apps),
+        "by_status": by_status,
+        "by_type": by_type,
+    })
+
+
+def admin_update(event: dict) -> dict:
+    """Обновление статуса заявки."""
+    body = json.loads(event.get("body") or "{}")
+    app_id = body.get("id")
+    new_status = (body.get("status") or "").strip()
+
+    if not app_id or not isinstance(app_id, int):
+        return resp(400, {"error": "Нужен числовой id"})
+    if new_status not in ALLOWED_STATUSES:
+        return resp(400, {"error": f"Статус должен быть одним из: {', '.join(ALLOWED_STATUSES)}"})
+
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        f"""UPDATE {SCHEMA}.partner_applications
+            SET status = %s, updated_at = NOW()
+            WHERE id = %s
+            RETURNING id""",
+        (new_status, app_id)
+    )
+    row = cur.fetchone()
+    if not row:
+        cur.close(); conn.close()
+        return resp(404, {"error": "Заявка не найдена"})
+    conn.commit(); cur.close(); conn.close()
+
+    return resp(200, {"ok": True, "id": row[0], "status": new_status})
