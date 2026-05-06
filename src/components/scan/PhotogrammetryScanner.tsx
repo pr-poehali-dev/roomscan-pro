@@ -24,6 +24,16 @@ interface ScanResult {
   outliers_removed?: number;
   confidence?: number;
   confidence_label?: string;
+  doors?: number;
+  windows?: number;
+  openings?: Array<{
+    type: "door" | "window";
+    wall_idx: number;
+    width: number;
+    height: number;
+    sill: number;
+    center: [number, number, number];
+  }>;
 }
 
 type Phase = "idle" | "recording" | "uploading" | "processing" | "done" | "error";
@@ -401,6 +411,57 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Окна и двери (auto-detect) */}
+          {((result.doors ?? 0) + (result.windows ?? 0)) > 0 && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1.5">
+                <Icon name="Sparkles" size={11} className="text-primary" />
+                Авто-распознавание проёмов
+              </p>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="bg-primary/5 border border-primary/20 rounded-md px-3 py-2 flex items-center gap-2">
+                  <Icon name="DoorOpen" size={16} className="text-primary" />
+                  <div>
+                    <p className="text-sm font-bold text-foreground">{result.doors ?? 0} {result.doors === 1 ? "дверь" : "двери"}</p>
+                    <p className="text-[10px] text-muted-foreground">найдено в стенах</p>
+                  </div>
+                </div>
+                <div className="bg-primary/5 border border-primary/20 rounded-md px-3 py-2 flex items-center gap-2">
+                  <Icon name="AppWindow" size={16} className="text-primary" />
+                  <div>
+                    <p className="text-sm font-bold text-foreground">{result.windows ?? 0} {result.windows === 1 ? "окно" : "окон"}</p>
+                    <p className="text-[10px] text-muted-foreground">с подоконниками</p>
+                  </div>
+                </div>
+              </div>
+              {result.openings && result.openings.length > 0 && (
+                <div className="space-y-1">
+                  {result.openings.slice(0, 5).map((o, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs bg-secondary/40 rounded px-2 py-1">
+                      <Icon name={o.type === "door" ? "DoorOpen" : "AppWindow"} size={11} className="text-primary shrink-0" />
+                      <span className="text-foreground font-semibold">
+                        {o.type === "door" ? "Дверь" : "Окно"} #{i + 1}
+                      </span>
+                      <span className="text-muted-foreground font-mono">
+                        {o.width}×{o.height} м
+                      </span>
+                      {o.type === "window" && (
+                        <span className="text-muted-foreground font-mono ml-auto">
+                          подоконник {o.sill} м
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  {result.openings.length > 5 && (
+                    <p className="text-[10px] text-muted-foreground font-mono pl-2">
+                      и ещё {result.openings.length - 5}…
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

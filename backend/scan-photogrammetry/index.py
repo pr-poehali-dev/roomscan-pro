@@ -261,6 +261,9 @@ def process_scan(event: dict, user_id: int, cur, conn) -> dict:
             "outliers_removed": cv_result["outliers_removed"],
             "confidence": cv_result["confidence"],
             "confidence_label": cv_result["confidence_label"],
+            "doors": cv_result.get("doors", 0),
+            "windows": cv_result.get("windows", 0),
+            "openings": cv_result.get("openings", []),
         }
     })
 

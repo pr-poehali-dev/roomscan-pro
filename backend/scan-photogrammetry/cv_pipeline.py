@@ -537,6 +537,173 @@ def estimate_dimensions(points: np.ndarray, planes: list[dict]) -> dict:
     }
 
 
+# ─── Окна и двери: детекция проёмов в стенах ─────────────────────────────────
+
+OPENING_GRID_CELL    = 0.10   # 10 см — размер ячейки density grid на стене
+OPENING_MIN_WIDTH    = 0.50   # минимальная ширина проёма, м
+OPENING_MAX_WIDTH    = 3.00   # максимальная ширина (шире — это не проём)
+DOOR_FLOOR_THRESHOLD = 0.20   # дверь начинается не выше 20 см от пола
+DOOR_MIN_HEIGHT      = 1.70   # минимальная высота дверного проёма
+WINDOW_MIN_SILL      = 0.40   # минимальная высота подоконника от пола
+WINDOW_MIN_HEIGHT    = 0.60   # минимальная высота окна
+DENSITY_THRESHOLD    = 0.15   # доля заполненных ячеек, ниже = «дыра» (проём)
+
+
+def _wall_basis(normal: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Для нормали стены строим ортонормированный базис (u — горизонталь, v — вертикаль).
+    v всегда направлен вверх (по +Y мира).
+    """
+    n = normal / (np.linalg.norm(normal) + 1e-9)
+    world_up = np.array([0.0, 1.0, 0.0])
+    # u — горизонтальное направление вдоль стены
+    u = np.cross(world_up, n)
+    u_norm = np.linalg.norm(u)
+    if u_norm < 1e-6:
+        # стена почти горизонтальная (потолок/пол) — дегенерат
+        u = np.array([1.0, 0.0, 0.0])
+    else:
+        u = u / u_norm
+    v = np.cross(n, u)
+    if v[1] < 0:
+        v = -v
+        u = -u
+    return u, v
+
+
+def detect_openings(points: np.ndarray, planes: list[dict],
+                    floor_y: float, ceil_y: float) -> list[dict]:
+    """
+    Поиск дверей и окон в вертикальных стенах.
+
+    Алгоритм:
+    1. Для каждой стены (вертикальной плоскости) выбираем точки-инлайеры (ε=10 см).
+    2. Проецируем в 2D (u-горизонталь, v-высота).
+    3. Строим density grid 10см × 10см.
+    4. Колонки с низкой плотностью точек по всей высоте от пола = "дыры".
+    5. По высоте начала дыры классифицируем: дверь (от пола) или окно (с подоконника).
+
+    Возвращает список объектов:
+      [{"type": "door"|"window", "wall_idx": i, "width": m, "height": m,
+        "sill": m, "center": [x, y, z]}]
+    """
+    if floor_y is None or ceil_y is None or ceil_y <= floor_y:
+        return []
+    if len(points) < 50:
+        return []
+
+    room_height = ceil_y - floor_y
+    openings: list[dict] = []
+
+    for wall_idx, plane in enumerate(planes):
+        normal = np.array(plane["normal"])
+        d = float(plane["d"])
+        # только вертикальные стены: |normal_y| < 0.3
+        if abs(normal[1]) > 0.3:
+            continue
+
+        # дистанция от каждой точки до плоскости
+        dist = np.abs(points @ normal + d)
+        wall_pts = points[dist < 0.10]  # 10 см — толерантность стены
+        if len(wall_pts) < 30:
+            continue
+
+        u, v = _wall_basis(normal)
+        # 2D-координаты на стене (центрируем по среднему u)
+        u_coords = wall_pts @ u
+        v_coords = wall_pts @ v
+
+        u_min, u_max = float(u_coords.min()), float(u_coords.max())
+        wall_width = u_max - u_min
+        if wall_width < 1.0:
+            continue
+
+        # density grid (cols × rows)
+        n_cols = max(int(wall_width / OPENING_GRID_CELL), 4)
+        n_rows = max(int(room_height / OPENING_GRID_CELL), 4)
+        if n_cols < 5 or n_rows < 5:
+            continue
+
+        u_idx = np.clip(((u_coords - u_min) / wall_width * n_cols).astype(int), 0, n_cols - 1)
+        # v нормируем к [floor_y, ceil_y] — берём проекцию на мировой Y (vertical)
+        y_world = wall_pts[:, 1]
+        v_norm = (y_world - floor_y) / max(room_height, 1e-6)
+        v_idx = np.clip((v_norm * n_rows).astype(int), 0, n_rows - 1)
+
+        grid = np.zeros((n_rows, n_cols), dtype=np.float32)
+        for r, c in zip(v_idx, u_idx):
+            grid[r, c] += 1.0
+
+        # бинаризация: ячейка «занята», если в ней есть точки
+        occupied = (grid > 0).astype(np.float32)
+        col_density = occupied.mean(axis=0)  # средняя занятость колонки
+
+        # ищем непрерывные участки колонок с низкой плотностью = «дыра»
+        is_hole = col_density < DENSITY_THRESHOLD
+        # морфология: убираем шум — окна шириной 1 колонка
+        runs = []
+        start = None
+        for i, h in enumerate(is_hole):
+            if h and start is None:
+                start = i
+            elif not h and start is not None:
+                runs.append((start, i - 1))
+                start = None
+        if start is not None:
+            runs.append((start, n_cols - 1))
+
+        for r_start, r_end in runs:
+            width_m = (r_end - r_start + 1) * (wall_width / n_cols)
+            if width_m < OPENING_MIN_WIDTH or width_m > OPENING_MAX_WIDTH:
+                continue
+
+            # анализ вертикального профиля в этой колонке
+            hole_cols = occupied[:, r_start:r_end + 1]
+            row_density = hole_cols.mean(axis=1)
+            # нижняя занятая строка в проёме (= нижняя граница проёма?)
+            # точнее: ищем самую нижнюю строку, где плотность < threshold
+            below_floor_rows = np.where(row_density < DENSITY_THRESHOLD)[0]
+            if len(below_floor_rows) < 2:
+                continue
+
+            bottom_row = int(below_floor_rows.min())
+            top_row = int(below_floor_rows.max())
+            sill = (bottom_row / n_rows) * room_height
+            top  = (top_row / n_rows) * room_height
+            opening_height = top - sill
+
+            if opening_height < 0.5:
+                continue
+
+            # классификация
+            if sill < DOOR_FLOOR_THRESHOLD and opening_height >= DOOR_MIN_HEIGHT:
+                otype = "door"
+            elif sill >= WINDOW_MIN_SILL and opening_height >= WINDOW_MIN_HEIGHT:
+                otype = "window"
+            else:
+                # промежуточное — пропускаем (вероятно артефакт)
+                continue
+
+            # центр проёма в мировых координатах
+            u_center = u_min + (r_start + r_end + 1) / 2 * (wall_width / n_cols)
+            world_center = u_center * u + (floor_y + sill + opening_height / 2) * np.array([0.0, 1.0, 0.0])
+            # проекция на плоскость стены: добавляем смещение по нормали = -d
+            world_center = world_center - normal * (np.dot(world_center, normal) + d)
+
+            openings.append({
+                "type":     otype,
+                "wall_idx": int(wall_idx),
+                "width":    round(float(width_m), 2),
+                "height":   round(float(opening_height), 2),
+                "sill":     round(float(sill), 2),
+                "center":   [round(float(world_center[0]), 2),
+                             round(float(world_center[1]), 2),
+                             round(float(world_center[2]), 2)],
+            })
+
+    return openings
+
+
 # ─── Quality control ─────────────────────────────────────────────────────────
 
 def compute_confidence(stats: dict) -> tuple[float, str]:
@@ -648,14 +815,32 @@ def run(s3_client, bucket: str, prefix: str, max_frames: int = 40) -> dict:
     avg_vps = vp_total / max(len(sample_idxs), 1)
 
     # ── 8. Plane segmentation ────────────────────────────────────────────
-    planes = segment_planes(points, max_planes=4)
+    planes = segment_planes(points, max_planes=6)  # +2 для большего числа стен
 
     # ── 9. Scale & room dimensions ───────────────────────────────────────
     dims = estimate_dimensions(points, planes)
     scale = dims["scale_factor"]
 
     # масштабируем облако (нормализация к метрам) и сэмплируем для UI
-    scaled_points = points * scale
+    scaled_points_full = points * scale  # полное масштабированное облако (для openings)
+
+    # ── 9.5. Детекция окон и дверей ──────────────────────────────────────
+    floor_y = float(scaled_points_full[:, 1].min())
+    ceil_y  = float(scaled_points_full[:, 1].max())
+    # пересчитываем плоскости в метрах: d * scale (геометрически верно для нормированных нормалей)
+    planes_scaled = [{"normal": p["normal"], "d": p["d"] * scale, "n_points": p["n_points"]}
+                     for p in planes]
+    try:
+        openings = detect_openings(scaled_points_full, planes_scaled, floor_y, ceil_y)
+    except Exception as e:
+        log.warning("detect_openings failed: %s", e)
+        openings = []
+
+    doors_count   = sum(1 for o in openings if o["type"] == "door")
+    windows_count = sum(1 for o in openings if o["type"] == "window")
+
+    # сэмплинг для UI (после анализа openings)
+    scaled_points = scaled_points_full
     if len(scaled_points) > 2500:
         idxs = np.random.RandomState(42).choice(len(scaled_points), 2500, replace=False)
         scaled_points = scaled_points[idxs]
@@ -695,4 +880,8 @@ def run(s3_client, bucket: str, prefix: str, max_frames: int = 40) -> dict:
         "outliers_removed": int(outliers_removed),
         "confidence":       confidence,
         "confidence_label": conf_label,
+        # ── Openings detection ──
+        "doors":   doors_count,
+        "windows": windows_count,
+        "openings": openings,
     }

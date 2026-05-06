@@ -17,25 +17,34 @@ type Section =
   | "profile"
   | "help";
 
-const navItems: { id: Section; label: string; icon: string }[] = [
+const navItemsAll: { id: Section; label: string; icon: string; hideInGuest?: boolean }[] = [
   { id: "scan", label: "Сканирование", icon: "ScanLine" },
   { id: "usecases", label: "Сценарии", icon: "Target" },
-  { id: "projects", label: "Мои проекты", icon: "FolderOpen" },
+  { id: "projects", label: "Мои проекты", icon: "FolderOpen", hideInGuest: true },
   { id: "planner", label: "Планировщик", icon: "LayoutGrid" },
   { id: "catalog", label: "Каталог мебели", icon: "Sofa" },
   { id: "calc", label: "Расчёты", icon: "Calculator" },
   { id: "export", label: "Экспорт", icon: "Share2" },
-  { id: "profile", label: "Профиль", icon: "User" },
+  { id: "profile", label: "Профиль", icon: "User", hideInGuest: true },
   { id: "help", label: "Помощь", icon: "LifeBuoy" },
 ];
+
+// На период тестирования — свободный вход. Регистрация скрыта.
+const GUEST_MODE = true;
+const GUEST_USER: User = {
+  id: 0,
+  email: "guest@roomscan-ai.ru",
+  name: "Гость",
+} as User;
 
 export default function Index() {
   const [active, setActive] = useState<Section>("scan");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [authChecked, setAuthChecked] = useState(false);
+  const [user, setUser] = useState<User | null>(GUEST_MODE ? GUEST_USER : null);
+  const [authChecked, setAuthChecked] = useState(GUEST_MODE);
 
   useEffect(() => {
+    if (GUEST_MODE) return;
     const token = getToken();
     if (!token) { setAuthChecked(true); return; }
     apiFetch(`${AUTH_URL}?action=verify`).then(({ status, data }) => {
@@ -45,7 +54,12 @@ export default function Index() {
     });
   }, []);
 
-  const logout = () => { clearToken(); setUser(null); setActive("scan"); };
+  const logout = () => {
+    if (GUEST_MODE) return; // в гостевом режиме выход недоступен
+    clearToken();
+    setUser(null);
+    setActive("scan");
+  };
 
   if (!authChecked) {
     return (
@@ -56,6 +70,10 @@ export default function Index() {
   }
 
   if (!user) return <AuthScreen onAuth={setUser} />;
+
+  const navItems = GUEST_MODE
+    ? navItemsAll.filter((n) => !n.hideInGuest)
+    : navItemsAll;
 
   const renderSection = () => {
     switch (active) {
@@ -119,18 +137,30 @@ export default function Index() {
         </nav>
 
         <div className="p-4 border-t border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-center shrink-0">
-              <Icon name="User" size={15} className="text-primary" />
+          {GUEST_MODE ? (
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Icon name="FlaskConical" size={13} className="text-yellow-500" />
+                <p className="text-xs font-bold text-yellow-500 uppercase tracking-wider">Тестовый режим</p>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Свободный вход. Регистрация откроется после релиза.
+              </p>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground truncate">{user.name}</p>
-              <p className="text-xs text-muted-foreground font-mono truncate">{user.email}</p>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-center shrink-0">
+                <Icon name="User" size={15} className="text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">{user.name}</p>
+                <p className="text-xs text-muted-foreground font-mono truncate">{user.email}</p>
+              </div>
+              <button onClick={logout} title="Выйти" className="text-muted-foreground hover:text-destructive transition-colors shrink-0">
+                <Icon name="LogOut" size={15} />
+              </button>
             </div>
-            <button onClick={logout} title="Выйти" className="text-muted-foreground hover:text-destructive transition-colors shrink-0">
-              <Icon name="LogOut" size={15} />
-            </button>
-          </div>
+          )}
         </div>
       </aside>
 
@@ -165,13 +195,21 @@ export default function Index() {
             <span className="text-foreground">{navItems.find((n) => n.id === active)?.label}</span>
           </div>
           <div className="flex items-center gap-3 ml-auto">
+            {GUEST_MODE && (
+              <span className="hidden sm:flex items-center gap-1.5 text-xs font-mono text-yellow-500 bg-yellow-500/10 border border-yellow-500/20 rounded-md px-2 py-1">
+                <Icon name="FlaskConical" size={11} />
+                BETA
+              </span>
+            )}
             <button className="relative text-muted-foreground hover:text-foreground transition-colors">
               <Icon name="Bell" size={20} />
               <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full" />
             </button>
-            <button onClick={logout} className="text-muted-foreground hover:text-destructive transition-colors" title="Выйти">
-              <Icon name="LogOut" size={20} />
-            </button>
+            {!GUEST_MODE && (
+              <button onClick={logout} className="text-muted-foreground hover:text-destructive transition-colors" title="Выйти">
+                <Icon name="LogOut" size={20} />
+              </button>
+            )}
           </div>
         </header>
 
