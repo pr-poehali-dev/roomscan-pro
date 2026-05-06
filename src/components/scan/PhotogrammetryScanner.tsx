@@ -1,43 +1,13 @@
 import { useState, useRef, useCallback } from "react";
-import Icon from "@/components/ui/icon";
 import { apiFetch } from "@/lib/api";
 import { saveLastScan } from "@/lib/scanStore";
 import PointCloud3D, { type Point3D, type RoomBox } from "./PointCloud3D";
+import ScannerViewport from "./photogrammetry/ScannerViewport";
+import ScannerControls from "./photogrammetry/ScannerControls";
+import ScanResultPanel from "./photogrammetry/ScanResultPanel";
+import type { ScanResult, Phase } from "./photogrammetry/types";
 
 const PHOTO_URL = "https://functions.poehali.dev/aa224ee6-cbee-45f1-bcf6-92dbb5ecd974";
-
-interface ScanResult {
-  area: number;
-  width: number;
-  length: number;
-  height: number;
-  frames_used: number;
-  accuracy_estimate: string;
-  point_cloud_points: number;
-  features_total?: number;
-  matches_total?: number;
-  inliers_pct?: number;
-  vanishing_points?: number;
-  wall_planes?: number;
-  frames_input?: number;
-  frames_blurred?: number;
-  frames_duplicates?: number;
-  outliers_removed?: number;
-  confidence?: number;
-  confidence_label?: string;
-  doors?: number;
-  windows?: number;
-  openings?: Array<{
-    type: "door" | "window";
-    wall_idx: number;
-    width: number;
-    height: number;
-    sill: number;
-    center: [number, number, number];
-  }>;
-}
-
-type Phase = "idle" | "recording" | "uploading" | "processing" | "done" | "error";
 
 function toBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -212,272 +182,28 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
 
   return (
     <div className="space-y-4">
-      {/* Видео / статус */}
-      <div className="relative bg-[#050810] rounded-lg overflow-hidden border border-border"
-        style={{ aspectRatio: "16/9" }}
-      >
-        <video
-          ref={videoRef}
-          className="w-full h-full object-cover"
-          playsInline muted
-          style={{ display: phase === "recording" ? "block" : "none" }}
-        />
+      <ScannerViewport
+        videoRef={videoRef}
+        phase={phase}
+        framesCount={framesCount}
+        uploadedCount={uploadedCount}
+        totalFrames={framesRef.current.length}
+        uploadPct={uploadPct}
+        tip={tip}
+        tips={TIPS}
+        result={result}
+        error={error}
+      />
 
-        {phase === "idle" && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-            <div className="w-16 h-16 bg-primary/10 border-2 border-primary/30 rounded-full flex items-center justify-center">
-              <Icon name="Camera" size={28} className="text-primary" />
-            </div>
-            <p className="text-muted-foreground text-sm">Медленно снимайте все стены помещения</p>
-            <p className="text-xs text-muted-foreground font-mono">Рекомендуется 30–60 секунд съёмки</p>
-          </div>
-        )}
+      <ScannerControls
+        phase={phase}
+        framesCount={framesCount}
+        onStart={startCamera}
+        onStop={stopAndProcess}
+        onReset={reset}
+      />
 
-        {phase === "recording" && (
-          <>
-            <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/60 rounded-full px-3 py-1.5">
-              <span className="w-2 h-2 bg-red-500 rounded-full pulse-dot" />
-              <span className="text-white font-mono text-xs">REC · {framesCount} кадров</span>
-            </div>
-            <div className="absolute bottom-3 left-3 right-3 bg-black/60 rounded-lg px-3 py-2">
-              <p className="text-white text-xs font-semibold">
-                💡 {TIPS[tip]}
-              </p>
-              <div className="mt-1.5 h-1 bg-white/20 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary transition-all duration-500"
-                  style={{ width: `${Math.min((framesCount / 60) * 100, 100)}%` }}
-                />
-              </div>
-              <p className="text-white/60 text-xs mt-0.5 font-mono">{framesCount}/60 кадров</p>
-            </div>
-          </>
-        )}
-
-        {phase === "uploading" && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/90">
-            <Icon name="Upload" size={32} className="text-primary" />
-            <p className="text-foreground font-semibold">Загружаю кадры на сервер</p>
-            <div className="w-48 h-2 bg-border rounded-full overflow-hidden">
-              <div className="h-full bg-primary transition-all" style={{ width: `${uploadPct}%` }} />
-            </div>
-            <p className="text-muted-foreground font-mono text-xs">
-              {uploadedCount} / {framesRef.current.length} кадров · {uploadPct}%
-            </p>
-          </div>
-        )}
-
-        {phase === "processing" && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/90">
-            <Icon name="Loader2" size={32} className="text-primary animate-spin" />
-            <p className="text-foreground font-semibold">Structure from Motion</p>
-            <p className="text-muted-foreground text-xs font-mono">OpenCV · поиск ключевых точек...</p>
-          </div>
-        )}
-
-        {phase === "done" && result && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/90">
-            <div className="w-14 h-14 border-2 border-primary rounded-full flex items-center justify-center">
-              <Icon name="Check" size={24} className="text-primary" />
-            </div>
-            <p className="text-primary font-semibold font-mono">РЕКОНСТРУКЦИЯ ЗАВЕРШЕНА</p>
-          </div>
-        )}
-
-        {phase === "error" && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 bg-background/90">
-            <Icon name="AlertCircle" size={32} className="text-destructive" />
-            <p className="text-destructive font-semibold text-center text-sm">{error}</p>
-          </div>
-        )}
-      </div>
-
-      {/* Кнопки управления */}
-      <div className="flex gap-3">
-        {phase === "idle" && (
-          <button onClick={startCamera}
-            className="flex-1 bg-primary text-primary-foreground font-bold py-3 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-          >
-            <Icon name="Camera" size={17} />
-            Начать съёмку
-          </button>
-        )}
-        {phase === "recording" && (
-          <>
-            <button onClick={stopAndProcess} disabled={framesCount < 10}
-              className="flex-1 bg-primary text-primary-foreground font-bold py-3 rounded-lg hover:opacity-90 disabled:opacity-40 transition-opacity flex items-center justify-center gap-2"
-            >
-              <Icon name="Cpu" size={17} />
-              {framesCount < 10 ? `Ещё ${10 - framesCount} кадров...` : "Обработать"}
-            </button>
-            <button onClick={reset}
-              className="bg-secondary text-muted-foreground px-4 rounded-lg hover:bg-border transition-colors"
-            >
-              <Icon name="X" size={17} />
-            </button>
-          </>
-        )}
-        {(phase === "done" || phase === "error") && (
-          <button onClick={reset}
-            className="flex-1 bg-secondary text-secondary-foreground font-semibold py-3 rounded-lg hover:bg-border transition-colors flex items-center justify-center gap-2"
-          >
-            <Icon name="RotateCcw" size={17} />
-            Сканировать заново
-          </button>
-        )}
-      </div>
-
-      {/* Результаты */}
-      {result && (
-        <div className="bg-card border border-border rounded-lg p-4 animate-fade-in space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
-              Фотограмметрия · SfM
-            </p>
-            <span className={`text-xs font-mono px-2 py-0.5 rounded-md ${
-              result.accuracy_estimate.includes("5") ? "bg-primary/10 text-primary" : "bg-yellow-500/10 text-yellow-500"
-            }`}>
-              {result.accuracy_estimate}
-            </span>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { label: "Ширина", value: `${result.width} м` },
-              { label: "Длина", value: `${result.length} м` },
-              { label: "Высота", value: `${result.height} м` },
-              { label: "Площадь", value: `${result.area} м²` },
-            ].map((m) => (
-              <div key={m.label} className="bg-secondary rounded-lg p-3 text-center">
-                <p className="text-xl font-black text-primary font-mono">{m.value}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{m.label}</p>
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-4 text-xs text-muted-foreground font-mono pt-1 border-t border-border flex-wrap">
-            <span>Кадров: {result.frames_used}</span>
-            <span>Точек облака: {result.point_cloud_points.toLocaleString()}</span>
-          </div>
-
-          {/* Data quality (Confidence) */}
-          {result.confidence !== undefined && (
-            <div className="mt-3 pt-3 border-t border-border">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                  <Icon name="ShieldCheck" size={11} className="text-primary" />
-                  Качество данных
-                </p>
-                <span className={`text-xs font-mono font-bold ${
-                  (result.confidence ?? 0) >= 0.75 ? "text-primary"
-                  : (result.confidence ?? 0) >= 0.5 ? "text-yellow-500"
-                  : "text-destructive"
-                }`}>
-                  {result.confidence_label} · {Math.round((result.confidence ?? 0) * 100)}%
-                </span>
-              </div>
-              <div className="h-1.5 bg-border rounded-full overflow-hidden mb-2">
-                <div className={`h-full transition-all ${
-                  (result.confidence ?? 0) >= 0.75 ? "bg-primary"
-                  : (result.confidence ?? 0) >= 0.5 ? "bg-yellow-500"
-                  : "bg-destructive"
-                }`} style={{ width: `${(result.confidence ?? 0) * 100}%` }} />
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] font-mono">
-                {[
-                  { label: "Принято", val: `${result.frames_used}/${result.frames_input ?? "—"}`, icon: "CheckCircle2" },
-                  { label: "Размытых", val: `${result.frames_blurred ?? 0}`, icon: "Frown" },
-                  { label: "Дубликатов", val: `${result.frames_duplicates ?? 0}`, icon: "Copy" },
-                  { label: "Выбросов 3D", val: `${result.outliers_removed ?? 0}`, icon: "Filter" },
-                ].map((m) => (
-                  <div key={m.label} className="bg-secondary/50 rounded-md px-2 py-1 flex items-center gap-1.5">
-                    <Icon name={m.icon} size={10} className="text-muted-foreground shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-foreground font-semibold truncate">{m.val}</p>
-                      <p className="text-muted-foreground truncate">{m.label}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* CV-метрики реального pipeline */}
-          {(result.features_total ?? 0) > 0 && (
-            <div className="mt-3 pt-3 border-t border-border">
-              <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1.5">
-                <Icon name="Cpu" size={11} className="text-primary" />
-                CV-pipeline · ORB + Essential RANSAC
-              </p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {[
-                  { label: "ORB-точек", val: result.features_total?.toLocaleString() ?? "—", icon: "Sparkles" },
-                  { label: "Совпадений", val: result.matches_total?.toLocaleString() ?? "—", icon: "Link2" },
-                  { label: "Inliers", val: `${result.inliers_pct ?? 0}%`, icon: "Target" },
-                  { label: "Стен найдено", val: `${result.wall_planes ?? 0}`, icon: "Box" },
-                ].map((m) => (
-                  <div key={m.label} className="bg-secondary/50 rounded-md px-2.5 py-1.5 flex items-center gap-1.5">
-                    <Icon name={m.icon} size={10} className="text-primary shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-mono text-foreground font-semibold truncate">{m.val}</p>
-                      <p className="text-[10px] text-muted-foreground truncate">{m.label}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Окна и двери (auto-detect) */}
-          {((result.doors ?? 0) + (result.windows ?? 0)) > 0 && (
-            <div className="mt-3 pt-3 border-t border-border">
-              <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1.5">
-                <Icon name="Sparkles" size={11} className="text-primary" />
-                Авто-распознавание проёмов
-              </p>
-              <div className="grid grid-cols-2 gap-2 mb-2">
-                <div className="bg-primary/5 border border-primary/20 rounded-md px-3 py-2 flex items-center gap-2">
-                  <Icon name="DoorOpen" size={16} className="text-primary" />
-                  <div>
-                    <p className="text-sm font-bold text-foreground">{result.doors ?? 0} {result.doors === 1 ? "дверь" : "двери"}</p>
-                    <p className="text-[10px] text-muted-foreground">найдено в стенах</p>
-                  </div>
-                </div>
-                <div className="bg-primary/5 border border-primary/20 rounded-md px-3 py-2 flex items-center gap-2">
-                  <Icon name="AppWindow" size={16} className="text-primary" />
-                  <div>
-                    <p className="text-sm font-bold text-foreground">{result.windows ?? 0} {result.windows === 1 ? "окно" : "окон"}</p>
-                    <p className="text-[10px] text-muted-foreground">с подоконниками</p>
-                  </div>
-                </div>
-              </div>
-              {result.openings && result.openings.length > 0 && (
-                <div className="space-y-1">
-                  {result.openings.slice(0, 5).map((o, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs bg-secondary/40 rounded px-2 py-1">
-                      <Icon name={o.type === "door" ? "DoorOpen" : "AppWindow"} size={11} className="text-primary shrink-0" />
-                      <span className="text-foreground font-semibold">
-                        {o.type === "door" ? "Дверь" : "Окно"} #{i + 1}
-                      </span>
-                      <span className="text-muted-foreground font-mono">
-                        {o.width}×{o.height} м
-                      </span>
-                      {o.type === "window" && (
-                        <span className="text-muted-foreground font-mono ml-auto">
-                          подоконник {o.sill} м
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                  {result.openings.length > 5 && (
-                    <p className="text-[10px] text-muted-foreground font-mono pl-2">
-                      и ещё {result.openings.length - 5}…
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+      {result && <ScanResultPanel result={result} />}
 
       {/* 3D Point Cloud */}
       {points3D.length > 0 && result && (
