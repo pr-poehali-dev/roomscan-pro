@@ -1,19 +1,31 @@
 """
-Фотограмметрия: приём кадров видео, запуск реконструкции, возврат результата.
+Фотограмметрия: приём кадров видео, реальный SfM + plane fitting, возврат результата.
 
 POST ?action=start   — создать новое сканирование, вернуть scan_id
 POST ?action=frame   — загрузить кадр (base64 JPEG) для scan_id
 POST ?action=process — запустить реконструкцию по накопленным кадрам
 GET  ?action=status  — получить статус и результат сканирования
+
+Реальный CV pipeline (cv_pipeline.run):
+1. Загрузка кадров из S3
+2. ORB feature detection
+3. BF-matching пар + Lowe ratio test
+4. Essential matrix + RANSAC → relative pose
+5. Triangulation 3D-точек
+6. Plane segmentation (RANSAC) — пол, потолок, стены
+7. Hough + Canny — детекция вертикальных линий (углы комнаты)
+8. Vanishing point analysis — выравнивание сцены
+9. Scale estimation через типичную высоту потолка (h≈2.7м)
+10. Возврат: размеры + point cloud
 """
 import json
 import os
 import base64
-import hashlib
 import math
 import psycopg2
 import boto3
-import io
+
+import cv_pipeline
 
 SCHEMA = "t_p79259893_roomscan_pro"
 
@@ -55,6 +67,7 @@ def get_s3():
 
 
 def handler(event: dict, context) -> dict:
+    """Точка входа Cloud Function. Маршрутизация по action= параметру."""
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": ""}
 
@@ -155,18 +168,12 @@ def upload_frame(event: dict, user_id: int, cur, conn) -> dict:
 
 def process_scan(event: dict, user_id: int, cur, conn) -> dict:
     """
-    Запускает реконструкцию. Поскольку COLMAP — тяжёлый инструмент,
-    который не может работать внутри serverless-функции напрямую,
-    здесь реализована умная аппроксимация на основе загруженных кадров:
-    анализируем метаданные кадров (количество, временные метки) и
-    вычисляем приблизительные размеры помещения.
-
-    Для production: здесь нужно поставить задачу в очередь (Celery/RQ)
-    и запустить COLMAP на отдельном воркере с GPU.
+    Запускает реальный CV pipeline (см. cv_pipeline.run):
+    ORB → BF-Matcher → Essential RANSAC → Triangulation →
+    Plane segmentation → Hough lines → Vanishing points → Scale.
     """
     body = json.loads(event.get("body") or "{}")
     scan_id = body.get("scan_id")
-
     if not scan_id:
         cur.close(); conn.close()
         return resp(400, {"error": "Нужен scan_id"})
@@ -186,19 +193,32 @@ def process_scan(event: dict, user_id: int, cur, conn) -> dict:
         cur.close(); conn.close()
         return resp(400, {"error": f"Недостаточно кадров ({frames_count}/30). Продолжайте съёмку."})
 
-    # Аппроксимация размеров на основе количества кадров
-    # В реальной системе здесь запускается COLMAP pipeline:
-    # 1. feature_extractor -> feature_matcher -> mapper
-    # 2. image_undistorter -> patch_match_stereo -> stereo_fusion
-    # 3. poisson_mesher -> результат в .ply -> конвертация в .glb
-    coverage_factor = min(frames_count / 60.0, 1.0)
-    base_area = 15.0 + (frames_count * 0.8)
-    area = round(min(base_area * coverage_factor, 150.0), 1)
-    width = round(math.sqrt(area * 0.7), 1)
-    length = round(area / width, 1)
-    height = 2.7
+    s3 = get_s3()
+    s3_prefix = f"scans/{user_id}/{scan_id}/frames/"
 
-    point_cloud = _generate_mock_point_cloud(width, length, height, frames_count)
+    try:
+        cv_result = cv_pipeline.run(
+            s3_client=s3,
+            bucket="files",
+            prefix=s3_prefix,
+            max_frames=min(frames_count, 40),
+        )
+    except Exception as e:
+        cur.execute(
+            f"UPDATE {SCHEMA}.scans SET status='error', error_message=%s WHERE id=%s",
+            (f"CV pipeline error: {str(e)[:200]}", scan_id)
+        )
+        conn.commit(); cur.close(); conn.close()
+        return resp(500, {"error": f"Ошибка обработки: {str(e)[:200]}"})
+
+    width  = cv_result["width"]
+    length = cv_result["length"]
+    height = cv_result["height"]
+    area   = round(width * length, 1)
+    point_cloud = {
+        "points": cv_result["points"],
+        "width": width, "length": length, "height": height,
+    }
 
     cdn_base = f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/bucket"
     result_url = f"{cdn_base}/scans/{user_id}/{scan_id}/result.glb"
@@ -226,10 +246,15 @@ def process_scan(event: dict, user_id: int, cur, conn) -> dict:
             "width": width,
             "length": length,
             "height": height,
-            "frames_used": frames_count,
-            "accuracy_estimate": "±5–8 см" if frames_count >= 40 else "±10–15 см",
+            "frames_used": cv_result["frames_used"],
+            "features_total": cv_result["features_total"],
+            "matches_total": cv_result["matches_total"],
+            "inliers_pct": cv_result["inliers_pct"],
+            "accuracy_estimate": cv_result["accuracy_estimate"],
             "glb_url": result_url,
-            "point_cloud_points": len(point_cloud.get("points", [])),
+            "point_cloud_points": len(point_cloud["points"]),
+            "vanishing_points": cv_result["vanishing_points"],
+            "wall_planes": cv_result["wall_planes"],
         }
     })
 
@@ -287,21 +312,3 @@ def get_status(event: dict, user_id: int, cur, conn) -> dict:
             "created": row[11],
         }
     })
-
-
-def _generate_mock_point_cloud(width: float, length: float, height: float, density: int) -> dict:
-    """Генерирует приближённый point cloud на основе размеров комнаты."""
-    import random
-    random.seed(density)
-    points = []
-    n = min(density * 20, 800)
-    for _ in range(n):
-        surface = random.randint(0, 5)
-        if surface == 0:   x, y, z = random.uniform(0, width), 0, random.uniform(0, length)
-        elif surface == 1: x, y, z = random.uniform(0, width), height, random.uniform(0, length)
-        elif surface == 2: x, y, z = 0, random.uniform(0, height), random.uniform(0, length)
-        elif surface == 3: x, y, z = width, random.uniform(0, height), random.uniform(0, length)
-        elif surface == 4: x, y, z = random.uniform(0, width), random.uniform(0, height), 0
-        else:              x, y, z = random.uniform(0, width), random.uniform(0, height), length
-        points.append([round(x, 3), round(y, 3), round(z, 3)])
-    return {"points": points, "width": width, "length": length, "height": height}

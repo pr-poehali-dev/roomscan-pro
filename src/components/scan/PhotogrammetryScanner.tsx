@@ -13,6 +13,11 @@ interface ScanResult {
   frames_used: number;
   accuracy_estimate: string;
   point_cloud_points: number;
+  features_total?: number;
+  matches_total?: number;
+  inliers_pct?: number;
+  vanishing_points?: number;
+  wall_planes?: number;
 }
 
 type Phase = "idle" | "recording" | "uploading" | "processing" | "done" | "error";
@@ -320,10 +325,36 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
               </div>
             ))}
           </div>
-          <div className="flex gap-4 text-xs text-muted-foreground font-mono pt-1 border-t border-border">
+          <div className="flex gap-4 text-xs text-muted-foreground font-mono pt-1 border-t border-border flex-wrap">
             <span>Кадров: {result.frames_used}</span>
             <span>Точек облака: {result.point_cloud_points.toLocaleString()}</span>
           </div>
+
+          {/* CV-метрики реального pipeline */}
+          {(result.features_total ?? 0) > 0 && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1.5">
+                <Icon name="Cpu" size={11} className="text-primary" />
+                CV-pipeline · ORB + Essential RANSAC
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { label: "ORB-точек", val: result.features_total?.toLocaleString() ?? "—", icon: "Sparkles" },
+                  { label: "Совпадений", val: result.matches_total?.toLocaleString() ?? "—", icon: "Link2" },
+                  { label: "Inliers", val: `${result.inliers_pct ?? 0}%`, icon: "Target" },
+                  { label: "Стен найдено", val: `${result.wall_planes ?? 0}`, icon: "Box" },
+                ].map((m) => (
+                  <div key={m.label} className="bg-secondary/50 rounded-md px-2.5 py-1.5 flex items-center gap-1.5">
+                    <Icon name={m.icon} size={10} className="text-primary shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-mono text-foreground font-semibold truncate">{m.val}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{m.label}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
