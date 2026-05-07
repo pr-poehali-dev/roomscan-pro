@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import Icon from "@/components/ui/icon";
 import { apiFetch } from "@/lib/api";
 import { saveLastScan } from "@/lib/scanStore";
 import PointCloud3D, { type Point3D, type RoomBox } from "./PointCloud3D";
@@ -327,8 +328,40 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
     ? Math.round((uploadedCount / framesRef.current.length) * 100)
     : 0;
 
+  // Превентивная проверка iframe — показываем предупреждение ДО клика «Начать»
+  const inIframe = typeof window !== "undefined" && window.self !== window.top;
+  const directUrl = typeof window !== "undefined"
+    ? window.location.href.replace(/^(https?:\/\/)preview--/, "$1")
+    : "";
+
   return (
     <div className="space-y-4">
+      {inIframe && phase === "idle" && (
+        <div className="bg-yellow-500/10 border-2 border-yellow-500/40 rounded-xl p-4 animate-fade-in">
+          <div className="flex items-start gap-3">
+            <Icon name="AlertTriangle" size={20} className="text-yellow-500 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-foreground text-sm mb-1">
+                Камера не работает в окне предпросмотра
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+                Браузер блокирует доступ к камере во встроенном iframe редактора.
+                Откройте сайт в отдельной вкладке, чтобы запустить сканирование.
+              </p>
+              <a
+                href={directUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-yellow-500 text-black font-bold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity text-sm"
+              >
+                <Icon name="ExternalLink" size={13} />
+                Открыть в новой вкладке
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ScannerViewport
         videoRef={videoRef}
         phase={phase}
