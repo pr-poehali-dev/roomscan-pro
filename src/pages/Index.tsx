@@ -187,7 +187,7 @@ export default function Index() {
   const renderSection = () => {
     switch (active) {
       case "home": return <HomeSection onNavigate={(s) => setActive(s as Section)} userName={user?.name} />;
-      case "projects": return <ProjectsSection token={getToken()} />;
+      case "projects": return <ProjectsSection token={getToken()} onNavigate={(s) => setActive(s as Section)} />;
       case "scan": return <ScanSection />;
       case "usecases": return <UseCasesSection onNavigate={(s) => setActive(s as Section)} />;
       case "planner": return <PlannerSection />;

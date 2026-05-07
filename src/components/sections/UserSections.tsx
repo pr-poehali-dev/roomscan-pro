@@ -3,9 +3,10 @@ import Icon from "@/components/ui/icon";
 import { PROJECTS_URL, User, Project, apiFetch } from "@/lib/api";
 import LocalProjectsList from "@/components/projects/LocalProjectsList";
 import ProjectsCompare from "@/components/projects/ProjectsCompare";
+import NewProjectWizard from "@/components/projects/NewProjectWizard";
 import { listProjects } from "@/lib/projectsStore";
 
-export function ProjectsSection({ token }: { token: string }) {
+export function ProjectsSection({ token, onNavigate }: { token: string; onNavigate: (section: string) => void }) {
   const isGuest = !token;
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +33,7 @@ export function ProjectsSection({ token }: { token: string }) {
 
   // Для гостя — показываем локальные проекты из localStorage
   if (isGuest) {
-    return <GuestProjectsView hasLocal={hasLocal} />;
+    return <GuestProjectsView hasLocal={hasLocal} onNavigate={onNavigate} />;
   }
 
   const createProject = async (e: React.FormEvent) => {
@@ -131,56 +132,96 @@ export function ProjectsSection({ token }: { token: string }) {
   );
 }
 
-function GuestProjectsView({ hasLocal }: { hasLocal: boolean }) {
+function GuestProjectsView({ hasLocal, onNavigate }: { hasLocal: boolean; onNavigate: (section: string) => void }) {
   const [tab, setTab] = useState<"list" | "compare">("list");
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [projectsCount, setProjectsCount] = useState(() => listProjects().length);
+
+  useEffect(() => {
+    const reload = () => setProjectsCount(listProjects().length);
+    window.addEventListener("roomscan:projects:changed", reload);
+    return () => window.removeEventListener("roomscan:projects:changed", reload);
+  }, []);
+
+  const canCompare = projectsCount >= 2;
 
   return (
     <div className="animate-fade-in space-y-5">
-      <div>
-        <p className="text-muted-foreground text-sm font-mono uppercase tracking-widest mb-1">Workspace</p>
-        <h2 className="text-3xl font-bold">Мои проекты</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          {hasLocal
-            ? "Сохранённые сметы, сканы и стейджинг-сценарии. Локально на вашем устройстве."
-            : "Тут появятся ваши сохранённые проекты — сканы, сметы и сценарии стейджинга."}
-        </p>
+      {/* Шапка с кнопкой «Новый проект» */}
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <p className="text-muted-foreground text-sm font-mono uppercase tracking-widest mb-1">Workspace</p>
+          <h2 className="text-3xl font-bold">Мои проекты</h2>
+          <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+            {hasLocal
+              ? "Сохранённые сметы, сканы и стейджинг-сценарии. Локально на вашем устройстве."
+              : "Создайте первый проект — мастер проведёт вас по шагам: скан → план → смета → стейджинг."}
+          </p>
+        </div>
+        <button
+          onClick={() => setWizardOpen(true)}
+          className="bg-primary text-primary-foreground hover:opacity-90 font-bold text-sm px-4 py-2.5 rounded-lg flex items-center gap-2 shrink-0"
+        >
+          <Icon name="Plus" size={15} />
+          Новый проект
+        </button>
       </div>
 
-      <div className="inline-flex bg-secondary rounded-lg p-1">
-        {([
-          { id: "list" as const, label: "Все проекты", icon: "List" },
-          { id: "compare" as const, label: "Сравнение", icon: "GitCompare" },
-        ]).map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${
-              tab === t.id ? "bg-card text-foreground shadow" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Icon name={t.icon} size={14} />
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {tab === "list" && (
-        <>
-          <LocalProjectsList />
-          <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 flex-wrap">
-            <Icon name="ScanLine" size={22} className="text-primary shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-foreground text-sm">Начните с 3D-сканирования комнаты</p>
-              <p className="text-xs text-muted-foreground">30 секунд — и у вас будут точные размеры</p>
+      {/* Большая карточка-приглашение, если проектов нет */}
+      {!hasLocal && (
+        <button
+          onClick={() => setWizardOpen(true)}
+          className="w-full text-left bg-gradient-to-br from-primary/10 to-emerald-500/5 border-2 border-dashed border-primary/40 hover:border-primary rounded-2xl p-6 transition-colors group"
+        >
+          <div className="flex items-start gap-4 flex-wrap">
+            <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              <Icon name="Sparkles" size={22} className="text-primary" />
             </div>
-            <a href="#scan" className="bg-primary text-primary-foreground font-bold text-sm px-4 py-2 rounded-lg hover:opacity-90">
-              Сканировать
-            </a>
+            <div className="flex-1 min-w-0">
+              <p className="font-black text-foreground text-lg">Создайте первый проект</p>
+              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                Получите план, смету и AI-рекомендации за 10–15 минут. Мастер проведёт вас по
+                4 шагам — от 3D-скана комнаты до готового PDF.
+              </p>
+              <div className="mt-3 flex items-center gap-1.5 text-xs font-bold text-primary">
+                Начать
+                <Icon name="ArrowRight" size={13} className="group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
           </div>
-        </>
+        </button>
       )}
 
-      {tab === "compare" && <ProjectsCompare />}
+      {/* Табы — показываем только если есть что сравнивать */}
+      {canCompare && (
+        <div className="inline-flex bg-secondary rounded-lg p-1">
+          {([
+            { id: "list" as const, label: "Все проекты", icon: "List" },
+            { id: "compare" as const, label: "Сравнение", icon: "GitCompare" },
+          ]).map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${
+                tab === t.id ? "bg-card text-foreground shadow" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Icon name={t.icon} size={14} />
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {tab === "list" && hasLocal && <LocalProjectsList />}
+      {tab === "compare" && canCompare && <ProjectsCompare />}
+
+      {wizardOpen && (
+        <NewProjectWizard
+          onClose={() => setWizardOpen(false)}
+          onNavigate={onNavigate}
+        />
+      )}
     </div>
   );
 }
