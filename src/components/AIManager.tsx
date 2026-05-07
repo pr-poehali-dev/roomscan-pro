@@ -21,6 +21,18 @@ const QUICK_PROMPTS = [
   { icon: "Sofa", text: "Покажи каталог мебели" },
 ];
 
+const MODELS = [
+  { id: "openai/gpt-4o-mini", name: "GPT-4o mini", desc: "Быстрая, экономная", icon: "Zap" },
+  { id: "openai/gpt-4o", name: "GPT-4o", desc: "Самая умная", icon: "Sparkles" },
+  { id: "anthropic/claude-3-5-sonnet", name: "Claude 3.5 Sonnet", desc: "Творческая", icon: "Feather" },
+  { id: "anthropic/claude-3-5-haiku", name: "Claude 3.5 Haiku", desc: "Лёгкая Claude", icon: "Wind" },
+  { id: "google/gemini-2.0-flash", name: "Gemini 2.0 Flash", desc: "Молниеносная", icon: "Bolt" },
+  { id: "deepseek/deepseek-chat", name: "DeepSeek", desc: "Хороша в логике", icon: "Brain" },
+  { id: "yandex/yandexgpt-lite", name: "YandexGPT Lite", desc: "Российская", icon: "Globe" },
+];
+
+const MODEL_KEY = "roomscan:ai_model";
+
 const SECTION_LABELS: Record<string, string> = {
   home: "Главная",
   scan: "Сканирование",
@@ -41,6 +53,11 @@ export default function AIManager({ activeSection, onNavigate }: Props) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
+  const [showModelPicker, setShowModelPicker] = useState(false);
+  const [model, setModel] = useState<string>(() => {
+    if (typeof window === "undefined") return MODELS[0].id;
+    return localStorage.getItem(MODEL_KEY) || MODELS[0].id;
+  });
   const [messages, setMessages] = useState<Message[]>(() => {
     if (typeof window === "undefined") return [];
     try {
@@ -71,6 +88,10 @@ export default function AIManager({ activeSection, onNavigate }: Props) {
     if (open) setHasUnread(false);
   }, [open]);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem(MODEL_KEY, model);
+  }, [model]);
+
   const send = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
@@ -87,6 +108,7 @@ export default function AIManager({ activeSection, onNavigate }: Props) {
         body: JSON.stringify({
           messages: next.map((m) => ({ role: m.role, content: m.content })),
           context: { section: activeSection || "" },
+          model,
         }),
       });
       const data = await r.json();
@@ -168,16 +190,68 @@ export default function AIManager({ activeSection, onNavigate }: Props) {
                   : "Помогу разобраться с проектом"}
               </p>
             </div>
-            {messages.length > 0 && (
+            <div className="flex items-center gap-2 shrink-0">
               <button
-                onClick={reset}
-                title="Очистить чат"
-                className="text-white/50 hover:text-white transition-colors shrink-0"
+                onClick={() => setShowModelPicker((s) => !s)}
+                title="Выбрать модель"
+                className={`text-white/50 hover:text-white transition-colors ${showModelPicker ? "text-primary" : ""}`}
               >
-                <Icon name="Trash2" size={16} />
+                <Icon name="Settings2" size={16} />
               </button>
-            )}
+              {messages.length > 0 && (
+                <button
+                  onClick={reset}
+                  title="Очистить чат"
+                  className="text-white/50 hover:text-white transition-colors"
+                >
+                  <Icon name="Trash2" size={16} />
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* Селектор модели */}
+          {showModelPicker && (
+            <div className="border-b border-border bg-secondary/40 p-3 max-h-[260px] overflow-y-auto animate-fade-in">
+              <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-2 px-1">
+                Модель ИИ · Polza.ai
+              </p>
+              <div className="space-y-1">
+                {MODELS.map((m) => {
+                  const active = m.id === model;
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() => {
+                        setModel(m.id);
+                        setShowModelPicker(false);
+                      }}
+                      className={`w-full flex items-center gap-3 text-left px-3 py-2 rounded-lg transition-colors ${
+                        active
+                          ? "bg-primary/10 border border-primary/30"
+                          : "hover:bg-background border border-transparent"
+                      }`}
+                    >
+                      <div
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                          active ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"
+                        }`}
+                      >
+                        <Icon name={m.icon} size={14} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-bold truncate ${active ? "text-primary" : "text-foreground"}`}>
+                          {m.name}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground truncate">{m.desc}</p>
+                      </div>
+                      {active && <Icon name="Check" size={14} className="text-primary shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Сообщения */}
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[280px] max-h-[420px]">
@@ -273,9 +347,21 @@ export default function AIManager({ activeSection, onNavigate }: Props) {
                 <Icon name={loading ? "Loader2" : "Send"} size={16} className={loading ? "animate-spin" : ""} />
               </button>
             </form>
-            <p className="text-[10px] text-muted-foreground mt-2 text-center font-mono">
-              ИИ может ошибаться — проверяйте важные данные
-            </p>
+            <div className="flex items-center justify-center gap-2 mt-2 text-[10px] text-muted-foreground font-mono">
+              <button
+                onClick={() => setShowModelPicker((s) => !s)}
+                className="inline-flex items-center gap-1 hover:text-primary transition-colors"
+              >
+                <Icon
+                  name={MODELS.find((m) => m.id === model)?.icon || "Sparkles"}
+                  size={10}
+                  className="text-primary"
+                />
+                <span>{MODELS.find((m) => m.id === model)?.name || "AI"}</span>
+              </button>
+              <span className="text-border">·</span>
+              <span>via Polza.ai</span>
+            </div>
           </div>
         </div>
       )}

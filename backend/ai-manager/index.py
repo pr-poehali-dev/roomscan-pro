@@ -52,9 +52,9 @@ POLZA_API_URL = "https://api.polza.ai/api/v1/chat/completions"
 POLZA_MODEL = os.environ.get("POLZA_AI_MODEL", "openai/gpt-4o-mini")
 
 
-def call_polza(messages: list, api_key: str) -> str:
+def call_polza(messages: list, api_key: str, model: str = None) -> str:
     payload = {
-        "model": POLZA_MODEL,
+        "model": model or POLZA_MODEL,
         "messages": [{"role": "system", "content": SYSTEM_PROMPT}] + messages,
         "temperature": 0.6,
         "max_tokens": 350,
@@ -103,6 +103,17 @@ def handler(event: dict, context) -> dict:
 
     messages = body.get("messages", [])
     context_section = body.get("context", {}).get("section", "")
+    requested_model = body.get("model", "")
+
+    ALLOWED_MODELS = {
+        "openai/gpt-4o-mini",
+        "openai/gpt-4o",
+        "anthropic/claude-3-5-sonnet",
+        "anthropic/claude-3-5-haiku",
+        "google/gemini-2.0-flash",
+        "deepseek/deepseek-chat",
+        "yandex/yandexgpt-lite",
+    }
 
     if not messages or not isinstance(messages, list):
         return resp(400, {"error": "Нет сообщений"})
@@ -124,8 +135,10 @@ def handler(event: dict, context) -> dict:
             {"role": "system", "content": f"Пользователь сейчас в секции: {context_section}"}
         ] + messages
 
+    model_to_use = requested_model if requested_model in ALLOWED_MODELS else POLZA_MODEL
+
     try:
-        raw = call_polza(messages, api_key)
+        raw = call_polza(messages, api_key, model_to_use)
     except urllib.error.HTTPError as e:
         try:
             err_body = e.read().decode("utf-8")[:200]
@@ -136,4 +149,4 @@ def handler(event: dict, context) -> dict:
         return resp(502, {"error": f"Ошибка ИИ: {str(e)[:120]}"})
 
     text, action = parse_action(raw)
-    return resp(200, {"reply": text, "action": action})
+    return resp(200, {"reply": text, "action": action, "model": model_to_use})
