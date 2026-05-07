@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import { getLastScan, getCart, type LastScan, type DetectedOpening, type CartItemRef } from "@/lib/scanStore";
 import { exportPlanToPDF } from "@/lib/planExporter";
+import FloorPlanEditor from "@/components/planner/FloorPlanEditor";
 
 const furnitureItems = [
   { id: 1, name: "Диван угловой Loft", brand: "Arredo", size: "280×170 см", price: "89 400 ₽", priceNum: 89400, category: "Диваны", icon: "Sofa", w: 280, d: 170 },
@@ -27,6 +28,7 @@ const defaultRooms: Room[] = [
 ];
 
 export default function PlannerSection({ cartItems }: { cartItems?: typeof furnitureItems }) {
+  const [tab, setTab] = useState<"editor" | "demo">("editor");
   const [activeTool, setActiveTool] = useState("select");
   const [view, setView] = useState<"2D" | "3D">("2D");
   const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
@@ -92,14 +94,35 @@ export default function PlannerSection({ cartItems }: { cartItems?: typeof furni
 
   const selected = rooms.find((r) => r.label === selectedRoom);
 
+  if (tab === "editor") {
+    return (
+      <div className="animate-fade-in space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <p className="text-muted-foreground text-sm font-mono uppercase tracking-widest mb-1">2D-редактор</p>
+            <h2 className="text-3xl font-bold">Планировщик</h2>
+            <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+              Профессиональный редактор планов в стиле Remplanner. Рисуйте стены, расставляйте двери, окна и мебель.
+              План автоматически сохраняется на устройстве.
+            </p>
+          </div>
+          <PlannerTabs tab={tab} onChange={setTab} />
+        </div>
+
+        <FloorPlanEditor />
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div>
-          <p className="text-muted-foreground text-sm font-mono uppercase tracking-widest mb-1">2D / 3D</p>
+          <p className="text-muted-foreground text-sm font-mono uppercase tracking-widest mb-1">Демо-режим</p>
           <h2 className="text-3xl font-bold">Планировщик</h2>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <PlannerTabs tab={tab} onChange={setTab} />
           {cartItemsList.length > 0 && (
             <button
               onClick={importFromCart}
@@ -294,6 +317,30 @@ export default function PlannerSection({ cartItems }: { cartItems?: typeof furni
       {lastScan && (
         <ScannedRoomPlan scan={lastScan} />
       )}
+    </div>
+  );
+}
+
+// ─── Переключатель режимов ───────────────────────────────────────────────────
+function PlannerTabs({ tab, onChange }: { tab: "editor" | "demo"; onChange: (t: "editor" | "demo") => void }) {
+  const items: { id: "editor" | "demo"; label: string; icon: string }[] = [
+    { id: "editor", label: "Редактор", icon: "PenTool" },
+    { id: "demo",   label: "Демо",     icon: "LayoutGrid" },
+  ];
+  return (
+    <div className="inline-flex bg-secondary rounded-lg p-1">
+      {items.map((it) => (
+        <button
+          key={it.id}
+          onClick={() => onChange(it.id)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${
+            tab === it.id ? "bg-card text-foreground shadow" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Icon name={it.icon} size={13} />
+          {it.label}
+        </button>
+      ))}
     </div>
   );
 }
