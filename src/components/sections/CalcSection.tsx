@@ -3,6 +3,7 @@ import Icon from "@/components/ui/icon";
 import { getLastScan } from "@/lib/scanStore";
 import { calcEstimate, formatRub, type RoomInput, type Tier } from "@/lib/estimate";
 import { saveProject } from "@/lib/projectsStore";
+import { exportEstimatePDF } from "@/lib/pdfExport";
 import TierSelector from "@/components/calc/TierSelector";
 import EstimateGroupCard from "@/components/calc/EstimateGroupCard";
 import RoomInputs from "@/components/calc/RoomInputs";
@@ -193,6 +194,13 @@ export default function CalcSection() {
             >
               <Icon name="Copy" size={14} />
               Скопировать
+            </button>
+            <button
+              onClick={() => exportEstimatePDF(room, result)}
+              className="inline-flex items-center gap-2 bg-primary/10 border border-primary/30 hover:bg-primary/20 text-primary font-bold text-sm px-3 py-2 rounded-lg transition-colors"
+            >
+              <Icon name="FileDown" size={14} />
+              Скачать PDF
             </button>
             <button
               onClick={() => window.print()}

@@ -1,6 +1,7 @@
 import Icon from "@/components/ui/icon";
 import HeroDemo3D from "./HeroDemo3D";
 import PartnersMarquee from "./PartnersMarquee";
+import ContinueWorkBlock from "@/components/home/ContinueWorkBlock";
 
 interface Props {
   onNavigate: (section: string) => void;
@@ -190,6 +191,9 @@ export default function HomeSection({ onNavigate, userName }: Props) {
         </div>
       </section>
 
+      {/* ПРОДОЛЖИТЬ РАБОТУ — показывается если есть сохранённые проекты */}
+      <ContinueWorkBlock onNavigate={onNavigate} />
+
       {/* ВОЗМОЖНОСТИ */}
       <section className="px-6 lg:px-12 max-w-6xl mx-auto w-full">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-8">
@@ -202,7 +206,7 @@ export default function HomeSection({ onNavigate, userName }: Props) {
             </h2>
           </div>
           <p className="text-sm text-muted-foreground max-w-md">
-            Шесть инструментов, которые заменят дизайнера, замерщика и&nbsp;сметчика
+            Восемь инструментов, которые заменят дизайнера, замерщика, риелтора и&nbsp;сметчика
           </p>
         </div>
 

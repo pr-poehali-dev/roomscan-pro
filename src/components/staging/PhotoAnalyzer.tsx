@@ -2,31 +2,38 @@ import { useRef, useState } from "react";
 import Icon from "@/components/ui/icon";
 import { formatRubShort } from "@/lib/staging";
 
-const API_URL = "https://functions.poehali.dev/1eba511f-2195-46e9-b37a-a15e0a816b9d";
+// staging-vision: GPT Vision анализ через Polza.ai
+const API_URL = "https://functions.poehali.dev/f9591f44-eaaa-44d7-bcb4-ead0c5b910f3";
 
 interface AIRecommendation {
   title: string;
-  desc: string;
-  category: "clean" | "repair" | "decor" | "photo";
+  desc?: string;
   priority: "must" | "should" | "nice";
   cost: number;
-  impact: number;
+  /** Может приходить как строка ("+5%") или число */
+  impact: string | number;
   icon: string;
 }
 
 interface AIIssue {
   title: string;
   severity: "high" | "medium" | "low";
+  icon?: string;
 }
 
 interface AIAnalysis {
   summary: string;
-  rating: number;
-  expected_uplift_pct: number;
-  budget_min: number;
-  budget_max: number;
+  score: number;
   issues: AIIssue[];
   recommendations: AIRecommendation[];
+  source?: "ai" | "fallback";
+}
+
+interface Props {
+  /** Площадь квартиры (м²) — передаётся в AI для масштабирования цен */
+  area?: number;
+  /** Цель: rent | fast_sale | max_price */
+  goal?: string;
 }
 
 const PRIORITY_LABELS: Record<AIRecommendation["priority"], string> = {
@@ -51,7 +58,7 @@ const SEVERITY_COLORS: Record<AIIssue["severity"], string> = {
  * AI-анализ фото квартиры. Загружаешь фото — ИИ выдаёт чек-лист улучшений.
  * Использует Polza.ai Vision API через бэкенд.
  */
-export default function PhotoAnalyzer() {
+export default function PhotoAnalyzer({ area = 35, goal = "fast_sale" }: Props = {}) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -60,23 +67,29 @@ export default function PhotoAnalyzer() {
 
   const onPick = (file: File) => {
     setError("");
+    if (file.size > 8 * 1024 * 1024) {
+      setError("Файл больше 8 МБ — попробуйте сжать фото");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string;
       setPreview(dataUrl);
-      analyze(dataUrl);
+      // Передаём только base64-часть (без префикса data:image/...;base64,)
+      const b64 = dataUrl.split(",")[1] || dataUrl;
+      analyze(b64);
     };
     reader.readAsDataURL(file);
   };
 
-  const analyze = async (dataUrl: string) => {
+  const analyze = async (imageBase64: string) => {
     setLoading(true);
     setResult(null);
     try {
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: dataUrl }),
+        body: JSON.stringify({ image_base64: imageBase64, area, goal }),
       });
       if (!res.ok) throw new Error(`Ошибка ${res.status}`);
       const data = await res.json();
@@ -153,7 +166,7 @@ export default function PhotoAnalyzer() {
               <div className="flex items-center gap-3">
                 <div className="relative w-14 h-14 rounded-full bg-card flex items-center justify-center border-2 border-primary">
                   <span className="text-xl font-black text-primary font-mono">
-                    {result.rating}
+                    {result.score}
                   </span>
                   <span className="absolute -bottom-1 text-[8px] font-mono text-muted-foreground">/10</span>
                 </div>
@@ -164,20 +177,25 @@ export default function PhotoAnalyzer() {
                   <p className="text-sm font-bold text-foreground leading-tight">
                     {result.summary}
                   </p>
+                  {result.source === "fallback" && (
+                    <p className="text-[10px] text-amber-500 mt-1">
+                      AI временно недоступен — показаны общие рекомендации
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2 pt-2 border-t border-primary/20">
                 <div className="bg-card/60 rounded-lg p-2.5">
-                  <p className="text-[10px] font-mono uppercase text-muted-foreground">Бюджет</p>
+                  <p className="text-[10px] font-mono uppercase text-muted-foreground">Рекомендаций</p>
                   <p className="font-bold text-foreground text-sm mt-0.5">
-                    {formatRubShort(result.budget_min)} – {formatRubShort(result.budget_max)}
+                    {result.recommendations.length} шт
                   </p>
                 </div>
                 <div className="bg-card/60 rounded-lg p-2.5">
-                  <p className="text-[10px] font-mono uppercase text-muted-foreground">Прирост цены</p>
-                  <p className="font-bold text-emerald-500 text-sm mt-0.5">
-                    +{result.expected_uplift_pct}%
+                  <p className="text-[10px] font-mono uppercase text-muted-foreground">Найдено проблем</p>
+                  <p className="font-bold text-amber-500 text-sm mt-0.5">
+                    {result.issues.length} шт
                   </p>
                 </div>
               </div>
@@ -231,7 +249,7 @@ export default function PhotoAnalyzer() {
                         {PRIORITY_LABELS[r.priority]}
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{r.desc}</p>
+                    {r.desc && <p className="text-xs text-muted-foreground mt-0.5">{r.desc}</p>}
                     <div className="flex items-center gap-3 mt-1.5 text-[11px] font-mono">
                       <span className="text-muted-foreground">
                         <Icon name="Wallet" size={10} className="inline mr-1" />
@@ -239,7 +257,7 @@ export default function PhotoAnalyzer() {
                       </span>
                       <span className="text-emerald-500">
                         <Icon name="TrendingUp" size={10} className="inline mr-1" />
-                        +{r.impact}%
+                        {typeof r.impact === "number" ? `+${r.impact}%` : r.impact}
                       </span>
                     </div>
                   </div>

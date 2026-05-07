@@ -98,6 +98,37 @@ export default function Index() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
+  // Импорт проекта по ссылке #shared=...
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash;
+    const m = hash.match(/^#shared=(.+)$/);
+    if (!m) return;
+    try {
+      const json = decodeURIComponent(escape(atob(decodeURIComponent(m[1]))));
+      const project = JSON.parse(json);
+      // Импортируем, если такого id ещё нет
+      import("@/lib/projectsStore").then(({ listProjects, saveProject }) => {
+        const exists = listProjects().find((p) => p.name === project.name);
+        if (!exists) {
+          saveProject({
+            name: `${project.name} (импорт)`,
+            scan: project.scan ?? null,
+            estimate: project.estimate,
+            staging: project.staging,
+            notes: project.notes,
+          });
+          alert(`Проект «${project.name}» импортирован в «Мои проекты»`);
+        }
+        // Уберём хэш чтобы не импортить повторно
+        window.history.replaceState(null, "", window.location.pathname);
+        setActive("projects");
+      });
+    } catch (err) {
+      console.warn("Не удалось импортировать проект из ссылки:", err);
+    }
+  }, []);
+
   useEffect(() => {
     if (GUEST_MODE) return;
     const token = getToken();

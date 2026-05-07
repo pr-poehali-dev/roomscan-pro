@@ -1,4 +1,6 @@
 {
+  "staging-vision": "https://functions.poehali.dev/f9591f44-eaaa-44d7-bcb4-ead0c5b910f3",
+  "staging-analyze": "https://functions.poehali.dev/1eba511f-2195-46e9-b37a-a15e0a816b9d",
   "ai-manager": "https://functions.poehali.dev/00d79c53-37be-4a9c-8b3f-2b4d8a172e01",
   "partners": "https://functions.poehali.dev/cd6a5b38-88ee-4b01-95e9-6d8fe96f7fd6",
   "scan-photogrammetry": "https://functions.poehali.dev/aa224ee6-cbee-45f1-bcf6-92dbb5ecd974",

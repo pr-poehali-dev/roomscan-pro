@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import Icon from "@/components/ui/icon";
 import { PROJECTS_URL, User, Project, apiFetch } from "@/lib/api";
 import LocalProjectsList from "@/components/projects/LocalProjectsList";
+import ProjectsCompare from "@/components/projects/ProjectsCompare";
 import { listProjects } from "@/lib/projectsStore";
 
 export function ProjectsSection({ token }: { token: string }) {
@@ -31,30 +32,7 @@ export function ProjectsSection({ token }: { token: string }) {
 
   // Для гостя — показываем локальные проекты из localStorage
   if (isGuest) {
-    return (
-      <div className="animate-fade-in space-y-5">
-        <div>
-          <p className="text-muted-foreground text-sm font-mono uppercase tracking-widest mb-1">Workspace</p>
-          <h2 className="text-3xl font-bold">Мои проекты</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {hasLocal
-              ? "Сохранённые сметы, сканы и стейджинг-сценарии. Локально на вашем устройстве."
-              : "Тут появятся ваши сохранённые проекты — сканы, сметы и сценарии стейджинга."}
-          </p>
-        </div>
-        <LocalProjectsList />
-        <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 flex-wrap">
-          <Icon name="ScanLine" size={22} className="text-primary shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-foreground text-sm">Начните с 3D-сканирования комнаты</p>
-            <p className="text-xs text-muted-foreground">30 секунд — и у вас будут точные размеры</p>
-          </div>
-          <a href="#scan" className="bg-primary text-primary-foreground font-bold text-sm px-4 py-2 rounded-lg hover:opacity-90">
-            Сканировать
-          </a>
-        </div>
-      </div>
-    );
+    return <GuestProjectsView hasLocal={hasLocal} />;
   }
 
   const createProject = async (e: React.FormEvent) => {
@@ -149,6 +127,60 @@ export function ProjectsSection({ token }: { token: string }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function GuestProjectsView({ hasLocal }: { hasLocal: boolean }) {
+  const [tab, setTab] = useState<"list" | "compare">("list");
+
+  return (
+    <div className="animate-fade-in space-y-5">
+      <div>
+        <p className="text-muted-foreground text-sm font-mono uppercase tracking-widest mb-1">Workspace</p>
+        <h2 className="text-3xl font-bold">Мои проекты</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          {hasLocal
+            ? "Сохранённые сметы, сканы и стейджинг-сценарии. Локально на вашем устройстве."
+            : "Тут появятся ваши сохранённые проекты — сканы, сметы и сценарии стейджинга."}
+        </p>
+      </div>
+
+      <div className="inline-flex bg-secondary rounded-lg p-1">
+        {([
+          { id: "list" as const, label: "Все проекты", icon: "List" },
+          { id: "compare" as const, label: "Сравнение", icon: "GitCompare" },
+        ]).map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${
+              tab === t.id ? "bg-card text-foreground shadow" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Icon name={t.icon} size={14} />
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "list" && (
+        <>
+          <LocalProjectsList />
+          <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 flex-wrap">
+            <Icon name="ScanLine" size={22} className="text-primary shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-foreground text-sm">Начните с 3D-сканирования комнаты</p>
+              <p className="text-xs text-muted-foreground">30 секунд — и у вас будут точные размеры</p>
+            </div>
+            <a href="#scan" className="bg-primary text-primary-foreground font-bold text-sm px-4 py-2 rounded-lg hover:opacity-90">
+              Сканировать
+            </a>
+          </div>
+        </>
+      )}
+
+      {tab === "compare" && <ProjectsCompare />}
     </div>
   );
 }

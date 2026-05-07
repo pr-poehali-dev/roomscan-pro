@@ -5,6 +5,7 @@ import { saveProject } from "@/lib/projectsStore";
 import { getLastScan } from "@/lib/scanStore";
 import StagingScenarioCard from "@/components/staging/StagingScenarioCard";
 import StagingTasksList from "@/components/staging/StagingTasksList";
+import PhotoAnalyzer from "@/components/staging/PhotoAnalyzer";
 
 /**
  * Хоумстейджинг — предпродажная подготовка квартиры.
@@ -91,6 +92,9 @@ export default function StagingSection() {
           ))}
         </div>
       </div>
+
+      {/* AI-анализ фото */}
+      <PhotoAnalyzer area={area} goal={goal} />
 
       {/* ROI блок */}
       <div className="bg-gradient-to-br from-emerald-500/15 to-primary/5 border-2 border-emerald-500/40 rounded-2xl p-5">
