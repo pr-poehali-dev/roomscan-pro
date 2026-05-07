@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import Icon from "@/components/ui/icon";
+import { getPublicUrl } from "./photogrammetry/getPublicUrl";
 
 /**
  * Блок «Открыть на телефоне».
@@ -12,10 +13,7 @@ export default function MobileQRBlock() {
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [qrError, setQrError] = useState<string>("");
 
-  const directUrl = useMemo(() => {
-    if (typeof window === "undefined") return "";
-    return window.location.href.replace(/^(https?:\/\/)preview--/, "$1");
-  }, []);
+  const directUrl = useMemo(() => getPublicUrl(), []);
 
   const inIframe = typeof window !== "undefined" && window.self !== window.top;
 

@@ -13,6 +13,7 @@ import {
   MobileIframeHelp,
   DemoFallbackButton,
 } from "./photogrammetry/IframeHelpBlocks";
+import { getPublicUrl } from "./photogrammetry/getPublicUrl";
 import type { ScanResult } from "./photogrammetry/types";
 
 /**
@@ -45,9 +46,7 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
   const inIframe = typeof window !== "undefined" && window.self !== window.top;
   const isMobile = typeof navigator !== "undefined"
     && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-  const directUrl = typeof window !== "undefined"
-    ? window.location.href.replace(/^(https?:\/\/)preview--/, "$1") + "#scan"
-    : "";
+  const directUrl = getPublicUrl();
   // Десктоп в iframe — QR + кнопки. Мобильный в iframe — отдельный мобильный блок.
   const showIframeHelp = inIframe && phase === "idle" && !isMobile;
   const showMobileIframeHelp = inIframe && phase === "idle" && isMobile;

@@ -1,6 +1,7 @@
 import { RefObject } from "react";
 import Icon from "@/components/ui/icon";
 import type { Phase, ScanResult } from "./types";
+import { getPublicUrl } from "./getPublicUrl";
 
 interface Props {
   videoRef: RefObject<HTMLVideoElement>;
@@ -100,10 +101,8 @@ export default function ScannerViewport({
         const isIOS = /iPhone|iPad|iPod/.test(ua);
         const isAndroid = /Android/.test(ua);
         const isMobile = isIOS || isAndroid;
-        // Прямая ссылка на сайт (без preview-- префикса) с переходом в раздел "scan"
-        const directUrl = typeof window !== "undefined"
-          ? window.location.href.replace(/^(https?:\/\/)preview--/, "$1") + "#scan"
-          : "";
+        // Прямая ссылка на сайт с переходом в раздел "scan"
+        const directUrl = getPublicUrl();
 
         return (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-5 bg-background/95 overflow-y-auto">

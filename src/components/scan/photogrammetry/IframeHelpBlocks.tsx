@@ -66,28 +66,28 @@ export function MobileIframeHelp({ directUrl, onDemo }: MobileProps) {
         </div>
         <div>
           <p className="font-bold text-foreground text-base mb-1">
-            Откройте сайт напрямую — заработает камера
+            Камера недоступна в предпросмотре
           </p>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Браузер блокирует камеру внутри окна предпросмотра.
-            Нажмите кнопку ниже — сайт откроется в новой вкладке, и тогда вы сможете отсканировать комнату.
+            Браузер блокирует доступ к камере внутри окна редактора.
+            Запустите демо-сканирование — увидите, как работает результат, или опубликуйте сайт и откройте его на телефоне.
           </p>
         </div>
+        <button
+          onClick={onDemo}
+          className="w-full inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold px-4 py-3.5 rounded-xl hover:opacity-90 transition-opacity text-base shadow-lg shadow-primary/30"
+        >
+          <Icon name="Sparkles" size={18} />
+          Запустить демо-сканирование
+        </button>
         <a
           href={directUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold px-4 py-3.5 rounded-xl hover:opacity-90 transition-opacity text-base shadow-lg shadow-primary/30"
-        >
-          <Icon name="Camera" size={18} />
-          Открыть камеру в новой вкладке
-        </a>
-        <button
-          onClick={onDemo}
           className="text-xs text-muted-foreground hover:text-foreground underline"
         >
-          или попробовать демо без камеры
-        </button>
+          или попробовать открыть в новой вкладке
+        </a>
       </div>
     </div>
   );
