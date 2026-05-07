@@ -11,7 +11,10 @@ import PartnersSection from "@/components/sections/PartnersSection";
 import AdminSection from "@/components/sections/AdminSection";
 import ScenarioRunner from "@/components/ScenarioRunner";
 import AIManager from "@/components/AIManager";
+import SectionSEO from "@/components/SectionSEO";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import type { ScenarioSection } from "@/lib/scenarios";
+import type { SectionId } from "@/lib/seo";
 
 type Section =
   | "home"
@@ -52,18 +55,42 @@ const GUEST_USER: User = {
   name: "Гость",
 } as User;
 
+// Восстановление активной секции из URL hash при загрузке
+function getInitialSection(): Section {
+  if (typeof window === "undefined") return "home";
+  const hash = window.location.hash.replace("#", "") as Section;
+  const valid: Section[] = [
+    "home", "scan", "usecases", "projects", "planner", "catalog",
+    "styles", "calc", "export", "partners", "admin", "profile", "help",
+  ];
+  return valid.includes(hash) ? hash : "home";
+}
+
 export default function Index() {
-  const [active, setActive] = useState<Section>("home");
+  const [active, setActive] = useState<Section>(getInitialSection);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<User | null>(GUEST_MODE ? GUEST_USER : null);
   const [authChecked, setAuthChecked] = useState(GUEST_MODE);
 
-  // Скролл наверх и закрытие сайдбара при смене секции
+  // Скролл наверх + синхронизация URL hash при смене секции
   useEffect(() => {
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
+      const newHash = active === "home" ? "" : `#${active}`;
+      if (window.location.hash !== newHash) {
+        window.history.replaceState(null, "", `${window.location.pathname}${newHash}`);
+      }
     }
   }, [active]);
+
+  // Синхронизация: если пользователь жмёт "назад" в браузере
+  useEffect(() => {
+    const onHashChange = () => {
+      setActive(getInitialSection());
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
 
   useEffect(() => {
     if (GUEST_MODE) return;
@@ -216,16 +243,11 @@ export default function Index() {
               {navItems.find((n) => n.id === active)?.label}
             </span>
           </div>
-          <div className="hidden lg:flex items-center gap-2 text-xs font-mono text-muted-foreground">
-            <a href="https://avangard-ai.ru" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors flex items-center gap-1">
-              <Icon name="Zap" size={11} className="text-primary" />
-              АВАНГАРД
-            </a>
-            <span className="text-border">/</span>
-            <span className="text-muted-foreground">RoomScan AI</span>
-            <span className="text-border">/</span>
-            <span className="text-foreground">{navItems.find((n) => n.id === active)?.label}</span>
-          </div>
+          <Breadcrumbs
+            activeSection={active}
+            onNavigate={(s) => setActive(s as Section)}
+          />
+          <SectionSEO sectionId={active} />
           <div className="flex items-center gap-3 ml-auto">
             {GUEST_MODE && (
               <span className="hidden sm:flex items-center gap-1.5 text-xs font-mono text-yellow-500 bg-yellow-500/10 border border-yellow-500/20 rounded-md px-2 py-1">

@@ -1,0 +1,194 @@
+/**
+ * Метаданные секций для SEO.
+ * Используются в SectionSEO для динамических <title> / <meta description> / breadcrumbs.
+ */
+
+export type SectionId =
+  | "home"
+  | "scan"
+  | "usecases"
+  | "projects"
+  | "planner"
+  | "catalog"
+  | "styles"
+  | "calc"
+  | "export"
+  | "partners"
+  | "admin"
+  | "profile"
+  | "help";
+
+export interface SectionSEOData {
+  id: SectionId;
+  /** Короткое название секции для крошек */
+  label: string;
+  /** Иконка lucide */
+  icon: string;
+  /** Полный заголовок страницы (для <title>) */
+  title: string;
+  /** Описание для поисковиков */
+  description: string;
+  /** Ключевые слова */
+  keywords: string;
+  /** H1-заголовок (что показывать пользователю) */
+  h1: string;
+}
+
+export const SITE_URL = "https://roomscan-ai.ru";
+export const SITE_NAME = "RoomScan AI";
+
+export const SECTIONS_SEO: Record<SectionId, SectionSEOData> = {
+  home: {
+    id: "home",
+    label: "Главная",
+    icon: "Home",
+    title: "RoomScan AI — 3D-сканирование, планировка и смета онлайн",
+    description:
+      "Отсканируйте комнату с телефона, расставьте мебель, получите смету ремонта. ИИ-сервис для дизайнеров, риелторов и владельцев квартир.",
+    keywords:
+      "3d сканирование комнаты, планировка квартиры онлайн, смета ремонта, фотограмметрия, дизайн интерьера ai",
+    h1: "Главная",
+  },
+  scan: {
+    id: "scan",
+    label: "Сканирование",
+    icon: "ScanLine",
+    title: "3D-сканирование комнаты телефоном за 30 секунд — RoomScan AI",
+    description:
+      "Сканируйте помещение камерой смартфона. Точность ±2 см, готовое 3D-облако точек, размеры стен и углов автоматически.",
+    keywords:
+      "3d сканер комнаты, фотограмметрия онлайн, сканирование помещения телефоном, lidar замер",
+    h1: "3D-сканирование комнаты",
+  },
+  usecases: {
+    id: "usecases",
+    label: "Сценарии",
+    icon: "Target",
+    title: "Сценарии использования RoomScan AI — для дизайнеров и риелторов",
+    description:
+      "9 готовых сценариев: дизайн-проект, замер для ремонта, продажа квартиры, планировка офиса, перестановка мебели и другие.",
+    keywords:
+      "сценарии дизайна интерьера, замер квартиры, дизайн-проект онлайн",
+    h1: "Сценарии использования",
+  },
+  projects: {
+    id: "projects",
+    label: "Мои проекты",
+    icon: "FolderOpen",
+    title: "Мои проекты — RoomScan AI",
+    description: "Список ваших дизайн-проектов и сканированных помещений.",
+    keywords: "проекты дизайн интерьера, мои сканы",
+    h1: "Мои проекты",
+  },
+  planner: {
+    id: "planner",
+    label: "Планировщик",
+    icon: "LayoutGrid",
+    title: "2D и 3D планировщик квартиры онлайн — RoomScan AI",
+    description:
+      "Расставьте мебель, измените стены, постройте перепланировку. Бесплатный онлайн-редактор интерьера.",
+    keywords:
+      "планировщик квартиры онлайн, 2d план интерьера, 3d расстановка мебели",
+    h1: "Планировщик 2D/3D",
+  },
+  catalog: {
+    id: "catalog",
+    label: "Каталог мебели",
+    icon: "Sofa",
+    title: "Каталог мебели с AR-просмотром — RoomScan AI",
+    description:
+      "36+ моделей мебели от партнёров: диваны, кровати, шкафы, кухни. Фильтры по цене, бренду, стилю. Примерка в AR на Android.",
+    keywords:
+      "каталог мебели онлайн, ar просмотр мебели, дизайнерская мебель",
+    h1: "Каталог мебели",
+  },
+  styles: {
+    id: "styles",
+    label: "AI-стили",
+    icon: "Wand2",
+    title: "AI-стили интерьера: лофт, скандинавский, классика — RoomScan AI",
+    description:
+      "Сгенерируйте интерьер в нужном стиле по фотографии комнаты. ИИ предложит мебель, цвета и расстановку.",
+    keywords:
+      "ai дизайн интерьера, генератор стилей интерьера, лофт скандинавский",
+    h1: "AI-стили интерьера",
+  },
+  calc: {
+    id: "calc",
+    label: "Расчёты",
+    icon: "Calculator",
+    title: "Калькулятор сметы ремонта онлайн — RoomScan AI",
+    description:
+      "Расчёт стоимости ремонта по параметрам комнаты: материалы, работы, доставка. Цены по регионам России.",
+    keywords:
+      "калькулятор ремонта, смета онлайн, расчёт стоимости ремонта квартиры",
+    h1: "Калькулятор сметы",
+  },
+  export: {
+    id: "export",
+    label: "Экспорт",
+    icon: "Share2",
+    title: "Экспорт проекта в PDF, OBJ, GLB, USDZ, FBX — RoomScan AI",
+    description:
+      "Скачайте дизайн-проект в 6 форматах: PDF для презентации, OBJ/GLB/USDZ для 3D-просмотра, FBX для дизайнеров.",
+    keywords: "экспорт дизайн-проекта, pdf обj glb usdz fbx",
+    h1: "Экспорт проекта",
+  },
+  partners: {
+    id: "partners",
+    label: "Партнёрам",
+    icon: "Handshake",
+    title: "Партнёрская программа для магазинов и дизайнеров — RoomScan AI",
+    description:
+      "Подключите свой каталог мебели или станьте партнёром-дизайнером. Получайте заявки от тысяч пользователей.",
+    keywords:
+      "партнёрская программа мебель, дизайнер интерьера сотрудничество",
+    h1: "Партнёрам",
+  },
+  admin: {
+    id: "admin",
+    label: "Админ",
+    icon: "ShieldCheck",
+    title: "Админ-панель — RoomScan AI",
+    description: "Управление заявками партнёров и пользователями.",
+    keywords: "",
+    h1: "Админ-панель",
+  },
+  profile: {
+    id: "profile",
+    label: "Профиль",
+    icon: "User",
+    title: "Профиль — RoomScan AI",
+    description: "Личный кабинет пользователя.",
+    keywords: "",
+    h1: "Профиль",
+  },
+  help: {
+    id: "help",
+    label: "Помощь",
+    icon: "LifeBuoy",
+    title: "FAQ и центр помощи — RoomScan AI",
+    description:
+      "Ответы на частые вопросы: как сканировать, как составить смету, форматы экспорта. Поддержка 24/7.",
+    keywords: "помощь roomscan, faq дизайн интерьера",
+    h1: "Центр помощи",
+  },
+};
+
+export function getSectionSEO(id: string): SectionSEOData {
+  return SECTIONS_SEO[id as SectionId] || SECTIONS_SEO.home;
+}
+
+/** Список секций, которые нужно индексировать (исключая admin/profile/projects) */
+export const PUBLIC_SECTIONS: SectionId[] = [
+  "home",
+  "scan",
+  "usecases",
+  "planner",
+  "catalog",
+  "styles",
+  "calc",
+  "export",
+  "partners",
+  "help",
+];
