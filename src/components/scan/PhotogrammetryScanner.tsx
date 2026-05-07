@@ -1,414 +1,41 @@
-import { useState, useRef, useCallback } from "react";
-import Icon from "@/components/ui/icon";
-import { apiFetch } from "@/lib/api";
-import { saveLastScan } from "@/lib/scanStore";
-import PointCloud3D, { type Point3D, type RoomBox } from "./PointCloud3D";
+import PointCloud3D, { type RoomBox } from "./PointCloud3D";
 import MobileQRBlock from "./MobileQRBlock";
 import CameraPermissionStatus from "./CameraPermissionStatus";
 import ScannerViewport from "./photogrammetry/ScannerViewport";
 import ScannerControls from "./photogrammetry/ScannerControls";
 import ScanResultPanel from "./photogrammetry/ScanResultPanel";
 import ProcessingTimeline from "./photogrammetry/ProcessingTimeline";
-import type { ScanResult, Phase } from "./photogrammetry/types";
+import { TIPS } from "./photogrammetry/constants";
+import { useCameraScan } from "./photogrammetry/useCameraScan";
+import { useDemoScan } from "./photogrammetry/useDemoScan";
+import {
+  DesktopIframeHelp,
+  MobileIframeHelp,
+  DemoFallbackButton,
+} from "./photogrammetry/IframeHelpBlocks";
+import type { ScanResult } from "./photogrammetry/types";
 
-const PHOTO_URL = "https://functions.poehali.dev/aa224ee6-cbee-45f1-bcf6-92dbb5ecd974";
-
-function toBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve((reader.result as string).split(",")[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-
+/**
+ * PhotogrammetryScanner — главный компонент сканирования через камеру.
+ *
+ * Декомпозирован на:
+ *  • useCameraScan       — реальная камера + загрузка кадров + обработка
+ *  • useDemoScan         — синтетический скан без камеры (для iframe/демо)
+ *  • IframeHelpBlocks    — три UI-блока подсказок (desktop iframe, mobile iframe, демо-кнопка)
+ *  • constants           — PHOTO_URL, TIPS, toBase64
+ *
+ * Все состояния, рефы и переходы фаз остались идентичны исходной версии.
+ */
 export default function PhotogrammetryScanner({ onComplete }: { onComplete: (result: ScanResult) => void }) {
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [scanId, setScanId] = useState<number | string | null>(null);
-  const [framesCount, setFramesCount] = useState(0);
-  const [uploadedCount, setUploadedCount] = useState(0);
-  const [result, setResult] = useState<ScanResult | null>(null);
-  const [points3D, setPoints3D] = useState<Point3D[]>([]);
-  const [error, setError] = useState("");
-  const [tip, setTip] = useState(0);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const captureIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const framesRef = useRef<Blob[]>([]);
-  const recordingRef = useRef(false);
+  const camera = useCameraScan(onComplete);
+  const {
+    phase, framesCount, uploadedCount, result, points3D, error, tip,
+    videoRef, framesRef,
+    startCamera, stopAndProcess, reset,
+    setPhase, setError, setPoints3D, setResult,
+  } = camera;
 
-  const TIPS = [
-    "Медленно обводите все стены",
-    "Снимайте углы помещения",
-    "Держите телефон вертикально",
-    "Пройдитесь по периметру комнаты",
-    "Наклоните телефон к полу и потолку",
-  ];
-
-  const startCamera = useCallback(async () => {
-    setError("");
-
-    // Диагностика 0: проверка iframe и Permissions Policy
-    const inIframe = typeof window !== "undefined" && window.self !== window.top;
-    let permissionPolicyBlocked = false;
-    try {
-      if (inIframe && document.featurePolicy?.allowsFeature) {
-        permissionPolicyBlocked = !document.featurePolicy.allowsFeature("camera");
-      }
-    } catch {
-      // featurePolicy не поддерживается — игнорируем
-    }
-
-    if (permissionPolicyBlocked) {
-      const directUrl = window.location.href.replace(/^https?:\/\/preview--/, "https://");
-      setError(
-        `Камера заблокирована политикой разрешений iframe предпросмотра. ` +
-        `Откройте сайт напрямую (не в редакторе): ${directUrl}`
-      );
-      setPhase("error");
-      return;
-    }
-
-    // Диагностика 1: HTTPS обязателен для getUserMedia
-    if (typeof window !== "undefined" && window.location.protocol !== "https:" && window.location.hostname !== "localhost") {
-      setError("Камера работает только по HTTPS. Откройте сайт по защищённому соединению.");
-      setPhase("error");
-      return;
-    }
-
-    // Диагностика 2: проверяем поддержку API
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setError("Браузер не поддерживает доступ к камере. Используйте Chrome 90+ или Safari 14+.");
-      setPhase("error");
-      return;
-    }
-
-    // Диагностика 3: предварительная проверка статуса разрешения
-    try {
-      if (navigator.permissions?.query) {
-        const status = await navigator.permissions.query({ name: "camera" as PermissionName });
-        if (status.state === "denied") {
-          setError(
-            "Камера заблокирована для этого сайта. " +
-            "Нажмите на иконку замка слева от адреса → Разрешения сайта → Камера → Разрешить, " +
-            "затем перезагрузите страницу."
-          );
-          setPhase("error");
-          return;
-        }
-      }
-    } catch {
-      // permissions API не поддерживается — пропускаем
-    }
-
-    // Шаг 1: получаем камеру
-    let stream: MediaStream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
-      });
-    } catch (e: unknown) {
-      const err = e as { name?: string; message?: string };
-      let msg = "Не удалось получить доступ к камере.";
-      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-        if (inIframe) {
-          msg =
-            "Доступ к камере запрещён внутри окна предпросмотра. " +
-            "Откройте сайт в отдельной вкладке (кнопка «Открыть» вверху редактора или прямая ссылка вашего проекта), " +
-            "и тогда браузер спросит разрешение на камеру.";
-        } else {
-          msg =
-            "Доступ к камере запрещён. " +
-            "Нажмите на иконку замка/камеры в адресной строке → разрешите камеру → перезагрузите страницу.";
-        }
-      } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
-        msg = "Камера не найдена. Проверьте, что устройство имеет камеру.";
-      } else if (err.name === "NotReadableError") {
-        msg = "Камера занята другим приложением. Закройте Skype/Zoom/другие камеры и попробуйте снова.";
-      } else if (err.name === "OverconstrainedError") {
-        // фолбек на любую камеру
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: true });
-          msg = "";
-        } catch {
-          msg = "Не удалось настроить камеру с нужным разрешением.";
-        }
-        if (msg) {
-          setError(msg);
-          setPhase("error");
-          return;
-        }
-      } else {
-        msg = `Ошибка камеры: ${err.message || err.name || "неизвестная"}`;
-      }
-      if (msg) {
-        setError(msg);
-        setPhase("error");
-        return;
-      }
-      stream = null as unknown as MediaStream;
-    }
-
-    streamRef.current = stream;
-    if (videoRef.current) {
-      videoRef.current.srcObject = stream;
-      try {
-        await videoRef.current.play();
-      } catch {
-        // некоторые браузеры требуют user gesture — игнорируем, видео всё равно стартует
-      }
-    }
-
-    // Шаг 2: создаём scan_id на бэке
-    let scanIdData: { scan_id?: string | number; error?: string };
-    try {
-      const { status, data } = await apiFetch(`${PHOTO_URL}?action=start`, {
-        method: "POST",
-        body: JSON.stringify({}),
-      });
-      scanIdData = data;
-      if (status !== 200 || !data.scan_id) {
-        throw new Error(data.error || `Сервер вернул статус ${status}`);
-      }
-    } catch (e: unknown) {
-      // если бэк не доступен — освобождаем камеру
-      stream.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-      setError("Не удалось создать сканирование. " + (e instanceof Error ? e.message : ""));
-      setPhase("error");
-      return;
-    }
-
-    setScanId(scanIdData.scan_id!);
-    setFramesCount(0);
-    framesRef.current = [];
-    recordingRef.current = true;
-    setPhase("recording");
-
-    let tipIdx = 0;
-    let frameIdx = 0;
-
-    captureIntervalRef.current = setInterval(() => {
-      if (!recordingRef.current || !videoRef.current) return;
-      // Проверяем, что видео реально играет
-      if (videoRef.current.readyState < 2 || videoRef.current.videoWidth === 0) return;
-
-      tipIdx = (tipIdx + 1) % TIPS.length;
-      setTip(tipIdx);
-
-      const canvas = document.createElement("canvas");
-      canvas.width = 640;
-      canvas.height = 480;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      ctx.drawImage(videoRef.current, 0, 0, 640, 480);
-      canvas.toBlob((blob) => {
-        if (blob) {
-          framesRef.current.push(blob);
-          frameIdx += 1;
-          setFramesCount(frameIdx);
-        }
-      }, "image/jpeg", 0.75);
-    }, 500);
-  }, [TIPS.length]);
-
-  const stopAndProcess = useCallback(async () => {
-    if (!scanId) return;
-    recordingRef.current = false;
-    if (captureIntervalRef.current) {
-      clearInterval(captureIntervalRef.current);
-      captureIntervalRef.current = null;
-    }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
-
-    const frames = framesRef.current;
-    if (frames.length < 10) {
-      setError(`Слишком мало кадров (${frames.length}/10). Нужно минимум 10 секунд съёмки. Попробуйте сканировать дольше и медленнее.`);
-      setPhase("error");
-      return;
-    }
-
-    setPhase("uploading");
-    setUploadedCount(0);
-
-    // Загрузка кадров с обработкой ошибок и повторами
-    let uploadFailed = 0;
-    const BATCH = 5;
-    for (let i = 0; i < frames.length; i += BATCH) {
-      const batch = frames.slice(i, i + BATCH);
-      const b64s = await Promise.all(batch.map((b) => toBase64(b)));
-      for (let j = 0; j < b64s.length; j++) {
-        try {
-          const { status, data } = await apiFetch(`${PHOTO_URL}?action=frame`, {
-            method: "POST",
-            body: JSON.stringify({ scan_id: scanId, frame: b64s[j], frame_index: i + j }),
-          });
-          if (status >= 400) {
-            uploadFailed += 1;
-            console.warn("Frame upload failed:", status, data);
-          }
-        } catch (e) {
-          uploadFailed += 1;
-          console.warn("Frame upload exception:", e);
-        }
-        setUploadedCount(i + j + 1);
-      }
-    }
-
-    // Если упал каждый второй кадр — дальше нет смысла
-    if (uploadFailed > frames.length / 2) {
-      setError(`Не удалось загрузить кадры на сервер (${uploadFailed} ошибок из ${frames.length}). Проверьте интернет-соединение.`);
-      setPhase("error");
-      return;
-    }
-
-    setPhase("processing");
-    let data: { result?: ScanResult; error?: string };
-    try {
-      const r = await apiFetch(`${PHOTO_URL}?action=process`, {
-        method: "POST",
-        body: JSON.stringify({ scan_id: scanId }),
-      });
-      data = r.data;
-      if (r.status >= 400) {
-        setError(data.error || `Сервер вернул статус ${r.status}`);
-        setPhase("error");
-        return;
-      }
-    } catch (e) {
-      setError("Сервер обработки не ответил. " + (e instanceof Error ? e.message : ""));
-      setPhase("error");
-      return;
-    }
-
-    if (data.result) {
-      setResult(data.result);
-      setPhase("done");
-      onComplete(data.result);
-
-      // Сохраняем в общий store для Планировщика
-      saveLastScan({
-        width:  data.result.width,
-        length: data.result.length,
-        height: data.result.height,
-        area:   data.result.area,
-        doors:    data.result.doors,
-        windows:  data.result.windows,
-        openings: data.result.openings,
-      });
-
-      // Загружаем point_cloud_data из БД для 3D-визуализации
-      const statusRes = await apiFetch(`${PHOTO_URL}?action=status&scan_id=${scanId}`);
-      const cloudRaw: number[][] = statusRes.data?.scan?.point_cloud?.points ?? [];
-      if (cloudRaw.length > 0) {
-        const pts3D: Point3D[] = cloudRaw.slice(0, 3000).map(([x, y, z]) => ({
-          x, y, z, intensity: y / (data.result.height || 2.7),
-        }));
-        setPoints3D(pts3D);
-      }
-    } else {
-      setError(data.error || "Ошибка обработки");
-      setPhase("error");
-    }
-  }, [scanId, onComplete]);
-
-  // ─── ДЕМО-РЕЖИМ ──────────────────────────────────────────────────────────
-  // Готовый скан без камеры — для проверки полного флоу (планировщик, каталог, экспорт)
-  // в окне предпросмотра, на десктопе без камеры или для презентаций.
-  const runDemoScan = useCallback(async () => {
-    setError("");
-    setPhase("processing");
-
-    // Имитация обработки 1.5 сек
-    await new Promise((r) => setTimeout(r, 1500));
-
-    const demoResult: ScanResult = {
-      area: 18.5,
-      width: 4.2,
-      length: 4.4,
-      height: 2.7,
-      frames_used: 60,
-      accuracy_estimate: "±2.4 см",
-      point_cloud_points: 2400,
-      features_total: 18420,
-      matches_total: 6850,
-      inliers_pct: 87,
-      vanishing_points: 3,
-      wall_planes: 4,
-      frames_input: 60,
-      frames_blurred: 0,
-      frames_duplicates: 0,
-      outliers_removed: 142,
-      confidence: 0.92,
-      confidence_label: "Высокая",
-      doors: 1,
-      windows: 1,
-      openings: [
-        { type: "door", wall_idx: 0, width: 0.9, height: 2.05, sill: 0, center: [-1.5, 1.025, -2.2] },
-        { type: "window", wall_idx: 2, width: 1.4, height: 1.4, sill: 0.85, center: [0.5, 1.55, 2.2] },
-      ],
-    };
-
-    // Генерируем точечное облако: стены, пол, потолок
-    const pts: Point3D[] = [];
-    const W = demoResult.width;
-    const L = demoResult.length;
-    const H = demoResult.height;
-    for (let i = 0; i < 2400; i++) {
-      const r = Math.random();
-      let x = 0, y = 0, z = 0;
-      if (r < 0.25) {
-        // пол
-        x = (Math.random() - 0.5) * W;
-        y = Math.random() * 0.05;
-        z = (Math.random() - 0.5) * L;
-      } else if (r < 0.4) {
-        // потолок
-        x = (Math.random() - 0.5) * W;
-        y = H - Math.random() * 0.05;
-        z = (Math.random() - 0.5) * L;
-      } else if (r < 0.7) {
-        // стены X
-        x = Math.random() < 0.5 ? -W / 2 : W / 2;
-        y = Math.random() * H;
-        z = (Math.random() - 0.5) * L;
-      } else {
-        // стены Z
-        x = (Math.random() - 0.5) * W;
-        y = Math.random() * H;
-        z = Math.random() < 0.5 ? -L / 2 : L / 2;
-      }
-      pts.push({ x, y, z, intensity: y / H });
-    }
-    setPoints3D(pts);
-
-    setResult(demoResult);
-    setPhase("done");
-    onComplete(demoResult);
-    saveLastScan({
-      width: demoResult.width,
-      length: demoResult.length,
-      height: demoResult.height,
-      area: demoResult.area,
-      doors: demoResult.doors,
-      windows: demoResult.windows,
-      openings: demoResult.openings,
-    });
-  }, [onComplete]);
-
-  const reset = useCallback(() => {
-    framesRef.current = [];
-    setPhase("idle");
-    setFramesCount(0);
-    setUploadedCount(0);
-    setScanId(null);
-    setResult(null);
-    setPoints3D([]);
-    setError("");
-  }, []);
+  const runDemoScan = useDemoScan({ setError, setPhase, setPoints3D, setResult, onComplete });
 
   const uploadPct = framesRef.current.length > 0
     ? Math.round((uploadedCount / framesRef.current.length) * 100)
@@ -428,74 +55,13 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
   return (
     <div className="space-y-4">
       {showIframeHelp && (
-        <div className="bg-yellow-500/10 border-2 border-yellow-500/40 rounded-xl p-4 animate-fade-in">
-          <div className="flex items-start gap-3">
-            <Icon name="AlertTriangle" size={20} className="text-yellow-500 shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-foreground text-sm mb-1">
-                Камера не работает в окне предпросмотра
-              </p>
-              <p className="text-xs text-muted-foreground leading-relaxed mb-3">
-                Браузер блокирует доступ к камере во встроенном iframe редактора.
-                Откройте сайт в отдельной вкладке или запустите демо-режим — мы покажем готовый результат сканирования, чтобы вы могли проверить остальные функции.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <a
-                  href={directUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-yellow-500 text-black font-bold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity text-sm"
-                >
-                  <Icon name="ExternalLink" size={13} />
-                  Открыть в новой вкладке
-                </a>
-                <button
-                  onClick={runDemoScan}
-                  className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-bold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity text-sm"
-                >
-                  <Icon name="Sparkles" size={13} />
-                  Запустить демо-сканирование
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <DesktopIframeHelp directUrl={directUrl} onDemo={runDemoScan} />
       )}
 
       {showIframeHelp && <MobileQRBlock />}
 
       {showMobileIframeHelp && (
-        <div className="bg-gradient-to-br from-primary/15 to-primary/5 border-2 border-primary/40 rounded-xl p-5 animate-fade-in">
-          <div className="flex flex-col items-center text-center gap-3">
-            <div className="bg-primary/20 rounded-full p-3">
-              <Icon name="Smartphone" size={28} className="text-primary" />
-            </div>
-            <div>
-              <p className="font-bold text-foreground text-base mb-1">
-                Откройте сайт напрямую — заработает камера
-              </p>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Браузер блокирует камеру внутри окна предпросмотра.
-                Нажмите кнопку ниже — сайт откроется в новой вкладке, и тогда вы сможете отсканировать комнату.
-              </p>
-            </div>
-            <a
-              href={directUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold px-4 py-3.5 rounded-xl hover:opacity-90 transition-opacity text-base shadow-lg shadow-primary/30"
-            >
-              <Icon name="Camera" size={18} />
-              Открыть камеру в новой вкладке
-            </a>
-            <button
-              onClick={runDemoScan}
-              className="text-xs text-muted-foreground hover:text-foreground underline"
-            >
-              или попробовать демо без камеры
-            </button>
-          </div>
-        </div>
+        <MobileIframeHelp directUrl={directUrl} onDemo={runDemoScan} />
       )}
 
       {phase === "idle" && !showIframeHelp && !showMobileIframeHelp && <CameraPermissionStatus />}
@@ -521,28 +87,7 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
         onReset={reset}
       />
 
-      {phase === "idle" && (
-        <div className="flex items-center gap-2 justify-center">
-          <span className="h-px flex-1 bg-border" />
-          <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-            или попробуйте без камеры
-          </span>
-          <span className="h-px flex-1 bg-border" />
-        </div>
-      )}
-
-      {phase === "idle" && (
-        <button
-          onClick={runDemoScan}
-          className="w-full flex items-center justify-center gap-2 bg-card border-2 border-dashed border-primary/40 hover:border-primary hover:bg-primary/5 text-foreground font-semibold px-4 py-3 rounded-xl transition-all"
-        >
-          <Icon name="Sparkles" size={16} className="text-primary" />
-          Демо-сканирование
-          <span className="text-xs font-mono text-muted-foreground">
-            (готовый пример комнаты)
-          </span>
-        </button>
-      )}
+      {phase === "idle" && <DemoFallbackButton onDemo={runDemoScan} />}
 
       {phase === "processing" && <ProcessingTimeline />}
 
