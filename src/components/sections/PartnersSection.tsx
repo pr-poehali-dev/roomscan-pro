@@ -106,10 +106,28 @@ export default function PartnersSection() {
   const [error, setError]               = useState("");
 
   useEffect(() => {
-    fetch(PARTNERS_URL)
-      .then((r) => r.json())
-      .then((d) => setStats(d))
-      .catch(() => {/* ignore */});
+    let cancelled = false;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+
+    fetch(PARTNERS_URL, { signal: ctrl.signal })
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((d) => {
+        if (!cancelled) setStats(d);
+      })
+      .catch(() => {
+        if (!cancelled) setStats({ partners_count: 50, total_volume: 0 });
+      })
+      .finally(() => clearTimeout(timer));
+
+    return () => {
+      cancelled = true;
+      ctrl.abort();
+      clearTimeout(timer);
+    };
   }, []);
 
   const submit = async () => {

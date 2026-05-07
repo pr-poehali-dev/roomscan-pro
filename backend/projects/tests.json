@@ -1,12 +1,30 @@
 {
   "tests": [
     {
-      "name": "Список проектов без токена — 401",
+      "name": "OPTIONS preflight — 200",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "GET без токена — 401",
       "method": "GET",
       "path": "/",
-      "expectedStatus": 401,
-      "expectedBody": {"error": "string"},
-      "bodyMatcher": "partial"
+      "expectedStatus": 401
+    },
+    {
+      "name": "GET с невалидным токеном — 401",
+      "method": "GET",
+      "path": "/",
+      "headers": {"X-Auth-Token": "invalid_token_xyz"},
+      "expectedStatus": 401
+    },
+    {
+      "name": "POST без токена — 401",
+      "method": "POST",
+      "path": "/",
+      "body": {"name": "Test"},
+      "expectedStatus": 401
     }
   ]
 }

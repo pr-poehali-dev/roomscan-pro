@@ -54,6 +54,13 @@ export default function Index() {
   const [user, setUser] = useState<User | null>(GUEST_MODE ? GUEST_USER : null);
   const [authChecked, setAuthChecked] = useState(GUEST_MODE);
 
+  // Скролл наверх и закрытие сайдбара при смене секции
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [active]);
+
   useEffect(() => {
     if (GUEST_MODE) return;
     const token = getToken();
@@ -234,7 +241,9 @@ export default function Index() {
         </header>
 
         <div className="flex-1 p-6 lg:p-8 overflow-y-auto">
-          {renderSection()}
+          <div key={active} className="animate-fade-in">
+            {renderSection()}
+          </div>
         </div>
       </main>
 
