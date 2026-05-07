@@ -91,8 +91,8 @@ export default function PlannerSection({ cartItems }: { cartItems?: typeof furni
             <p className="text-muted-foreground text-sm font-mono uppercase tracking-widest mb-1">2D-редактор</p>
             <h2 className="text-3xl font-bold">Планировщик</h2>
             <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-              Профессиональный редактор планов в стиле Remplanner. Рисуйте стены, расставляйте двери, окна и мебель.
-              План автоматически сохраняется на устройстве.
+              Профессиональный 2D/3D-редактор планов квартир и домов. Рисуйте стены, расставляйте двери,
+              окна и мебель — план автоматически сохраняется на вашем устройстве.
             </p>
           </div>
           <PlannerTabs tab={tab} onChange={setTab} />

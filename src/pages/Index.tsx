@@ -38,7 +38,7 @@ type Section =
   | "profile"
   | "help";
 
-const navItemsAll: { id: Section; label: string; icon: string; hideInGuest?: boolean; adminOnly?: boolean }[] = [
+const navItemsAll: { id: Section; label: string; icon: string; hideInGuest?: boolean }[] = [
   { id: "home", label: "Главная", icon: "Home" },
   { id: "scan", label: "Сканирование", icon: "ScanLine" },
   { id: "usecases", label: "Сценарии", icon: "Target" },
@@ -51,7 +51,7 @@ const navItemsAll: { id: Section; label: string; icon: string; hideInGuest?: boo
   { id: "staging", label: "Хоумстейджинг", icon: "TrendingUp" },
   { id: "export", label: "Экспорт", icon: "Share2" },
   { id: "partners", label: "Партнёрам", icon: "Handshake" },
-  { id: "admin", label: "Админ", icon: "ShieldCheck", adminOnly: true },
+  { id: "admin", label: "Админ-кабинет", icon: "ShieldCheck" },
   { id: "profile", label: "Профиль", icon: "User", hideInGuest: true },
   { id: "help", label: "Помощь", icon: "LifeBuoy" },
 ];
@@ -177,15 +177,12 @@ export default function Index() {
 
   if (!user) return <AuthScreen onAuth={setUser} />;
 
-  // Админский пункт меню видим только если есть токен в localStorage
-  // или если URL имеет hash #admin (для первичного входа).
-  const hasAdminToken = typeof window !== "undefined" &&
-    (!!localStorage.getItem("roomscan:admin_token") || window.location.hash === "#admin");
-
-  let navItems = GUEST_MODE
+  // Админский пункт меню теперь виден всегда — кликнув на него,
+  // пользователь попадёт на форму логина (AdminOffice сам её показывает,
+  // если токен отсутствует или истёк).
+  const navItems = GUEST_MODE
     ? navItemsAll.filter((n) => !n.hideInGuest)
     : navItemsAll;
-  if (!hasAdminToken) navItems = navItems.filter((n) => !n.adminOnly);
 
   const renderSection = () => {
     switch (active) {

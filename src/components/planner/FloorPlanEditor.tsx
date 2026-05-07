@@ -12,7 +12,7 @@ import { useFloorPlanState } from "./useFloorPlanState";
 const PlanScene3D = lazy(() => import("./PlanScene3D"));
 
 /**
- * Полный редактор плана этажа в стиле Remplanner / Planner5D.
+ * Полный профессиональный редактор плана этажа.
  * - Слева: каталог мебели
  * - В центре: 2D-canvas с панелью инструментов сверху
  * - Справа: свойства выделенного элемента + сводка по плану

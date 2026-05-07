@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import Icon from "@/components/ui/icon";
 import { getLastScan } from "@/lib/scanStore";
 import { calcEstimate, formatRub, type RoomInput, type Tier } from "@/lib/estimate";
+import { REGIONS, DEFAULT_REGION_ID } from "@/lib/regions";
 import { saveProject } from "@/lib/projectsStore";
 import { exportEstimatePDF } from "@/lib/pdfExport";
 import TierSelector from "@/components/calc/TierSelector";
@@ -25,11 +26,15 @@ export default function CalcSection() {
         windows: s.windows ?? 1,
       };
     }
-    return { area: 30, perimeter: 22, height: 2.7, doors: 2, windows: 2 };
+    return { area: 30, perimeter: 22, height: 2.7, doors: 2, windows: 2, regionId: DEFAULT_REGION_ID };
   });
 
   const [tier, setTier] = useState<Tier>("standart");
   const [autoFromScan, setAutoFromScan] = useState(false);
+
+  const setRegion = (regionId: string) => {
+    setRoom((r) => ({ ...r, regionId }));
+  };
 
   // Если скан появился пока пользователь на странице — предложим подставить
   useEffect(() => {
@@ -71,13 +76,14 @@ export default function CalcSection() {
             onClick={() => {
               const s = getLastScan();
               if (s) {
-                setRoom({
+                setRoom((r) => ({
+                  ...r,
                   area: +s.area.toFixed(1),
                   perimeter: +(2 * (s.width + s.length)).toFixed(1),
                   height: +s.height.toFixed(2),
-                  doors: s.doors ?? room.doors,
-                  windows: s.windows ?? room.windows,
-                });
+                  doors: s.doors ?? r.doors,
+                  windows: s.windows ?? r.windows,
+                }));
               }
               setAutoFromScan(false);
             }}
@@ -95,6 +101,44 @@ export default function CalcSection() {
       )}
 
       <TierSelector value={tier} onChange={setTier} />
+
+      {/* Региональный коэффициент */}
+      <div className="bg-card border border-border rounded-xl p-4">
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
+          <Icon name="MapPin" size={16} className="text-primary" />
+          <p className="text-sm font-bold text-foreground">Регион</p>
+          <p className="text-xs text-muted-foreground flex-1">
+            Цены автоматически пересчитаются с учётом местного рынка труда и логистики материалов
+          </p>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+          {REGIONS.map((r) => {
+            const isActive = (room.regionId || DEFAULT_REGION_ID) === r.id;
+            const totalK = (r.worksK + r.materialsK) / 2;
+            return (
+              <button
+                key={r.id}
+                onClick={() => setRegion(r.id)}
+                title={r.note}
+                className={`text-left p-2 rounded-lg border transition-all ${
+                  isActive
+                    ? "bg-primary/15 border-primary text-foreground"
+                    : "bg-secondary/40 border-transparent hover:bg-secondary text-foreground"
+                }`}
+              >
+                <p className="text-xs font-bold truncate">{r.name}</p>
+                <p className={`text-[10px] font-mono ${isActive ? "text-primary" : "text-muted-foreground"}`}>
+                  k = {totalK.toFixed(2)}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
+          ⓘ Базовый регион — Москва (k = 1.00). Коэффициент применяется отдельно к работам и материалам.
+          Цены — ориентировочные, актуализированы на 2025 г.
+        </p>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1">
