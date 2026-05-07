@@ -1,13 +1,16 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import QRCode from "qrcode";
 import Icon from "@/components/ui/icon";
 
 /**
  * Блок «Открыть на телефоне».
- * Показывает прямую ссылку без preview-- префикса и QR-код для мобильного.
- * Используется в разделе сканирования — камера всё равно работает только в отдельной вкладке по HTTPS.
+ * Генерирует QR-код локально (без сетевых запросов) и показывает прямую ссылку
+ * без preview-- префикса, чтобы на телефоне камера работала по HTTPS.
  */
 export default function MobileQRBlock() {
   const [copied, setCopied] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string>("");
+  const [qrError, setQrError] = useState<string>("");
 
   const directUrl = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -15,7 +18,26 @@ export default function MobileQRBlock() {
   }, []);
 
   const inIframe = typeof window !== "undefined" && window.self !== window.top;
-  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=4&data=${encodeURIComponent(directUrl)}`;
+
+  useEffect(() => {
+    if (!directUrl) return;
+    let cancelled = false;
+    QRCode.toDataURL(directUrl, {
+      width: 240,
+      margin: 2,
+      errorCorrectionLevel: "M",
+      color: { dark: "#0a0a0a", light: "#ffffff" },
+    })
+      .then((url) => {
+        if (!cancelled) setQrDataUrl(url);
+      })
+      .catch((err) => {
+        if (!cancelled) setQrError(String(err?.message || err));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [directUrl]);
 
   const copyLink = async () => {
     try {
@@ -30,15 +52,20 @@ export default function MobileQRBlock() {
   return (
     <div className="bg-card border border-border rounded-xl p-4 animate-fade-in">
       <div className="flex items-start gap-4">
-        <div className="shrink-0 bg-white p-2 rounded-lg border border-border">
-          <img
-            src={qrSrc}
-            alt="QR-код для открытия на телефоне"
-            width={120}
-            height={120}
-            className="block"
-            loading="lazy"
-          />
+        <div className="shrink-0 bg-white p-2 rounded-lg border border-border w-[136px] h-[136px] flex items-center justify-center">
+          {qrDataUrl ? (
+            <img
+              src={qrDataUrl}
+              alt="QR-код для открытия на телефоне"
+              width={120}
+              height={120}
+              className="block"
+            />
+          ) : qrError ? (
+            <span className="text-[10px] text-red-500 text-center px-1">QR ошибка</span>
+          ) : (
+            <Icon name="Loader2" size={28} className="text-muted-foreground animate-spin" />
+          )}
         </div>
 
         <div className="flex-1 min-w-0">
