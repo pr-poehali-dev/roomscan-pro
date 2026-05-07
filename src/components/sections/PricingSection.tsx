@@ -2,13 +2,16 @@ import { useState } from "react";
 import Icon from "@/components/ui/icon";
 import { COMPARISON_TABLE, formatRubMonth, PLANS, type Plan } from "@/lib/pricing";
 import { notify } from "@/lib/notify";
+import PaymentDialog from "@/components/pricing/PaymentDialog";
 
 /**
  * Раздел «Тарифы». 3 плана: Free / PRO / BUSINESS.
  * Тоггл «Месяц / Год -20%». Сравнительная таблица. FAQ.
+ * PRO — оплата через ЮKassa. BUSINESS — заявка менеджеру.
  */
 export default function PricingSection() {
   const [yearly, setYearly] = useState(false);
+  const [payingPlan, setPayingPlan] = useState<Plan | null>(null);
 
   const handleSelect = (p: Plan) => {
     if (p.id === "free") {
@@ -19,7 +22,8 @@ export default function PricingSection() {
       notify.success("Заявка отправлена", "Мы свяжемся с вами в течение рабочего дня");
       return;
     }
-    notify.success(`Выбран тариф ${p.name}`, "Скоро откроем оплату — пока запишем вас в раннюю очередь");
+    // PRO — открываем диалог оплаты ЮKassa
+    setPayingPlan(p);
   };
 
   return (
@@ -149,6 +153,15 @@ export default function PricingSection() {
           Оплата зачисляется в адрес ООО «МАТ-Лабс» · ИНН 6312223437 · ОГРН 126630004288
         </div>
       </div>
+
+      {/* Модалка оплаты ЮKassa */}
+      {payingPlan && (
+        <PaymentDialog
+          plan={payingPlan}
+          yearly={yearly}
+          onClose={() => setPayingPlan(null)}
+        />
+      )}
     </div>
   );
 }
