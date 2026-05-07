@@ -10,6 +10,7 @@ import StylesSection from "@/components/sections/StylesSection";
 import StagingSection from "@/components/sections/StagingSection";
 import OpeningsSection from "@/components/sections/OpeningsSection";
 import PartnersSection from "@/components/sections/PartnersSection";
+import PricingSection from "@/components/sections/PricingSection";
 import AdminOffice from "@/components/admin/AdminOffice";
 import ScenarioRunner from "@/components/ScenarioRunner";
 import AIManager from "@/components/AIManager";
@@ -33,6 +34,7 @@ type Section =
   | "openings"
   | "staging"
   | "export"
+  | "pricing"
   | "partners"
   | "admin"
   | "profile"
@@ -50,6 +52,7 @@ const navItemsAll: { id: Section; label: string; icon: string; hideInGuest?: boo
   { id: "openings", label: "Окна и двери", icon: "DoorOpen" },
   { id: "staging", label: "Хоумстейджинг", icon: "TrendingUp" },
   { id: "export", label: "Экспорт", icon: "Share2" },
+  { id: "pricing", label: "Тарифы", icon: "Wallet" },
   { id: "partners", label: "Партнёрам", icon: "Handshake" },
   { id: "admin", label: "Админ-кабинет", icon: "ShieldCheck" },
   { id: "profile", label: "Профиль", icon: "User", hideInGuest: true },
@@ -197,6 +200,7 @@ export default function Index() {
       case "openings": return <OpeningsSection />;
       case "staging": return <StagingSection />;
       case "export": return <ExportSection />;
+      case "pricing": return <PricingSection />;
       case "partners": return <PartnersSection />;
       case "admin": return <AdminOffice />;
       case "profile": return <ProfileSection user={user} onLogout={logout} />;
