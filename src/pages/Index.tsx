@@ -5,6 +5,7 @@ import AuthScreen from "@/components/AuthScreen";
 import { ScanSection, PlannerSection, CatalogSection, CalcSection, ExportSection, HelpSection } from "@/components/sections/ContentSections";
 import { ProjectsSection, ProfileSection } from "@/components/sections/UserSections";
 import UseCasesSection from "@/components/sections/UseCasesSection";
+import HomeSection from "@/components/sections/HomeSection";
 import StylesSection from "@/components/sections/StylesSection";
 import PartnersSection from "@/components/sections/PartnersSection";
 import AdminSection from "@/components/sections/AdminSection";
@@ -12,6 +13,7 @@ import ScenarioRunner from "@/components/ScenarioRunner";
 import type { ScenarioSection } from "@/lib/scenarios";
 
 type Section =
+  | "home"
   | "scan"
   | "usecases"
   | "projects"
@@ -26,6 +28,7 @@ type Section =
   | "help";
 
 const navItemsAll: { id: Section; label: string; icon: string; hideInGuest?: boolean; adminOnly?: boolean }[] = [
+  { id: "home", label: "Главная", icon: "Home" },
   { id: "scan", label: "Сканирование", icon: "ScanLine" },
   { id: "usecases", label: "Сценарии", icon: "Target" },
   { id: "projects", label: "Мои проекты", icon: "FolderOpen", hideInGuest: true },
@@ -49,7 +52,7 @@ const GUEST_USER: User = {
 } as User;
 
 export default function Index() {
-  const [active, setActive] = useState<Section>("scan");
+  const [active, setActive] = useState<Section>("home");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<User | null>(GUEST_MODE ? GUEST_USER : null);
   const [authChecked, setAuthChecked] = useState(GUEST_MODE);
@@ -76,7 +79,7 @@ export default function Index() {
     if (GUEST_MODE) return; // в гостевом режиме выход недоступен
     clearToken();
     setUser(null);
-    setActive("scan");
+    setActive("home");
   };
 
   if (!authChecked) {
@@ -101,6 +104,7 @@ export default function Index() {
 
   const renderSection = () => {
     switch (active) {
+      case "home": return <HomeSection onNavigate={(s) => setActive(s as Section)} userName={user?.name} />;
       case "projects": return <ProjectsSection token={getToken()} />;
       case "scan": return <ScanSection />;
       case "usecases": return <UseCasesSection onNavigate={(s) => setActive(s as Section)} />;
@@ -113,7 +117,7 @@ export default function Index() {
       case "admin": return <AdminSection />;
       case "profile": return <ProfileSection user={user} onLogout={logout} />;
       case "help": return <HelpSection />;
-      default: return <ScanSection />;
+      default: return <HomeSection onNavigate={(s) => setActive(s as Section)} userName={user?.name} />;
     }
   };
 
