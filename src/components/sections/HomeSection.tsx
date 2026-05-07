@@ -1,4 +1,5 @@
 import Icon from "@/components/ui/icon";
+import HeroDemo3D from "./HeroDemo3D";
 
 interface Props {
   onNavigate: (section: string) => void;
@@ -83,62 +84,79 @@ export default function HomeSection({ onNavigate, userName }: Props) {
         <div className="absolute bottom-0 left-1/3 w-[400px] h-[400px] bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />
 
         <div className="relative max-w-6xl mx-auto">
-          {/* Бейдж АВАНГАРД */}
-          <a
-            href="https://avangard-ai.ru"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-primary/30 rounded-full px-3 py-1.5 mb-6 backdrop-blur-sm transition-colors group"
-          >
-            <Icon name="Zap" size={12} className="text-primary" />
-            <span className="text-xs font-mono uppercase tracking-widest text-white/80">
-              Часть экосистемы
-            </span>
-            <span className="text-xs font-bold text-primary">АВАНГАРД</span>
-            <Icon
-              name="ArrowUpRight"
-              size={11}
-              className="text-white/40 group-hover:text-primary transition-colors"
-            />
-          </a>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center mb-12">
+            {/* ЛЕВАЯ КОЛОНКА — текст */}
+            <div className="lg:col-span-7">
+              {/* Бейдж АВАНГАРД */}
+              <a
+                href="https://avangard-ai.ru"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-primary/30 rounded-full px-3 py-1.5 mb-6 backdrop-blur-sm transition-colors group"
+              >
+                <Icon name="Zap" size={12} className="text-primary" />
+                <span className="text-xs font-mono uppercase tracking-widest text-white/80">
+                  Часть экосистемы
+                </span>
+                <span className="text-xs font-bold text-primary">АВАНГАРД</span>
+                <Icon
+                  name="ArrowUpRight"
+                  size={11}
+                  className="text-white/40 group-hover:text-primary transition-colors"
+                />
+              </a>
 
-          {/* Главный заголовок */}
-          <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black leading-[1.05] tracking-tight mb-6 max-w-4xl">
-            Превратите{" "}
-            <span className="relative inline-block">
-              <span className="relative z-10 text-primary">любую комнату</span>
-              <span className="absolute inset-x-0 bottom-1 h-3 bg-primary/20 -z-0" />
-            </span>
-            <br />
-            в 3D-проект с AI
-          </h1>
+              {/* Главный заголовок */}
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.05] tracking-tight mb-6">
+                Превратите{" "}
+                <span className="relative inline-block">
+                  <span className="relative z-10 text-primary">любую комнату</span>
+                  <span className="absolute inset-x-0 bottom-1 h-3 bg-primary/20 -z-0" />
+                </span>
+                <br />
+                в 3D-проект с AI
+              </h1>
 
-          <p className="text-base lg:text-xl text-white/70 max-w-2xl mb-8 leading-relaxed">
-            {userName && userName !== "Гость" ? `${userName}, отсканируйте` : "Отсканируйте"} помещение за 30 секунд,
-            расставьте мебель, получите смету и&nbsp;поделитесь готовым проектом — всё&nbsp;в&nbsp;одном&nbsp;окне.
-          </p>
+              <p className="text-base lg:text-lg text-white/70 mb-8 leading-relaxed">
+                {userName && userName !== "Гость" ? `${userName}, отсканируйте` : "Отсканируйте"} помещение за 30 секунд,
+                расставьте мебель, получите смету и&nbsp;поделитесь готовым проектом — всё&nbsp;в&nbsp;одном&nbsp;окне.
+              </p>
 
-          {/* CTA-кнопки */}
-          <div className="flex flex-wrap gap-3 mb-12">
-            <button
-              onClick={() => onNavigate("scan")}
-              className="group inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-6 py-4 rounded-xl transition-all hover:scale-[1.02] shadow-lg shadow-primary/20"
-            >
-              <Icon name="ScanLine" size={20} />
-              Начать сканирование
-              <Icon
-                name="ArrowRight"
-                size={18}
-                className="group-hover:translate-x-1 transition-transform"
-              />
-            </button>
-            <button
-              onClick={() => onNavigate("usecases")}
-              className="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/15 text-white font-semibold px-6 py-4 rounded-xl transition-all backdrop-blur-sm"
-            >
-              <Icon name="Play" size={18} className="text-primary" />
-              Сценарии использования
-            </button>
+              {/* CTA-кнопки */}
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={() => onNavigate("scan")}
+                  className="group inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-6 py-4 rounded-xl transition-all hover:scale-[1.02] shadow-lg shadow-primary/20"
+                >
+                  <Icon name="ScanLine" size={20} />
+                  Начать сканирование
+                  <Icon
+                    name="ArrowRight"
+                    size={18}
+                    className="group-hover:translate-x-1 transition-transform"
+                  />
+                </button>
+                <button
+                  onClick={() => onNavigate("usecases")}
+                  className="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/15 text-white font-semibold px-6 py-4 rounded-xl transition-all backdrop-blur-sm"
+                >
+                  <Icon name="Play" size={18} className="text-primary" />
+                  Сценарии использования
+                </button>
+              </div>
+            </div>
+
+            {/* ПРАВАЯ КОЛОНКА — 3D-демо */}
+            <div className="lg:col-span-5">
+              <div className="relative aspect-square max-w-[500px] mx-auto rounded-2xl overflow-hidden bg-gradient-to-br from-[#0a1410] to-[#050807] border border-primary/20 shadow-2xl shadow-primary/10">
+                {/* Внутреннее свечение */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none z-10" />
+                <HeroDemo3D />
+              </div>
+              <p className="text-center text-xs font-mono uppercase tracking-widest text-white/40 mt-4">
+                Так выглядит ваша комната после сканирования
+              </p>
+            </div>
           </div>
 
           {/* Статистика */}
