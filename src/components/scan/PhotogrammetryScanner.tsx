@@ -5,6 +5,7 @@ import ScannerViewport from "./photogrammetry/ScannerViewport";
 import ScannerControls from "./photogrammetry/ScannerControls";
 import ScanResultPanel from "./photogrammetry/ScanResultPanel";
 import ProcessingTimeline from "./photogrammetry/ProcessingTimeline";
+import AfterScanActions from "./photogrammetry/AfterScanActions";
 import { TIPS } from "./photogrammetry/constants";
 import { useCameraScan } from "./photogrammetry/useCameraScan";
 import { useDemoScan } from "./photogrammetry/useDemoScan";
@@ -91,6 +92,8 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
       {phase === "processing" && <ProcessingTimeline />}
 
       {result && <ScanResultPanel result={result} />}
+
+      {result && <AfterScanActions result={result} />}
 
       {/* 3D Point Cloud */}
       {points3D.length > 0 && result && (

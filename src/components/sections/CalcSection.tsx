@@ -1,154 +1,238 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Icon from "@/components/ui/icon";
+import { getLastScan } from "@/lib/scanStore";
+import { calcEstimate, formatRub, type RoomInput, type Tier } from "@/lib/estimate";
+import { saveProject } from "@/lib/projectsStore";
+import TierSelector from "@/components/calc/TierSelector";
+import EstimateGroupCard from "@/components/calc/EstimateGroupCard";
+import RoomInputs from "@/components/calc/RoomInputs";
 
+/**
+ * Расширенный калькулятор сметы.
+ * Считает все категории работ + материалы по 3 тарифам (Эконом / Стандарт / Премиум).
+ * Может подставлять размеры из последнего скана.
+ */
 export default function CalcSection() {
-  const [area, setArea] = useState(87.4);
-  const [perim, setPerim] = useState(47.6);
-  const [height, setHeight] = useState(2.8);
-  const [doors, setDoors] = useState(6);
-  const [windows, setWindows] = useState(8);
-  const [lamPrice, setLamPrice] = useState(220);
-  const [wallPrice, setWallPrice] = useState(480);
-  const [ceilPrice, setCeilPrice] = useState(95);
-  const [plinthPrice, setPlinthPrice] = useState(120);
+  const [room, setRoom] = useState<RoomInput>(() => {
+    const s = getLastScan();
+    if (s) {
+      return {
+        area: +s.area.toFixed(1),
+        perimeter: +(2 * (s.width + s.length)).toFixed(1),
+        height: +s.height.toFixed(2),
+        doors: s.doors ?? 1,
+        windows: s.windows ?? 1,
+      };
+    }
+    return { area: 30, perimeter: 22, height: 2.7, doors: 2, windows: 2 };
+  });
 
-  const wallArea = Math.max(0, perim * height - doors * 2.1 * 0.9 - windows * 1.4 * 1.1);
-  const ceilArea = area;
-  const floorArea = area * 0.98;
+  const [tier, setTier] = useState<Tier>("standart");
+  const [autoFromScan, setAutoFromScan] = useState(false);
 
-  const lamTotal  = Math.round(floorArea * 1.08 * lamPrice);
-  const wallTotal = Math.round(wallArea * 1.1 * wallPrice);
-  const ceilTotal = Math.round(ceilArea * ceilPrice);
-  const plinthTotal = Math.round(perim * plinthPrice);
-  const total = lamTotal + wallTotal + ceilTotal + plinthTotal;
+  // Если скан появился пока пользователь на странице — предложим подставить
+  useEffect(() => {
+    const handler = () => {
+      const s = getLastScan();
+      if (s) setAutoFromScan(true);
+    };
+    window.addEventListener("roomscan:lastScan:changed", handler);
+    return () => window.removeEventListener("roomscan:lastScan:changed", handler);
+  }, []);
 
-  const params = [
-    { label: "Площадь помещений", value: `${area.toFixed(1)} м²` },
-    { label: "Периметр стен", value: `${perim.toFixed(1)} м` },
-    { label: "Площадь пола", value: `${floorArea.toFixed(1)} м²` },
-    { label: "Площадь потолка", value: `${ceilArea.toFixed(1)} м²` },
-    { label: "Площадь стен (чистая)", value: `${wallArea.toFixed(1)} м²` },
-    { label: "Дверных проёмов", value: `${doors} шт.` },
-    { label: "Оконных проёмов", value: `${windows} шт.` },
-    { label: "Объём помещений", value: `${(area * height).toFixed(1)} м³` },
-  ];
+  const result = useMemo(() => calcEstimate(room, tier), [room, tier]);
+
+  // Сравнение всех тарифов
+  const allTiers = useMemo(() => ({
+    econom:   calcEstimate(room, "econom"),
+    standart: calcEstimate(room, "standart"),
+    premium:  calcEstimate(room, "premium"),
+  }), [room]);
 
   return (
-    <div className="animate-fade-in">
-      <div className="mb-6">
+    <div className="animate-fade-in space-y-6">
+      <div>
         <p className="text-muted-foreground text-sm font-mono uppercase tracking-widest mb-1">Калькулятор</p>
-        <h2 className="text-3xl font-bold">Расчёты</h2>
+        <h2 className="text-3xl font-bold">Расчёт стоимости ремонта</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Полная смета: демонтаж, черновые, чистовые работы, сантехника, электрика. Три уровня качества.
+        </p>
       </div>
 
+      {autoFromScan && (
+        <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 flex items-center gap-3 animate-fade-in">
+          <Icon name="ScanLine" size={20} className="text-primary shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-foreground">У вас есть свежий скан комнаты</p>
+            <p className="text-xs text-muted-foreground">Подставить размеры автоматически?</p>
+          </div>
+          <button
+            onClick={() => {
+              const s = getLastScan();
+              if (s) {
+                setRoom({
+                  area: +s.area.toFixed(1),
+                  perimeter: +(2 * (s.width + s.length)).toFixed(1),
+                  height: +s.height.toFixed(2),
+                  doors: s.doors ?? room.doors,
+                  windows: s.windows ?? room.windows,
+                });
+              }
+              setAutoFromScan(false);
+            }}
+            className="bg-primary text-primary-foreground font-bold text-xs px-3 py-2 rounded-lg hover:opacity-90"
+          >
+            Подставить
+          </button>
+          <button
+            onClick={() => setAutoFromScan(false)}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Icon name="X" size={16} />
+          </button>
+        </div>
+      )}
+
+      <TierSelector value={tier} onChange={setTier} />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Ввод параметров */}
-        <div className="space-y-4">
-          <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Параметры помещения</p>
-          <div className="bg-card border border-border rounded-lg p-4 space-y-3">
-            {[
-              { label: "Площадь, м²", value: area, set: setArea, min: 1, max: 500, step: 0.1 },
-              { label: "Периметр стен, м", value: perim, set: setPerim, min: 4, max: 200, step: 0.1 },
-              { label: "Высота потолка, м", value: height, set: setHeight, min: 2, max: 5, step: 0.05 },
-            ].map(({ label, value, set, min, max, step }) => (
-              <div key={label}>
-                <div className="flex justify-between mb-1">
-                  <label className="text-xs text-muted-foreground">{label}</label>
-                  <span className="text-xs font-mono text-primary font-semibold">{value}</span>
-                </div>
-                <input type="range" min={min} max={max} step={step} value={value}
-                  onChange={(e) => set(parseFloat(e.target.value))}
-                  className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
-                  style={{ accentColor: "hsl(142 70% 36%)" }} />
-              </div>
-            ))}
-
-            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
-              {[
-                { label: "Дверей", value: doors, set: setDoors, max: 20 },
-                { label: "Окон", value: windows, set: setWindows, max: 20 },
-              ].map(({ label, value, set, max }) => (
-                <div key={label}>
-                  <label className="text-xs text-muted-foreground block mb-1">{label}</label>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => set(Math.max(0, value - 1))}
-                      className="w-7 h-7 bg-secondary rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-border transition-colors">
-                      <Icon name="Minus" size={12} />
-                    </button>
-                    <span className="flex-1 text-center font-mono font-bold text-foreground text-sm">{value}</span>
-                    <button onClick={() => set(Math.min(max, value + 1))}
-                      className="w-7 h-7 bg-secondary rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-border transition-colors">
-                      <Icon name="Plus" size={12} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Цены материалов, ₽/м²</p>
-          <div className="bg-card border border-border rounded-lg p-4 space-y-3">
-            {[
-              { label: "Ламинат", value: lamPrice, set: setLamPrice, min: 50, max: 2000, step: 10 },
-              { label: "Обои/штукатурка", value: wallPrice, set: setWallPrice, min: 50, max: 3000, step: 10 },
-              { label: "Краска потолка", value: ceilPrice, set: setCeilPrice, min: 20, max: 500, step: 5 },
-              { label: "Плинтус (₽/м)", value: plinthPrice, set: setPlinthPrice, min: 20, max: 1000, step: 10 },
-            ].map(({ label, value, set, min, max, step }) => (
-              <div key={label}>
-                <div className="flex justify-between mb-1">
-                  <label className="text-xs text-muted-foreground">{label}</label>
-                  <span className="text-xs font-mono text-primary font-semibold">{value} ₽</span>
-                </div>
-                <input type="range" min={min} max={max} step={step} value={value}
-                  onChange={(e) => set(parseInt(e.target.value))}
-                  className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
-                  style={{ accentColor: "hsl(142 70% 36%)" }} />
-              </div>
-            ))}
-          </div>
+        <div className="lg:col-span-1">
+          <RoomInputs value={room} onChange={setRoom} />
         </div>
 
-        {/* Параметры + Смета */}
-        <div className="lg:col-span-2 space-y-5">
+        <div className="lg:col-span-2 space-y-4">
+          {/* Главный итог */}
+          <div className="bg-gradient-to-br from-primary/15 to-primary/5 border-2 border-primary/40 rounded-xl p-5">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                  Итоговая стоимость · {result.tier === "econom" ? "Эконом" : result.tier === "standart" ? "Стандарт" : "Премиум"}
+                </p>
+                <p className="text-4xl font-black text-primary font-mono mt-1">
+                  {formatRub(result.grandTotal)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  ≈ {formatRub(result.perSqm)} за м² · работы + материалы
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 text-right">
+                <span className="bg-card border border-border rounded-lg px-3 py-2 text-xs">
+                  <Icon name="Calendar" size={11} className="inline mr-1 text-primary" />
+                  ~{result.daysApprox} дней
+                </span>
+                <span className="bg-card border border-border rounded-lg px-3 py-2 text-xs">
+                  <Icon name="Shield" size={11} className="inline mr-1 text-primary" />
+                  Гарантия {result.warranty}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-primary/20">
+              <div className="bg-card/60 rounded-lg p-3">
+                <p className="text-[10px] text-muted-foreground font-mono uppercase">Работы</p>
+                <p className="font-bold text-foreground">{formatRub(result.worksTotal)}</p>
+              </div>
+              <div className="bg-card/60 rounded-lg p-3">
+                <p className="text-[10px] text-muted-foreground font-mono uppercase">Материалы</p>
+                <p className="font-bold text-foreground">{formatRub(result.materialsTotal)}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Сравнение тарифов */}
+          <div className="grid grid-cols-3 gap-2">
+            {(["econom", "standart", "premium"] as Tier[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTier(t)}
+                className={`text-left p-3 rounded-lg border transition-all ${
+                  tier === t ? "border-primary bg-primary/5" : "border-border bg-card hover:border-muted-foreground"
+                }`}
+              >
+                <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+                  {t === "econom" ? "Эконом" : t === "standart" ? "Стандарт" : "Премиум"}
+                </p>
+                <p className={`font-bold font-mono mt-0.5 text-sm ${tier === t ? "text-primary" : "text-foreground"}`}>
+                  {formatRub(allTiers[t].grandTotal)}
+                </p>
+              </button>
+            ))}
+          </div>
+
+          {/* Действия со сметой */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => {
+                const name = prompt("Название проекта", `Ремонт ${room.area} м²`);
+                if (!name) return;
+                const lastScan = getLastScan();
+                saveProject({
+                  name,
+                  scan: lastScan,
+                  estimate: {
+                    tier: result.tier,
+                    grandTotal: result.grandTotal,
+                    daysApprox: result.daysApprox,
+                  },
+                });
+                alert("Проект сохранён в «Мои проекты»");
+              }}
+              className="inline-flex items-center gap-2 bg-card border border-border hover:border-primary text-foreground font-bold text-sm px-3 py-2 rounded-lg transition-colors"
+            >
+              <Icon name="Bookmark" size={14} />
+              Сохранить как проект
+            </button>
+            <button
+              onClick={() => {
+                const text = `Смета ремонта · ${room.area} м² · ${result.tier === "econom" ? "Эконом" : result.tier === "standart" ? "Стандарт" : "Премиум"}\n` +
+                  result.groups.map((g) => `${g.name}: ${formatRub(g.total)}`).join("\n") +
+                  `\nИтого: ${formatRub(result.grandTotal)} (${result.daysApprox} дней)`;
+                navigator.clipboard?.writeText(text);
+              }}
+              className="inline-flex items-center gap-2 bg-card border border-border hover:border-primary text-foreground font-bold text-sm px-3 py-2 rounded-lg transition-colors"
+            >
+              <Icon name="Copy" size={14} />
+              Скопировать
+            </button>
+            <button
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-2 bg-card border border-border hover:border-primary text-foreground font-bold text-sm px-3 py-2 rounded-lg transition-colors"
+            >
+              <Icon name="Printer" size={14} />
+              Распечатать
+            </button>
+          </div>
+
+          {/* Группы работ */}
           <div>
-            <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Основные параметры</p>
-            <div className="grid grid-cols-2 gap-2">
-              {params.map((item) => (
-                <div key={item.label} className="flex items-center justify-between bg-card border border-border rounded-lg px-4 py-3">
-                  <span className="text-sm text-muted-foreground">{item.label}</span>
-                  <span className="font-mono font-semibold text-primary text-sm">{item.value}</span>
-                </div>
+            <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-2">
+              Детализация сметы
+            </p>
+            <div className="space-y-2">
+              {result.groups.map((g) => (
+                <EstimateGroupCard key={g.key} group={g} />
               ))}
             </div>
           </div>
 
-          <div>
-            <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Смета материалов</p>
-            <div className="space-y-2">
-              {[
-                { mat: "Напольное покрытие (ламинат)", qty: `${(floorArea * 1.08).toFixed(1)} м²`, price: `${lamPrice} ₽/м²`, total: lamTotal },
-                { mat: "Стеновое покрытие (обои)", qty: `${(wallArea * 1.1).toFixed(1)} м²`, price: `${wallPrice} ₽/м²`, total: wallTotal },
-                { mat: "Краска потолочная", qty: `${ceilArea.toFixed(1)} м²`, price: `${ceilPrice} ₽/м²`, total: ceilTotal },
-                { mat: "Плинтус (пол)", qty: `${perim.toFixed(1)} м`, price: `${plinthPrice} ₽/м`, total: plinthTotal },
-              ].map((r) => (
-                <div key={r.mat} className="bg-card border border-border rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-1.5">
-                    <p className="text-sm font-semibold text-foreground">{r.mat}</p>
-                    <p className="text-primary font-bold font-mono text-sm">{r.total.toLocaleString("ru-RU")} ₽</p>
-                  </div>
-                  <div className="flex gap-3 text-xs text-muted-foreground font-mono">
-                    <span>{r.qty}</span><span>×</span><span>{r.price}</span>
-                  </div>
-                </div>
-              ))}
-
-              <div className="bg-primary/10 border border-primary/30 rounded-lg p-4 flex items-center justify-between">
-                <div>
-                  <span className="font-semibold text-foreground">Итого материалы</span>
-                  <p className="text-xs text-muted-foreground font-mono mt-0.5">без учёта работ и доставки</p>
-                </div>
-                <span className="text-primary font-black text-2xl font-mono">{total.toLocaleString("ru-RU")} ₽</span>
-              </div>
+          {/* CTA — заявка */}
+          <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-4 flex-wrap">
+            <Icon name="Hammer" size={28} className="text-primary shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-foreground text-sm">Готовы начать ремонт?</p>
+              <p className="text-xs text-muted-foreground">
+                Партнёры АВАНГАРД работают по этой смете с фиксированной ценой
+              </p>
             </div>
+            <a
+              href="https://avangard-ai.ru"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-bold text-sm px-4 py-2.5 rounded-lg hover:opacity-90 transition-opacity"
+            >
+              Найти мастера
+              <Icon name="ArrowRight" size={14} />
+            </a>
           </div>
         </div>
       </div>

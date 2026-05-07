@@ -7,6 +7,8 @@ import { ProjectsSection, ProfileSection } from "@/components/sections/UserSecti
 import UseCasesSection from "@/components/sections/UseCasesSection";
 import HomeSection from "@/components/sections/HomeSection";
 import StylesSection from "@/components/sections/StylesSection";
+import StagingSection from "@/components/sections/StagingSection";
+import OpeningsSection from "@/components/sections/OpeningsSection";
 import PartnersSection from "@/components/sections/PartnersSection";
 import AdminSection from "@/components/sections/AdminSection";
 import ScenarioRunner from "@/components/ScenarioRunner";
@@ -25,6 +27,8 @@ type Section =
   | "catalog"
   | "styles"
   | "calc"
+  | "openings"
+  | "staging"
   | "export"
   | "partners"
   | "admin"
@@ -35,11 +39,13 @@ const navItemsAll: { id: Section; label: string; icon: string; hideInGuest?: boo
   { id: "home", label: "Главная", icon: "Home" },
   { id: "scan", label: "Сканирование", icon: "ScanLine" },
   { id: "usecases", label: "Сценарии", icon: "Target" },
-  { id: "projects", label: "Мои проекты", icon: "FolderOpen", hideInGuest: true },
+  { id: "projects", label: "Мои проекты", icon: "FolderOpen" },
   { id: "planner", label: "Планировщик", icon: "LayoutGrid" },
   { id: "catalog", label: "Каталог мебели", icon: "Sofa" },
   { id: "styles", label: "AI-стили", icon: "Wand2" },
-  { id: "calc", label: "Расчёты", icon: "Calculator" },
+  { id: "calc", label: "Смета ремонта", icon: "Calculator" },
+  { id: "openings", label: "Окна и двери", icon: "DoorOpen" },
+  { id: "staging", label: "Хоумстейджинг", icon: "TrendingUp" },
   { id: "export", label: "Экспорт", icon: "Share2" },
   { id: "partners", label: "Партнёрам", icon: "Handshake" },
   { id: "admin", label: "Админ", icon: "ShieldCheck", adminOnly: true },
@@ -61,7 +67,7 @@ function getInitialSection(): Section {
   const hash = window.location.hash.replace("#", "") as Section;
   const valid: Section[] = [
     "home", "scan", "usecases", "projects", "planner", "catalog",
-    "styles", "calc", "export", "partners", "admin", "profile", "help",
+    "styles", "calc", "openings", "staging", "export", "partners", "admin", "profile", "help",
   ];
   return valid.includes(hash) ? hash : "home";
 }
@@ -140,6 +146,8 @@ export default function Index() {
       case "catalog": return <CatalogSection />;
       case "styles": return <StylesSection />;
       case "calc": return <CalcSection />;
+      case "openings": return <OpeningsSection />;
+      case "staging": return <StagingSection />;
       case "export": return <ExportSection />;
       case "partners": return <PartnersSection />;
       case "admin": return <AdminSection />;

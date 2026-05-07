@@ -1,22 +1,61 @@
 import { useState, useEffect, useCallback } from "react";
 import Icon from "@/components/ui/icon";
 import { PROJECTS_URL, User, Project, apiFetch } from "@/lib/api";
+import LocalProjectsList from "@/components/projects/LocalProjectsList";
+import { listProjects } from "@/lib/projectsStore";
 
-export function ProjectsSection({ token: _token }: { token: string }) {
+export function ProjectsSection({ token }: { token: string }) {
+  const isGuest = !token;
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [hasLocal, setHasLocal] = useState(() => listProjects().length > 0);
+
+  useEffect(() => {
+    const reload = () => setHasLocal(listProjects().length > 0);
+    window.addEventListener("roomscan:projects:changed", reload);
+    return () => window.removeEventListener("roomscan:projects:changed", reload);
+  }, []);
 
   const load = useCallback(async () => {
+    if (isGuest) { setLoading(false); return; }
     setLoading(true);
     const { data } = await apiFetch(PROJECTS_URL);
     if (data.projects) setProjects(data.projects);
     setLoading(false);
-  }, []);
+  }, [isGuest]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Для гостя — показываем локальные проекты из localStorage
+  if (isGuest) {
+    return (
+      <div className="animate-fade-in space-y-5">
+        <div>
+          <p className="text-muted-foreground text-sm font-mono uppercase tracking-widest mb-1">Workspace</p>
+          <h2 className="text-3xl font-bold">Мои проекты</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            {hasLocal
+              ? "Сохранённые сметы, сканы и стейджинг-сценарии. Локально на вашем устройстве."
+              : "Тут появятся ваши сохранённые проекты — сканы, сметы и сценарии стейджинга."}
+          </p>
+        </div>
+        <LocalProjectsList />
+        <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 flex-wrap">
+          <Icon name="ScanLine" size={22} className="text-primary shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-foreground text-sm">Начните с 3D-сканирования комнаты</p>
+            <p className="text-xs text-muted-foreground">30 секунд — и у вас будут точные размеры</p>
+          </div>
+          <a href="#scan" className="bg-primary text-primary-foreground font-bold text-sm px-4 py-2 rounded-lg hover:opacity-90">
+            Сканировать
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   const createProject = async (e: React.FormEvent) => {
     e.preventDefault();
