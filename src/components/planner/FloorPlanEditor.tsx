@@ -1,3 +1,5 @@
+import { Suspense, lazy, useState } from "react";
+import Icon from "@/components/ui/icon";
 import PlanCanvas from "./PlanCanvas";
 import PlannerToolbar from "./PlannerToolbar";
 import FurnitureCatalog from "./FurnitureCatalog";
@@ -5,6 +7,9 @@ import PropertiesPanel from "./PropertiesPanel";
 import FloorPlanHeader from "./FloorPlanHeader";
 import { FloorPlanStats, Hints } from "./FloorPlanStats";
 import { useFloorPlanState } from "./useFloorPlanState";
+
+// Three.js — тяжёлая зависимость, грузим лениво только при включении 3D
+const PlanScene3D = lazy(() => import("./PlanScene3D"));
 
 /**
  * Полный редактор плана этажа в стиле Remplanner / Planner5D.
@@ -36,6 +41,8 @@ export default function FloorPlanEditor() {
     importPlanJson,
   } = useFloorPlanState();
 
+  const [view, setView] = useState<"2d" | "3d">("2d");
+
   return (
     <div className="space-y-3">
       {/* Шапка: имя плана и быстрые действия */}
@@ -58,34 +65,78 @@ export default function FloorPlanEditor() {
 
         {/* Центр — холст */}
         <div className="space-y-2 order-1 lg:order-2">
-          <PlannerToolbar
-            tool={tool}
-            onToolChange={(t) => {
-              setTool(t);
-              if (t !== "furniture") setPendingFurn(null);
-            }}
-            onZoomIn={zoomIn}
-            onZoomOut={zoomOut}
-            onZoomFit={zoomFit}
-            onUndo={handleUndo}
-            canUndo={canUndo}
-          />
-
-          <div className="h-[60vh] min-h-[460px] bg-white border border-border rounded-xl overflow-hidden">
-            <PlanCanvas
-              plan={plan}
-              onChange={handleChange}
-              tool={tool}
-              pendingFurniture={pendingFurn}
-              selected={selected}
-              onSelect={setSelected}
-              scale={scale}
-              offset={offset}
-              onOffsetChange={setOffset}
-            />
+          <div className="flex items-center gap-2 flex-wrap">
+            {view === "2d" && (
+              <PlannerToolbar
+                tool={tool}
+                onToolChange={(t) => {
+                  setTool(t);
+                  if (t !== "furniture") setPendingFurn(null);
+                }}
+                onZoomIn={zoomIn}
+                onZoomOut={zoomOut}
+                onZoomFit={zoomFit}
+                onUndo={handleUndo}
+                canUndo={canUndo}
+              />
+            )}
+            <div className="ml-auto inline-flex bg-secondary rounded-lg p-0.5">
+              <button
+                onClick={() => setView("2d")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${
+                  view === "2d" ? "bg-card text-foreground shadow" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Icon name="LayoutGrid" size={13} />
+                2D
+              </button>
+              <button
+                onClick={() => setView("3d")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${
+                  view === "3d" ? "bg-card text-foreground shadow" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Icon name="Box" size={13} />
+                3D-вид
+              </button>
+            </div>
           </div>
 
-          <Hints tool={tool} />
+          <div className="h-[65vh] min-h-[500px] bg-white border border-border rounded-xl overflow-hidden">
+            {view === "2d" ? (
+              <PlanCanvas
+                plan={plan}
+                onChange={handleChange}
+                tool={tool}
+                pendingFurniture={pendingFurn}
+                selected={selected}
+                onSelect={setSelected}
+                scale={scale}
+                offset={offset}
+                onOffsetChange={setOffset}
+              />
+            ) : (
+              <Suspense fallback={
+                <div className="w-full h-full flex items-center justify-center flex-col gap-2 text-muted-foreground">
+                  <Icon name="Loader2" size={28} className="animate-spin text-primary" />
+                  <p className="text-sm">Загружаю 3D-движок…</p>
+                </div>
+              }>
+                <PlanScene3D plan={plan} />
+              </Suspense>
+            )}
+          </div>
+
+          {view === "2d" && <Hints tool={tool} />}
+          {view === "3d" && (
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-2 flex items-start gap-2">
+              <Icon name="Sparkles" size={13} className="text-primary shrink-0 mt-0.5" />
+              <p className="text-[11px] text-foreground leading-relaxed">
+                Полноценная 3D-визуализация плана. Стены строятся с проёмами для дверей и окон,
+                мебель отображается в объёме. Управление мышью: ЛКМ — поворот, ПКМ — пан, колесо — зум.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Правая колонка — свойства + статистика */}

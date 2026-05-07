@@ -1,0 +1,8 @@
+{
+  "tests": [
+    { "name": "OPTIONS", "method": "OPTIONS", "path": "/", "expectedStatus": 200 },
+    { "name": "Verify пустого токена возвращает ok=false", "method": "POST", "path": "/", "body": {"action":"verify","token":""}, "expectedStatus": 200 },
+    { "name": "Login без полей даёт 400", "method": "POST", "path": "/", "body": {"action":"login"}, "expectedStatus": 400 },
+    { "name": "Unknown action даёт 400", "method": "POST", "path": "/", "body": {"action":"foo"}, "expectedStatus": 400 }
+  ]
+}

@@ -5,8 +5,10 @@
 export const CRM_URL = "https://functions.poehali.dev/670c4048-1474-45cd-a4db-046fc2dd0381";
 export const PARTNERS_FINDER_URL = "https://functions.poehali.dev/20f0f8db-38d0-44ee-9ae8-16abec8d49fd";
 export const SALES_AGENT_URL = "https://functions.poehali.dev/4aa95b17-ab9a-4159-b62c-f5d97fe922c2";
+export const ADMIN_AUTH_URL = "https://functions.poehali.dev/73a4c875-2194-4128-bb1a-72f318c5b902";
 
 const ADMIN_TOKEN_KEY = "roomscan:admin-token";
+const ADMIN_LOGIN_KEY = "roomscan:admin-login";
 
 export function getAdminToken(): string {
   try { return window.localStorage.getItem(ADMIN_TOKEN_KEY) || ""; }
@@ -16,6 +18,59 @@ export function setAdminToken(t: string) {
   try { window.localStorage.setItem(ADMIN_TOKEN_KEY, t); }
   catch { /* noop */ }
 }
+export function clearAdminToken() {
+  try {
+    window.localStorage.removeItem(ADMIN_TOKEN_KEY);
+    window.localStorage.removeItem(ADMIN_LOGIN_KEY);
+  } catch { /* noop */ }
+}
+export function getAdminLogin(): string {
+  try { return window.localStorage.getItem(ADMIN_LOGIN_KEY) || ""; }
+  catch { return ""; }
+}
+export function setAdminLogin(l: string) {
+  try { window.localStorage.setItem(ADMIN_LOGIN_KEY, l); }
+  catch { /* noop */ }
+}
+
+/* ──────── ADMIN AUTH ──────── */
+
+export const adminAuthApi = {
+  async login(login: string, password: string): Promise<{ ok: boolean; token?: string; error?: string }> {
+    try {
+      const res = await fetch(ADMIN_AUTH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "login", login, password }),
+      });
+      const data = await res.json();
+      if (data.ok && data.token) {
+        setAdminToken(data.token);
+        setAdminLogin(login);
+        return { ok: true, token: data.token };
+      }
+      return { ok: false, error: data.error || "Ошибка входа" };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : "Сеть недоступна" };
+    }
+  },
+
+  async verify(): Promise<boolean> {
+    const token = getAdminToken();
+    if (!token) return false;
+    try {
+      const res = await fetch(ADMIN_AUTH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Admin-Token": token },
+        body: JSON.stringify({ action: "verify", token }),
+      });
+      const data = await res.json();
+      return !!data.ok;
+    } catch {
+      return false;
+    }
+  },
+};
 
 async function adminFetch<T = unknown>(url: string, init?: RequestInit): Promise<T> {
   const token = getAdminToken();

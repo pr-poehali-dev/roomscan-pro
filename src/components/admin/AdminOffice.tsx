@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Icon from "@/components/ui/icon";
 import AdminDashboard from "./AdminDashboard";
 import AdminCRM from "./AdminCRM";
 import AdminPartners from "./AdminPartners";
 import AdminSalesAgent from "./AdminSalesAgent";
-import { getAdminToken, setAdminToken } from "@/lib/adminApi";
+import AdminLogin from "./AdminLogin";
+import { adminAuthApi, clearAdminToken, getAdminLogin, getAdminToken } from "@/lib/adminApi";
 import { notify } from "@/lib/notify";
 
 type Tab = "dashboard" | "crm" | "partners" | "ai";
@@ -21,13 +22,44 @@ const TABS: { id: Tab; label: string; icon: string; desc: string }[] = [
  */
 export default function AdminOffice() {
   const [tab, setTab] = useState<Tab>("dashboard");
-  const [tokenInput, setTokenInput] = useState(getAdminToken());
-  const [showToken, setShowToken] = useState(false);
+  const [authState, setAuthState] = useState<"loading" | "authed" | "anon">("loading");
+  const [adminLogin, setAdminLogin] = useState("");
 
-  const saveToken = () => {
-    setAdminToken(tokenInput.trim());
-    notify.success("Токен сохранён", "Все запросы к админ-API будут авторизованы");
+  const checkAuth = async () => {
+    if (!getAdminToken()) {
+      setAuthState("anon");
+      return;
+    }
+    setAuthState("loading");
+    const ok = await adminAuthApi.verify();
+    if (ok) {
+      setAdminLogin(getAdminLogin());
+      setAuthState("authed");
+    } else {
+      clearAdminToken();
+      setAuthState("anon");
+    }
   };
+
+  useEffect(() => { checkAuth(); }, []);
+
+  const handleLogout = () => {
+    clearAdminToken();
+    setAuthState("anon");
+    notify.info("Вы вышли из админ-кабинета");
+  };
+
+  if (authState === "loading") {
+    return (
+      <div className="flex items-center justify-center min-h-[40vh]">
+        <Icon name="Loader2" size={28} className="text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (authState === "anon") {
+    return <AdminLogin onSuccess={() => checkAuth()} />;
+  }
 
   return (
     <div className="animate-fade-in space-y-4">
@@ -40,36 +72,25 @@ export default function AdminOffice() {
             CRM, отдел продаж с ИИ-агентом и автопоиск партнёров — в одном кабинете.
           </p>
         </div>
-        <button
-          onClick={() => setShowToken((v) => !v)}
-          className="bg-card border border-border hover:border-primary text-foreground font-bold text-xs px-3 py-2 rounded-lg flex items-center gap-1.5"
-        >
-          <Icon name={showToken ? "X" : "Key"} size={12} />
-          {showToken ? "Скрыть" : "Токен админа"}
-        </button>
-      </div>
-
-      {showToken && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-center gap-2 flex-wrap">
-          <Icon name="Shield" size={14} className="text-amber-500" />
-          <p className="text-xs text-foreground flex-1 min-w-[200px]">
-            Введите ADMIN_TOKEN (если задан в секретах бэкенда). Сохраняется локально в браузере.
-          </p>
-          <input
-            type="password"
-            value={tokenInput}
-            onChange={(e) => setTokenInput(e.target.value)}
-            placeholder="токен"
-            className="bg-card border border-border rounded-lg px-3 py-1.5 text-sm font-mono"
-          />
+        <div className="flex items-center gap-2">
+          <div className="bg-card border border-border rounded-lg px-3 py-2 flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center">
+              <Icon name="User" size={13} className="text-primary" />
+            </div>
+            <div>
+              <p className="text-[10px] font-mono text-muted-foreground leading-none">админ</p>
+              <p className="text-xs font-bold text-foreground leading-tight">{adminLogin || "—"}</p>
+            </div>
+          </div>
           <button
-            onClick={saveToken}
-            className="bg-amber-500 text-white font-bold text-xs px-3 py-1.5 rounded-lg hover:opacity-90"
+            onClick={handleLogout}
+            className="bg-card border border-border hover:border-destructive hover:text-destructive text-foreground font-bold text-xs px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
           >
-            Сохранить
+            <Icon name="LogOut" size={13} />
+            Выйти
           </button>
         </div>
-      )}
+      </div>
 
       {/* Табы */}
       <div className="bg-card border border-border rounded-xl p-1 flex items-center gap-1 overflow-x-auto">

@@ -42,14 +42,35 @@ def _esc(s: Any) -> str:
 
 
 def _is_admin(event: dict) -> bool:
-    """Базовая защита админ-эндпоинтов через X-Admin-Token."""
+    """Защита админ-эндпоинтов через HMAC-токен из admin-auth (логин/пароль)."""
+    import hmac
+    import hashlib
+    import time as _time
     headers = {k.lower(): v for k, v in (event.get('headers') or {}).items()}
     token = headers.get('x-admin-token') or headers.get('x-auth-token') or ''
-    expected = os.environ.get('ADMIN_TOKEN', '')
-    if expected:
-        return token == expected
-    # Если ADMIN_TOKEN не настроен — пускаем всех (dev-режим). Прод должен задать его.
-    return True
+    pwd = os.environ.get('ADMIN_PASSWORD', '')
+    if not pwd:
+        # Пароль не задан — dev-режим, пропускаем
+        return True
+    if not token:
+        return False
+    salt = os.environ.get('DATABASE_URL', 'roomscan-salt')[:32]
+    secret = hashlib.sha256((pwd + salt).encode('utf-8')).digest()
+    try:
+        parts = token.split('|')
+        if len(parts) != 3:
+            return False
+        login, expiry_str, sig = parts
+        expiry = int(expiry_str)
+        if _time.time() > expiry:
+            return False
+        expected = hmac.new(secret, f"{login}|{expiry}".encode('utf-8'), hashlib.sha256).hexdigest()[:32]
+        admin_login = os.environ.get('ADMIN_LOGIN', '')
+        if admin_login and login != admin_login:
+            return False
+        return hmac.compare_digest(sig, expected)
+    except (ValueError, AttributeError):
+        return False
 
 
 # ───────────── LEADS ─────────────
