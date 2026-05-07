@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import Icon from "@/components/ui/icon";
+import { createFurnitureMesh } from "./arMeshHelpers";
+import { ARCheckingView, ARErrorView, ARReadyView } from "./ARStatusViews";
+import ARActiveControls from "./ARActiveControls";
 
 export interface ARFurniture {
   id: number;
@@ -213,10 +216,12 @@ export default function ARFurnitureView({ item, onClose }: Props) {
 
         const onTouchEnd = (e: TouchEvent) => {
           const ts = touchStateRef.current;
-          // переход 2→1 — оставляем drag на оставшемся пальце
-          if (e.touches.length === 1 && ts.mode === "rotate" && ts.activeIdx != null) {
-            const mesh = placedMeshesRef.current[ts.activeIdx];
-            if (mesh) {
+          if (e.touches.length === 1 && ts.mode === "rotate") {
+            // переход с двух пальцев на один — продолжаем тащить
+            const idx = ts.activeIdx;
+            if (idx != null) {
+              const mesh = placedMeshesRef.current[idx];
+              if (!mesh) return;
               ts.mode = "drag";
               ts.startX = e.touches[0].clientX;
               ts.startY = e.touches[0].clientY;
@@ -337,269 +342,30 @@ export default function ARFurnitureView({ item, onClose }: Props) {
 
         {/* Body */}
         <div className="p-5 space-y-4 min-h-[280px]">
-          {status === "checking" && (
-            <div className="flex flex-col items-center gap-3 py-8">
-              <Icon name="Loader2" size={28} className="text-primary animate-spin" />
-              <p className="text-sm text-muted-foreground">Проверяем поддержку AR…</p>
-            </div>
-          )}
+          {status === "checking" && <ARCheckingView />}
 
           {(status === "unsupported" || status === "error") && (
-            <div className="flex flex-col items-center gap-3 py-6">
-              <div className="w-14 h-14 bg-destructive/10 rounded-full flex items-center justify-center">
-                <Icon name="AlertCircle" size={26} className="text-destructive" />
-              </div>
-              <p className="text-sm font-semibold text-foreground text-center">
-                {status === "unsupported" ? "AR недоступен" : "Ошибка"}
-              </p>
-              <p className="text-xs text-muted-foreground text-center max-w-md">
-                {error || "Откройте этот сайт на Android в Chrome 90+ с поддержкой ARCore. " +
-                "Список устройств: developers.google.com/ar/devices"}
-              </p>
-              <div className="bg-secondary/40 rounded-lg p-3 mt-2 w-full">
-                <p className="text-xs font-semibold text-foreground mb-2">Что нужно для работы:</p>
-                <ul className="text-xs text-muted-foreground space-y-1">
-                  <li>• Android-смартфон Pixel 4+ / Galaxy S10+ / OnePlus 7+</li>
-                  <li>• Браузер Chrome 90+ или Edge</li>
-                  <li>• Установленный Google Play Services for AR</li>
-                  <li>• Доступ к камере</li>
-                </ul>
-              </div>
-            </div>
+            <ARErrorView status={status} error={error} />
           )}
 
-          {status === "ready" && (
-            <div className="space-y-3">
-              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <Icon name="CheckCircle2" size={18} className="text-primary mt-0.5" />
-                  <div>
-                    <p className="text-sm font-bold text-foreground">AR доступен на этом устройстве</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Нажмите «Запустить AR», направьте камеру на пол и тапните, чтобы поставить мебель.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <div className="bg-secondary/40 rounded-md p-2 text-center">
-                  <p className="text-primary font-bold font-mono">{item.width} м</p>
-                  <p className="text-muted-foreground">Ширина</p>
-                </div>
-                <div className="bg-secondary/40 rounded-md p-2 text-center">
-                  <p className="text-primary font-bold font-mono">{item.depth} м</p>
-                  <p className="text-muted-foreground">Глубина</p>
-                </div>
-                <div className="bg-secondary/40 rounded-md p-2 text-center">
-                  <p className="text-primary font-bold font-mono">{item.height} м</p>
-                  <p className="text-muted-foreground">Высота</p>
-                </div>
-              </div>
-
-              <div className="bg-secondary/30 rounded-lg p-3 space-y-1.5">
-                <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                  Инструкция
-                </p>
-                {[
-                  "Направьте камеру на пол",
-                  "Подождите, пока появится зелёный кружок",
-                  "Тапните, чтобы поставить предмет",
-                  "Можете обойти его и оценить габариты",
-                ].map((s, i) => (
-                  <div key={i} className="flex items-center gap-2 text-xs">
-                    <span className="w-5 h-5 bg-primary/10 text-primary rounded-md flex items-center justify-center font-mono font-bold">
-                      {i + 1}
-                    </span>
-                    <span className="text-foreground">{s}</span>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={startAR}
-                className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-              >
-                <Icon name="View" size={17} />
-                Запустить AR
-              </button>
-            </div>
-          )}
+          {status === "ready" && <ARReadyView item={item} onStart={startAR} />}
 
           {status === "active" && (
-            <div className="space-y-3">
-              <div className="bg-primary/10 border border-primary/30 rounded-lg p-3 flex items-center gap-2">
-                <span className="w-2 h-2 bg-primary rounded-full pulse-dot" />
-                <p className="text-sm font-bold text-foreground">AR активен</p>
-                <span className="ml-auto text-xs font-mono text-primary">
-                  Поставлено: {placedCount}
-                </span>
-              </div>
-
-              {/* Режим */}
-              <div className="grid grid-cols-2 gap-2 bg-secondary/30 rounded-lg p-1">
-                {(["place", "edit"] as const).map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => {
-                      setGestureMode(m);
-                      if (m === "place") setSelectedIdx(null);
-                    }}
-                    className={`text-xs font-semibold py-2 rounded-md transition-all flex items-center justify-center gap-1.5 ${
-                      gestureMode === m
-                        ? "bg-primary text-primary-foreground shadow"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <Icon name={m === "place" ? "MousePointerClick" : "Move3d"} size={12} />
-                    {m === "place" ? "Установка" : "Редактор"}
-                  </button>
-                ))}
-              </div>
-
-              {gestureMode === "place" ? (
-                <p className="text-xs text-muted-foreground">
-                  Тапайте на экран в позиции зелёного кружка — мебель появится в реальном масштабе.
-                </p>
-              ) : placedCount === 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  Сначала поставьте хотя бы один предмет в режиме «Установка».
-                </p>
-              ) : (
-                <>
-                  <div className="bg-secondary/40 rounded-lg p-3 space-y-2">
-                    <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                      Жесты в режиме редактора
-                    </p>
-                    <div className="text-xs space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Icon name="Hand" size={12} className="text-primary" />
-                        <span className="text-foreground">1 палец — перемещение по полу</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Icon name="RotateCw" size={12} className="text-primary" />
-                        <span className="text-foreground">2 пальца — вращение</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Селектор объекта */}
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setSelectedIdx((i) => {
-                        const n = placedMeshesRef.current.length;
-                        if (n === 0) return null;
-                        return i == null ? n - 1 : (i - 1 + n) % n;
-                      })}
-                      className="w-9 h-9 rounded-md bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center"
-                    >
-                      <Icon name="ChevronLeft" size={14} />
-                    </button>
-                    <div className="flex-1 text-center bg-secondary/40 rounded-md py-2">
-                      <p className="text-xs font-mono text-foreground font-semibold">
-                        {selectedIdx == null ? "Выберите объект" : `Объект ${selectedIdx + 1} из ${placedCount}`}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setSelectedIdx((i) => {
-                        const n = placedMeshesRef.current.length;
-                        if (n === 0) return null;
-                        return i == null ? 0 : (i + 1) % n;
-                      })}
-                      className="w-9 h-9 rounded-md bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center"
-                    >
-                      <Icon name="ChevronRight" size={14} />
-                    </button>
-                  </div>
-
-                  {/* Быстрые действия с выбранным */}
-                  {selectedIdx != null && (
-                    <div className="grid grid-cols-3 gap-2">
-                      <button
-                        onClick={() => {
-                          const mesh = placedMeshesRef.current[selectedIdx];
-                          if (mesh) mesh.rotation.y -= Math.PI / 2;
-                        }}
-                        className="bg-secondary py-2 rounded-md text-xs font-semibold flex items-center justify-center gap-1 hover:bg-border transition-colors"
-                      >
-                        <Icon name="RotateCcw" size={12} />
-                        −90°
-                      </button>
-                      <button
-                        onClick={() => {
-                          const mesh = placedMeshesRef.current[selectedIdx];
-                          if (mesh) mesh.rotation.y += Math.PI / 2;
-                        }}
-                        className="bg-secondary py-2 rounded-md text-xs font-semibold flex items-center justify-center gap-1 hover:bg-border transition-colors"
-                      >
-                        <Icon name="RotateCw" size={12} />
-                        +90°
-                      </button>
-                      <button
-                        onClick={() => {
-                          const mesh = placedMeshesRef.current[selectedIdx];
-                          if (mesh && sceneRef.current) {
-                            sceneRef.current.remove(mesh);
-                            placedMeshesRef.current.splice(selectedIdx, 1);
-                            setPlacedCount(placedMeshesRef.current.length);
-                            setSelectedIdx(null);
-                          }
-                        }}
-                        className="bg-destructive/10 text-destructive py-2 rounded-md text-xs font-semibold flex items-center justify-center gap-1 hover:bg-destructive/20 transition-colors"
-                      >
-                        <Icon name="Trash2" size={12} />
-                        Удалить
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-
-              <div className="flex gap-2">
-                {placedCount > 0 && (
-                  <button
-                    onClick={clearPlaced}
-                    className="flex-1 bg-secondary text-secondary-foreground py-2.5 rounded-lg hover:bg-border transition-colors flex items-center justify-center gap-2 text-sm font-semibold"
-                  >
-                    <Icon name="Eraser" size={15} />
-                    Очистить
-                  </button>
-                )}
-                <button
-                  onClick={stopAR}
-                  className="flex-1 bg-destructive/10 text-destructive py-2.5 rounded-lg hover:bg-destructive/20 transition-colors flex items-center justify-center gap-2 text-sm font-semibold"
-                >
-                  <Icon name="X" size={15} />
-                  Завершить AR
-                </button>
-              </div>
-            </div>
+            <ARActiveControls
+              placedCount={placedCount}
+              selectedIdx={selectedIdx}
+              setSelectedIdx={setSelectedIdx}
+              gestureMode={gestureMode}
+              setGestureMode={setGestureMode}
+              placedMeshesRef={placedMeshesRef}
+              sceneRef={sceneRef}
+              setPlacedCount={setPlacedCount}
+              clearPlaced={clearPlaced}
+              stopAR={stopAR}
+            />
           )}
         </div>
       </div>
     </div>
   );
-}
-
-// ─── Хелпер: создаёт mesh мебели в виде bbox с лейблом ─────────────────────
-function createFurnitureMesh(item: ARFurniture): THREE.Mesh {
-  const geo = new THREE.BoxGeometry(item.width, item.height, item.depth);
-  const mat = new THREE.MeshStandardMaterial({
-    color: item.color ?? 0x16a34a,
-    transparent: true,
-    opacity: 0.55,
-    roughness: 0.7,
-    metalness: 0.1,
-  });
-  const mesh = new THREE.Mesh(geo, mat);
-  // Поднимаем на половину высоты, чтобы низ касался пола
-  mesh.position.y = item.height / 2;
-
-  // Каркас (edges) — зелёный контур поверх полупрозрачного бокса
-  const edges = new THREE.EdgesGeometry(geo);
-  const edgeMat = new THREE.LineBasicMaterial({ color: 0x16a34a });
-  const wire = new THREE.LineSegments(edges, edgeMat);
-  mesh.add(wire);
-
-  return mesh;
 }
