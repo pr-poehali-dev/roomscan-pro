@@ -331,13 +331,16 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
 
   // Превентивная проверка iframe — показываем предупреждение ДО клика «Начать»
   const inIframe = typeof window !== "undefined" && window.self !== window.top;
+  const isMobile = typeof navigator !== "undefined"
+    && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
   const directUrl = typeof window !== "undefined"
     ? window.location.href.replace(/^(https?:\/\/)preview--/, "$1")
     : "";
+  const showIframeHelp = inIframe && phase === "idle" && !isMobile;
 
   return (
     <div className="space-y-4">
-      {inIframe && phase === "idle" && (
+      {showIframeHelp && (
         <div className="bg-yellow-500/10 border-2 border-yellow-500/40 rounded-xl p-4 animate-fade-in">
           <div className="flex items-start gap-3">
             <Icon name="AlertTriangle" size={20} className="text-yellow-500 shrink-0 mt-0.5" />
@@ -363,7 +366,7 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
         </div>
       )}
 
-      {inIframe && phase === "idle" && <MobileQRBlock />}
+      {showIframeHelp && <MobileQRBlock />}
 
       <ScannerViewport
         videoRef={videoRef}
