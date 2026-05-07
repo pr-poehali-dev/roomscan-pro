@@ -164,11 +164,12 @@ export default function CalcSection() {
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => {
-                const name = prompt("Название проекта", `Ремонт ${room.area} м²`);
-                if (!name) return;
+                const defaultName = `Ремонт ${room.area} м²`;
+                const name = window.prompt("Название проекта", defaultName) ?? defaultName;
+                if (!name.trim()) return;
                 const lastScan = getLastScan();
                 saveProject({
-                  name,
+                  name: name.trim(),
                   scan: lastScan,
                   estimate: {
                     tier: result.tier,
@@ -176,7 +177,9 @@ export default function CalcSection() {
                     daysApprox: result.daysApprox,
                   },
                 });
-                alert("Проект сохранён в «Мои проекты»");
+                import("@/lib/notify").then(({ notify }) =>
+                  notify.success("Проект сохранён", "Откройте «Мои проекты» — он там"),
+                );
               }}
               className="inline-flex items-center gap-2 bg-card border border-border hover:border-primary text-foreground font-bold text-sm px-3 py-2 rounded-lg transition-colors"
             >

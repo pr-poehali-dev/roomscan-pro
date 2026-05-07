@@ -3,6 +3,7 @@ import Icon from "@/components/ui/icon";
 import { listProjects, deleteProject, type SavedProject } from "@/lib/projectsStore";
 import { formatRub } from "@/lib/estimate";
 import { exportProjectPDF } from "@/lib/pdfExport";
+import { notify, confirmAction } from "@/lib/notify";
 
 interface Props {
   onOpen?: (p: SavedProject) => void;
@@ -110,10 +111,14 @@ export default function LocalProjectsList({ onOpen, selectable, selected, onTogg
                   <Icon name="FileDown" size={16} />
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     const url = `${window.location.origin}${window.location.pathname}#shared=${encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(p)))))}`;
-                    navigator.clipboard?.writeText(url);
-                    alert("Ссылка скопирована! Отправьте её дизайнеру или мастеру.");
+                    try {
+                      await navigator.clipboard?.writeText(url);
+                      notify.success("Ссылка скопирована", "Отправьте её дизайнеру или мастеру");
+                    } catch {
+                      notify.error("Не удалось скопировать", "Скопируйте ссылку вручную");
+                    }
                   }}
                   className="p-2 text-muted-foreground hover:text-primary transition-colors"
                   title="Поделиться ссылкой"
@@ -130,8 +135,16 @@ export default function LocalProjectsList({ onOpen, selectable, selected, onTogg
                   </button>
                 )}
                 <button
-                  onClick={() => {
-                    if (confirm(`Удалить проект «${p.name}»?`)) deleteProject(p.id);
+                  onClick={async () => {
+                    const ok = await confirmAction(`Удалить проект «${p.name}»?`, {
+                      confirmLabel: "Удалить",
+                      cancelLabel: "Отмена",
+                      description: "Действие необратимо.",
+                    });
+                    if (ok) {
+                      deleteProject(p.id);
+                      notify.success("Проект удалён");
+                    }
                   }}
                   className="p-2 text-muted-foreground hover:text-destructive transition-colors"
                   title="Удалить"

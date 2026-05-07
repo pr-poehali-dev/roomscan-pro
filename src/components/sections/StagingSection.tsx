@@ -136,10 +136,11 @@ export default function StagingSection() {
       <div className="flex items-center gap-2 flex-wrap">
         <button
           onClick={() => {
-            const name = prompt("Название проекта", `Стейджинг ${area} м²`);
-            if (!name) return;
+            const defaultName = `Стейджинг ${area} м²`;
+            const name = window.prompt("Название проекта", defaultName) ?? defaultName;
+            if (!name.trim()) return;
             saveProject({
-              name,
+              name: name.trim(),
               scan: getLastScan(),
               staging: {
                 goal: active.goal,
@@ -147,7 +148,9 @@ export default function StagingSection() {
                 expectedUplift: active.expectedUplift,
               },
             });
-            alert("Проект сохранён в «Мои проекты»");
+            import("@/lib/notify").then(({ notify }) =>
+              notify.success("Проект сохранён", "Откройте «Мои проекты» — он там"),
+            );
           }}
           className="inline-flex items-center gap-2 bg-card border border-border hover:border-primary text-foreground font-bold text-sm px-3 py-2 rounded-lg transition-colors"
         >

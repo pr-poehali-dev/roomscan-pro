@@ -15,6 +15,8 @@ import ScenarioRunner from "@/components/ScenarioRunner";
 import AIManager from "@/components/AIManager";
 import SectionSEO from "@/components/SectionSEO";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import SiteFooter from "@/components/SiteFooter";
+import ContentProtection from "@/components/ContentProtection";
 import type { ScenarioSection } from "@/lib/scenarios";
 import type { SectionId } from "@/lib/seo";
 
@@ -118,7 +120,9 @@ export default function Index() {
             staging: project.staging,
             notes: project.notes,
           });
-          alert(`Проект «${project.name}» импортирован в «Мои проекты»`);
+          import("@/lib/notify").then(({ notify }) =>
+            notify.success(`Проект «${project.name}» импортирован`, "Найдёте его во вкладке «Мои проекты»"),
+          );
         }
         // Уберём хэш чтобы не импортить повторно
         window.history.replaceState(null, "", window.location.pathname);
@@ -306,12 +310,17 @@ export default function Index() {
           </div>
         </header>
 
-        <div className="flex-1 p-6 lg:p-8 overflow-y-auto">
-          <div key={active} className="animate-fade-in">
-            {renderSection()}
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-6 lg:p-8">
+            <div key={active} className="animate-fade-in">
+              {renderSection()}
+            </div>
           </div>
+          <SiteFooter />
         </div>
       </main>
+
+      <ContentProtection />
 
       <ScenarioRunner
         activeSection={active}

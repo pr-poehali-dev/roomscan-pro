@@ -102,8 +102,14 @@ export default function ScenarioRunner({ activeSection, onNavigate }: Props) {
               <Icon name="Minus" size={14} />
             </button>
             <button
-              onClick={() => {
-                if (confirm("Прервать сценарий? Прогресс будет потерян.")) stopScenario();
+              onClick={async () => {
+                const { confirmAction } = await import("@/lib/notify");
+                const ok = await confirmAction("Прервать сценарий?", {
+                  confirmLabel: "Прервать",
+                  cancelLabel: "Продолжить",
+                  description: "Прогресс будет потерян.",
+                });
+                if (ok) stopScenario();
               }}
               className="text-muted-foreground hover:text-destructive transition-colors p-1"
               aria-label="Прервать"
