@@ -126,29 +126,28 @@ export default function CalcSection() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
           {REGIONS.map((r) => {
             const isActive = (room.regionId || DEFAULT_REGION_ID) === r.id;
-            const totalK = (r.worksK + r.materialsK) / 2;
             return (
               <button
                 key={r.id}
                 onClick={() => setRegion(r.id)}
                 title={r.note}
-                className={`text-left p-2 rounded-lg border transition-all ${
+                className={`text-left p-2.5 rounded-lg border transition-all ${
                   isActive
                     ? "bg-primary/15 border-primary text-foreground"
                     : "bg-secondary/40 border-transparent hover:bg-secondary text-foreground"
                 }`}
               >
-                <p className="text-xs font-bold truncate">{r.name}</p>
-                <p className={`text-[10px] font-mono ${isActive ? "text-primary" : "text-muted-foreground"}`}>
-                  k = {totalK.toFixed(2)}
+                <p className="text-xs font-bold truncate flex items-center gap-1.5">
+                  {isActive && <Icon name="Check" size={11} className="text-primary shrink-0" />}
+                  {r.name}
                 </p>
               </button>
             );
           })}
         </div>
         <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
-          ⓘ Базовый регион — Москва (k = 1.00). Коэффициент применяется отдельно к работам и материалам.
-          Цены — ориентировочные, актуализированы на 2025 г.
+          ⓘ Цены автоматически пересчитываются под выбранный регион — учитываем местный рынок труда
+          и логистику материалов. Актуализированы на 2026 г.
         </p>
       </div>
 
@@ -168,8 +167,9 @@ export default function CalcSection() {
                 <p className="text-4xl font-black text-primary font-mono mt-1">
                   {formatRub(result.grandTotal)}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  ≈ {formatRub(result.perSqm)} за м² · работы + материалы
+                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
+                  <Icon name="MapPin" size={11} className="text-primary" />
+                  {result.regionName} · работы + материалы
                 </p>
               </div>
               <div className="flex flex-col gap-2 text-right">
@@ -181,6 +181,30 @@ export default function CalcSection() {
                   <Icon name="Shield" size={11} className="inline mr-1 text-primary" />
                   Гарантия {result.warranty}
                 </span>
+              </div>
+            </div>
+
+            {/* Крупный блок ₽/м² */}
+            <div className="bg-card border-2 border-primary/30 rounded-xl p-4 mt-4 flex items-center gap-4 flex-wrap">
+              <div className="w-11 h-11 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+                <Icon name="Ruler" size={20} className="text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                  Цена за квадратный метр · {result.regionName}
+                </p>
+                <p className="text-3xl font-black text-foreground font-mono leading-none mt-1">
+                  {formatRub(result.perSqm)}
+                  <span className="text-sm font-bold text-muted-foreground ml-1">/ м²</span>
+                </p>
+              </div>
+              <div className="text-right hidden sm:block">
+                <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                  Площадь
+                </p>
+                <p className="text-2xl font-black text-foreground font-mono leading-none mt-1">
+                  {room.area} <span className="text-sm font-bold text-muted-foreground">м²</span>
+                </p>
               </div>
             </div>
 
