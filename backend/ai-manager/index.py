@@ -48,15 +48,19 @@ SYSTEM_PROMPT = """Ты — ИИ-менеджер проекта RoomScan AI, д
 """
 
 
-def call_openai(messages: list, api_key: str) -> str:
+POLZA_API_URL = "https://api.polza.ai/api/v1/chat/completions"
+POLZA_MODEL = os.environ.get("POLZA_AI_MODEL", "openai/gpt-4o-mini")
+
+
+def call_polza(messages: list, api_key: str) -> str:
     payload = {
-        "model": "gpt-4o-mini",
+        "model": POLZA_MODEL,
         "messages": [{"role": "system", "content": SYSTEM_PROMPT}] + messages,
         "temperature": 0.6,
         "max_tokens": 350,
     }
     req = urllib.request.Request(
-        "https://api.openai.com/v1/chat/completions",
+        POLZA_API_URL,
         data=json.dumps(payload).encode("utf-8"),
         headers={
             "Content-Type": "application/json",
@@ -103,7 +107,7 @@ def handler(event: dict, context) -> dict:
     if not messages or not isinstance(messages, list):
         return resp(400, {"error": "Нет сообщений"})
 
-    api_key = os.environ.get("OPENAI_API_KEY", "")
+    api_key = os.environ.get("POLZA_AI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
     if not api_key:
         return resp(503, {"error": "AI временно недоступен (нет ключа)"})
 
@@ -121,9 +125,13 @@ def handler(event: dict, context) -> dict:
         ] + messages
 
     try:
-        raw = call_openai(messages, api_key)
+        raw = call_polza(messages, api_key)
     except urllib.error.HTTPError as e:
-        return resp(502, {"error": f"OpenAI HTTP {e.code}"})
+        try:
+            err_body = e.read().decode("utf-8")[:200]
+        except Exception:
+            err_body = ""
+        return resp(502, {"error": f"Polza.ai HTTP {e.code}: {err_body}"})
     except Exception as e:
         return resp(502, {"error": f"Ошибка ИИ: {str(e)[:120]}"})
 
