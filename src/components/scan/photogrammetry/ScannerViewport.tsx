@@ -95,10 +95,14 @@ export default function ScannerViewport({
 
       {phase === "error" && (() => {
         const inIframe = typeof window !== "undefined" && window.self !== window.top;
-        const isPermissionError = /камер|разреш|политик|iframe|предпросмотр/i.test(error);
-        // Прямая ссылка на сайт (без preview-- префикса)
+        const isPermissionError = /камер|разреш|политик|iframe|предпросмотр|запрещ|заблокирован/i.test(error);
+        const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+        const isIOS = /iPhone|iPad|iPod/.test(ua);
+        const isAndroid = /Android/.test(ua);
+        const isMobile = isIOS || isAndroid;
+        // Прямая ссылка на сайт (без preview-- префикса) с переходом в раздел "scan"
         const directUrl = typeof window !== "undefined"
-          ? window.location.href.replace(/^(https?:\/\/)preview--/, "$1")
+          ? window.location.href.replace(/^(https?:\/\/)preview--/, "$1") + "#scan"
           : "";
 
         return (
@@ -116,9 +120,10 @@ export default function ScannerViewport({
                   href={directUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block bg-primary text-primary-foreground text-center font-bold py-2 rounded-md hover:opacity-90 transition-opacity text-sm"
+                  className="block bg-primary text-primary-foreground text-center font-bold py-2.5 rounded-md hover:opacity-90 transition-opacity text-sm"
                 >
-                  Открыть проект →
+                  <Icon name="Camera" size={14} className="inline mr-1.5" />
+                  Открыть камеру в новой вкладке
                 </a>
                 <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
                   Камера не работает в предпросмотре редактора из-за политики безопасности iframe.
@@ -127,12 +132,36 @@ export default function ScannerViewport({
               </div>
             )}
 
+            {isMobile && isPermissionError && !inIframe && (
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-md p-3 max-w-md w-full text-left">
+                <p className="text-xs font-bold text-yellow-600 dark:text-yellow-400 mb-2 flex items-center gap-1.5">
+                  <Icon name="Smartphone" size={12} />
+                  Как разрешить камеру на {isIOS ? "iPhone" : "Android"}
+                </p>
+                {isIOS ? (
+                  <ol className="text-[11px] text-foreground space-y-1 list-decimal list-inside leading-relaxed">
+                    <li>Откройте «Настройки» → Safari → Камера → «Спросить»</li>
+                    <li>Или: «Настройки» → Конфиденциальность → Камера → разрешите Safari</li>
+                    <li>Вернитесь сюда и нажмите «Сканировать заново»</li>
+                    <li>В всплывающем окне выберите «Разрешить»</li>
+                  </ol>
+                ) : (
+                  <ol className="text-[11px] text-foreground space-y-1 list-decimal list-inside leading-relaxed">
+                    <li>Нажмите на иконку замка/⚙️ слева от адреса</li>
+                    <li>Найдите «Камера» → выберите «Разрешить»</li>
+                    <li>Перезагрузите страницу (потяните вниз)</li>
+                    <li>В всплывающем окне выберите «Разрешить»</li>
+                  </ol>
+                )}
+              </div>
+            )}
+
             <div className="bg-secondary/40 rounded-md p-3 text-xs text-muted-foreground max-w-md text-left w-full">
               <p className="font-semibold text-foreground mb-1.5">Что ещё попробовать:</p>
               <ul className="space-y-1 list-disc list-inside">
                 <li>Открыть сайт в отдельной вкладке (не в редакторе)</li>
-                <li>Иконка замка в адресной строке → Камера → Разрешить</li>
-                <li>Закрыть Skype / Zoom / другие приложения с камерой</li>
+                {!isMobile && <li>Иконка замка в адресной строке → Камера → Разрешить</li>}
+                <li>Закрыть другие приложения с камерой</li>
                 <li>Chrome 90+ на Android или Safari 14+ на iOS</li>
                 <li>Перезагрузить страницу после смены настроек</li>
               </ul>

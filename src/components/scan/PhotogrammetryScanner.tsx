@@ -419,9 +419,11 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
   const isMobile = typeof navigator !== "undefined"
     && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
   const directUrl = typeof window !== "undefined"
-    ? window.location.href.replace(/^(https?:\/\/)preview--/, "$1")
+    ? window.location.href.replace(/^(https?:\/\/)preview--/, "$1") + "#scan"
     : "";
+  // Десктоп в iframe — QR + кнопки. Мобильный в iframe — отдельный мобильный блок.
   const showIframeHelp = inIframe && phase === "idle" && !isMobile;
+  const showMobileIframeHelp = inIframe && phase === "idle" && isMobile;
 
   return (
     <div className="space-y-4">
@@ -462,7 +464,41 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
 
       {showIframeHelp && <MobileQRBlock />}
 
-      {phase === "idle" && !showIframeHelp && <CameraPermissionStatus />}
+      {showMobileIframeHelp && (
+        <div className="bg-gradient-to-br from-primary/15 to-primary/5 border-2 border-primary/40 rounded-xl p-5 animate-fade-in">
+          <div className="flex flex-col items-center text-center gap-3">
+            <div className="bg-primary/20 rounded-full p-3">
+              <Icon name="Smartphone" size={28} className="text-primary" />
+            </div>
+            <div>
+              <p className="font-bold text-foreground text-base mb-1">
+                Откройте сайт напрямую — заработает камера
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Браузер блокирует камеру внутри окна предпросмотра.
+                Нажмите кнопку ниже — сайт откроется в новой вкладке, и тогда вы сможете отсканировать комнату.
+              </p>
+            </div>
+            <a
+              href={directUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold px-4 py-3.5 rounded-xl hover:opacity-90 transition-opacity text-base shadow-lg shadow-primary/30"
+            >
+              <Icon name="Camera" size={18} />
+              Открыть камеру в новой вкладке
+            </a>
+            <button
+              onClick={runDemoScan}
+              className="text-xs text-muted-foreground hover:text-foreground underline"
+            >
+              или попробовать демо без камеры
+            </button>
+          </div>
+        </div>
+      )}
+
+      {phase === "idle" && !showIframeHelp && !showMobileIframeHelp && <CameraPermissionStatus />}
 
       <ScannerViewport
         videoRef={videoRef}
