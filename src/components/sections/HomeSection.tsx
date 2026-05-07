@@ -1,5 +1,6 @@
 import Icon from "@/components/ui/icon";
 import HeroDemo3D from "./HeroDemo3D";
+import PartnersMarquee from "./PartnersMarquee";
 
 interface Props {
   onNavigate: (section: string) => void;
@@ -224,6 +225,9 @@ export default function HomeSection({ onNavigate, userName }: Props) {
           ))}
         </div>
       </section>
+
+      {/* ЛЕНТА ПАРТНЁРОВ */}
+      <PartnersMarquee />
 
       {/* КАК ЭТО РАБОТАЕТ */}
       <section className="px-6 lg:px-12 max-w-6xl mx-auto w-full">

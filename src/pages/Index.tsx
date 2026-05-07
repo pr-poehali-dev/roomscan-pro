@@ -10,6 +10,7 @@ import StylesSection from "@/components/sections/StylesSection";
 import PartnersSection from "@/components/sections/PartnersSection";
 import AdminSection from "@/components/sections/AdminSection";
 import ScenarioRunner from "@/components/ScenarioRunner";
+import AIManager from "@/components/AIManager";
 import type { ScenarioSection } from "@/lib/scenarios";
 
 type Section =
@@ -254,6 +255,11 @@ export default function Index() {
       <ScenarioRunner
         activeSection={active}
         onNavigate={(s: ScenarioSection) => setActive(s as Section)}
+      />
+
+      <AIManager
+        activeSection={active}
+        onNavigate={(s: string) => setActive(s as Section)}
       />
     </div>
   );
