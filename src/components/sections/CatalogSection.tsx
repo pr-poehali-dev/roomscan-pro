@@ -465,9 +465,12 @@ export default function CatalogSection() {
           item={details}
           inCart={cart.includes(details.id)}
           isFav={favorites.includes(details.id)}
+          cartIds={cart}
+          favIds={favorites}
           onClose={() => setDetails(null)}
           onAddToCart={addToCart}
           onToggleFav={onToggleFav}
+          onSelectRelated={(it) => setDetails(it)}
           onOpenAR={(it) => {
             setDetails(null);
             setArItem({

@@ -229,6 +229,55 @@ export function getFurnitureById(id: number): FurnitureItem | undefined {
   return FURNITURE_CATALOG.find((f) => f.id === id);
 }
 
+/**
+ * Подбор похожих товаров «С этим покупают».
+ * Учитывает совпадение стилей, дружественные категории, близость цены, рейтинг.
+ */
+export function getRelatedItems(item: FurnitureItem, limit = 4): FurnitureItem[] {
+  const candidates = FURNITURE_CATALOG.filter((f) => f.id !== item.id);
+
+  const COMPLEMENT: Partial<Record<Category, Category[]>> = {
+    "Диваны":     ["Столы", "Освещение", "Текстиль", "Декор"],
+    "Кровати":    ["Шкафы", "Освещение", "Текстиль", "Декор"],
+    "Столы":      ["Кресла", "Освещение", "Декор"],
+    "Кресла":     ["Столы", "Освещение", "Текстиль"],
+    "Шкафы":      ["Декор", "Растения", "Освещение"],
+    "ТВ-зоны":    ["Диваны", "Декор", "Освещение"],
+    "Освещение":  ["Декор", "Растения", "Текстиль"],
+    "Декор":      ["Растения", "Освещение", "Текстиль"],
+    "Текстиль":   ["Диваны", "Кровати", "Декор"],
+    "Растения":   ["Декор", "Освещение"],
+    "Кухня":      ["Освещение", "Декор", "Растения"],
+    "Ванная":     ["Освещение", "Декор", "Текстиль"],
+  };
+
+  const friendly = COMPLEMENT[item.category] ?? [];
+
+  const scored = candidates.map((c) => {
+    let score = 0;
+
+    const myTags = new Set(item.styleTags ?? []);
+    const matchingTags = (c.styleTags ?? []).filter((t) => myTags.has(t)).length;
+    score += matchingTags * 3;
+
+    if (friendly.includes(c.category)) score += 4;
+    if (c.category === item.category) score += 1;
+
+    const priceDiff = Math.abs(c.priceNum - item.priceNum) / Math.max(item.priceNum, 1);
+    if (priceDiff < 0.5) score += 2;
+    else if (priceDiff < 1.5) score += 1;
+
+    score += (c.rating ?? 0) * 0.5;
+    if (c.inStock !== false) score += 1;
+    if (c.popular) score += 1;
+
+    return { item: c, score };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, limit).map((s) => s.item);
+}
+
 /** Уникальные бренды */
 export function getAllBrands(): string[] {
   return Array.from(new Set(FURNITURE_CATALOG.map((f) => f.brand))).sort();
