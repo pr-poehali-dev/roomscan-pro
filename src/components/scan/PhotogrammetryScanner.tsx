@@ -4,6 +4,7 @@ import { apiFetch } from "@/lib/api";
 import { saveLastScan } from "@/lib/scanStore";
 import PointCloud3D, { type Point3D, type RoomBox } from "./PointCloud3D";
 import MobileQRBlock from "./MobileQRBlock";
+import CameraPermissionStatus from "./CameraPermissionStatus";
 import ScannerViewport from "./photogrammetry/ScannerViewport";
 import ScannerControls from "./photogrammetry/ScannerControls";
 import ScanResultPanel from "./photogrammetry/ScanResultPanel";
@@ -367,6 +368,8 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
       )}
 
       {showIframeHelp && <MobileQRBlock />}
+
+      {phase === "idle" && !showIframeHelp && <CameraPermissionStatus />}
 
       <ScannerViewport
         videoRef={videoRef}
