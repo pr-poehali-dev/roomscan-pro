@@ -2,6 +2,7 @@ import { useState } from "react";
 import Icon from "@/components/ui/icon";
 import WebXRScanner from "./WebXRScanner";
 import PhotogrammetryScanner from "./PhotogrammetryScanner";
+import MobileQRBlock from "./MobileQRBlock";
 
 type Method = "choose" | "webxr" | "photo";
 
@@ -151,6 +152,9 @@ export default function ScanSection() {
               </div>
             </div>
           )}
+
+          {/* QR для быстрого открытия с телефона */}
+          <MobileQRBlock />
 
           {/* Подсказка */}
           <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-start gap-3">
