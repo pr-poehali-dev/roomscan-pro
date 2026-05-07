@@ -31,6 +31,34 @@ export interface FurnitureItem {
   color?: string;
   /** теги стиля (используются в StylesSection) */
   styleTags?: StyleTag[];
+
+  // ─── Расширенные поля каталога ──────────────────────────────────────
+  /** Материал, например "Дуб, ткань велюр" */
+  material?: string;
+  /** Доступные цвета — человекочитаемые названия */
+  colors?: string[];
+  /** HEX-палитра для отображения цветовых кружков */
+  colorPalette?: string[];
+  /** Рейтинг 1–5 */
+  rating?: number;
+  /** Количество отзывов */
+  reviews?: number;
+  /** Наличие на складе */
+  inStock?: boolean;
+  /** Популярный товар (для бейджа Hit) */
+  popular?: boolean;
+  /** Новинка */
+  isNew?: boolean;
+  /** Скидка в процентах */
+  discount?: number;
+  /** Старая цена (числом, до скидки) */
+  oldPrice?: number;
+  /** Время доставки в днях */
+  deliveryDays?: number;
+  /** Гарантия в месяцах */
+  warrantyMonths?: number;
+  /** Подробное описание */
+  description?: string;
 }
 
 export type Category =
@@ -118,6 +146,71 @@ export const FURNITURE_CATALOG: FurnitureItem[] = [
   { id: 72, name: "Тумба под раковину",   brand: "Aqua",   size: "80×45 см",   price: "32 600 ₽",  priceNum: 32600,  category: "Ванная",  icon: "Package",   w: 80,  d: 45,  h: 60, styleTags: ["modern", "scandi"] },
 ];
 
+// ─── Обогащение каталога ───────────────────────────────────────────────────
+// Расширяем базовые записи дополнительными атрибутами без изменения структуры.
+
+type Enrichment = Partial<Omit<FurnitureItem, "id">>;
+
+const ENRICHMENT: Record<number, Enrichment> = {
+  1:  { material: "Велюр, металл", colors: ["Серый", "Графит"], colorPalette: ["#7e8489", "#3a3d40"], rating: 4.8, reviews: 142, popular: true, deliveryDays: 7, warrantyMonths: 24, inStock: true, description: "Угловой диван премиум-класса с механизмом еврокнижка. Каркас из массива бука, велюровая обивка с грязеотталкивающей пропиткой." },
+  10: { material: "Лён, дуб", colors: ["Бежевый", "Молочный"], colorPalette: ["#d8c9a8", "#efe7d2"], rating: 4.7, reviews: 98, isNew: true, deliveryDays: 5, warrantyMonths: 18, inStock: true, description: "Лаконичный 3-местный диван в скандинавском стиле. Натуральный лён, ножки из массива дуба." },
+  11: { material: "Бархат, дерево", colors: ["Изумруд", "Бордо", "Тёмно-синий"], colorPalette: ["#1f5d4f", "#6e1f24", "#1e2a4a"], rating: 4.9, reviews: 67, discount: 15, oldPrice: 138800, deliveryDays: 10, warrantyMonths: 24, inStock: true, description: "Классический бархатный диван с каретной стяжкой. Идеально для гостиной в классическом или ар-деко стиле." },
+
+  2:  { material: "Дуб масляный", colors: ["Натуральный дуб"], colorPalette: ["#b08858"], rating: 4.6, reviews: 213, popular: true, deliveryDays: 14, warrantyMonths: 36, inStock: true, description: "Обеденный стол из массива дуба с маслом. Выдерживает до 200 кг, рассчитан на 6 человек." },
+  9:  { material: "ЛДСП, металл", colors: ["Чёрный мрамор", "Дуб сонома"], colorPalette: ["#1a1a1a", "#c9a77a"], rating: 4.4, reviews: 89, deliveryDays: 3, warrantyMonths: 12, inStock: true, description: "Журнальный столик с эффектом мрамора. Подходит к минимализму и лофту." },
+  12: { material: "ЛДСП, металл", colors: ["Белый", "Графит"], colorPalette: ["#f5f5f5", "#3a3d40"], rating: 4.5, reviews: 134, deliveryDays: 5, warrantyMonths: 18, inStock: true, description: "Эргономичный письменный стол. Кабель-органайзер в комплекте." },
+  13: { material: "Металл, дуб", colors: ["Чёрный с дубом"], colorPalette: ["#1a1a1a", "#b08858"], rating: 4.7, reviews: 56, isNew: true, deliveryDays: 7, warrantyMonths: 24, inStock: true, description: "Барный стол лофт. Тяжёлый стальной каркас, столешница из массива дуба." },
+
+  3:  { material: "Букле, металл", colors: ["Молочный", "Графит", "Терракот"], colorPalette: ["#efe7d2", "#3a3d40", "#c9624a"], rating: 4.7, reviews: 178, popular: true, deliveryDays: 7, warrantyMonths: 24, inStock: true, description: "Кресло с обивкой букле. Ножки из чёрного матового металла." },
+  8:  { material: "Велюр", colors: ["Зелёный", "Розовый", "Серый"], colorPalette: ["#3d7a5f", "#d6a3a3", "#7e8489"], rating: 4.5, reviews: 94, deliveryDays: 3, warrantyMonths: 12, inStock: true, description: "Круглый пуф с велюровой обивкой. Идеален как банкетка или подставка для ног." },
+  14: { material: "Шерсть, дуб", colors: ["Серая шерсть"], colorPalette: ["#9aa0a6"], rating: 4.8, reviews: 112, deliveryDays: 14, warrantyMonths: 36, inStock: true, description: "Кресло-качалка из массива дуба с шерстяной обивкой. Скандинавский стиль." },
+
+  4:  { material: "ЛДСП, зеркало", colors: ["Белый", "Графит", "Дуб"], colorPalette: ["#f5f5f5", "#3a3d40", "#b08858"], rating: 4.6, reviews: 245, popular: true, deliveryDays: 10, warrantyMonths: 24, inStock: true, description: "Шкаф-купе с зеркальными дверями и встроенной подсветкой. Доводчики Blum." },
+  7:  { material: "Сосна", colors: ["Натуральный"], colorPalette: ["#d8b886"], rating: 4.4, reviews: 167, deliveryDays: 5, warrantyMonths: 18, inStock: true, description: "Открытый стеллаж 5 полок. Натуральный массив сосны." },
+  15: { material: "Массив берёзы", colors: ["Белый", "Натуральный"], colorPalette: ["#f5f5f5", "#d8b886"], rating: 4.7, reviews: 89, isNew: true, deliveryDays: 7, warrantyMonths: 24, inStock: true, description: "Комод на 4 ящика из массива берёзы. Скрытые направляющие с доводчиками." },
+
+  5:  { material: "Дуб, ткань", colors: ["Дуб натуральный"], colorPalette: ["#b08858"], rating: 4.8, reviews: 203, popular: true, deliveryDays: 14, warrantyMonths: 36, inStock: true, description: "Кровать с мягким изголовьем из массива дуба. Ортопедическое основание в комплекте." },
+  16: { material: "Металл, кожа", colors: ["Чёрный"], colorPalette: ["#1a1a1a"], rating: 4.6, reviews: 78, deliveryDays: 14, warrantyMonths: 36, inStock: true, description: "Кровать в стиле лофт со стальным каркасом и кожаным изголовьем." },
+
+  6:  { material: "ЛДСП", colors: ["Белый", "Графит"], colorPalette: ["#f5f5f5", "#3a3d40"], rating: 4.5, reviews: 156, deliveryDays: 5, warrantyMonths: 18, inStock: true, description: "Тумба под телевизор до 65 дюймов. Ниша для саундбара." },
+  17: { material: "ЛДСП, металл", colors: ["Дуб", "Чёрный"], colorPalette: ["#b08858", "#1a1a1a"], rating: 4.7, reviews: 92, isNew: true, deliveryDays: 7, warrantyMonths: 24, inStock: true, description: "ТВ-тумба с металлическими ножками. Кабель-канал внутри." },
+
+  20: { material: "Стекло, латунь", colors: ["Прозрачный", "Дымчатый"], colorPalette: ["#e8e8e8", "#5a5550"], rating: 4.6, reviews: 124, deliveryDays: 3, warrantyMonths: 24, inStock: true, description: "Подвесной светильник с шарообразным плафоном. Лампа E27 в комплекте." },
+  21: { material: "Текстиль, дерево", colors: ["Серый", "Бежевый"], colorPalette: ["#9aa0a6", "#d8c9a8"], rating: 4.5, reviews: 88, deliveryDays: 5, warrantyMonths: 24, inStock: true, description: "Торшер на трёх деревянных ножках с текстильным абажуром." },
+  22: { material: "Металл", colors: ["Чёрный", "Латунь"], colorPalette: ["#1a1a1a", "#b88a4a"], rating: 4.7, reviews: 156, popular: true, deliveryDays: 2, warrantyMonths: 24, inStock: true, description: "Настольная лампа с регулируемым кронштейном. LED-лампа 8 Вт." },
+  23: { material: "Хрусталь, металл", colors: ["Хром"], colorPalette: ["#cdd2d6"], rating: 4.9, reviews: 45, discount: 20, oldPrice: 60000, deliveryDays: 10, warrantyMonths: 36, inStock: true, description: "Хрустальная люстра на 8 ламп. Идеально для классической гостиной." },
+
+  30: { material: "Холст, дерево", colors: ["Мультиколор"], colorPalette: ["#3a3d40", "#c9624a", "#1f5d4f"], rating: 4.5, reviews: 67, deliveryDays: 5, warrantyMonths: 12, inStock: true, description: "Абстрактная картина в раме. Печать на холсте, размер 80×60 см." },
+  31: { material: "Стекло, металл", colors: ["Чёрный", "Латунь"], colorPalette: ["#1a1a1a", "#b88a4a"], rating: 4.6, reviews: 198, popular: true, deliveryDays: 3, warrantyMonths: 24, inStock: true, description: "Круглое зеркало в металлической раме. Диаметр 80 см." },
+  32: { material: "Керамика", colors: ["Белый", "Чёрный матовый"], colorPalette: ["#f5f5f5", "#2a2a2a"], rating: 4.4, reviews: 112, isNew: true, deliveryDays: 2, warrantyMonths: 6, inStock: true, description: "Керамическая ваза ручной работы. Подходит для сухоцветов и живых букетов." },
+  33: { material: "Дуб", colors: ["Натуральный"], colorPalette: ["#b08858"], rating: 4.3, reviews: 89, deliveryDays: 3, warrantyMonths: 12, inStock: true, description: "Настенная декоративная полка из массива дуба. Скрытое крепление." },
+
+  40: { material: "Шерсть", colors: ["Кремовый"], colorPalette: ["#efe7d2"], rating: 4.7, reviews: 134, popular: true, deliveryDays: 7, warrantyMonths: 24, inStock: true, description: "Берберский ковёр ручной работы. 100% овечья шерсть." },
+  41: { material: "Шерсть, шёлк", colors: ["Бордо с золотым"], colorPalette: ["#6e1f24", "#b88a4a"], rating: 4.8, reviews: 56, deliveryDays: 14, warrantyMonths: 36, inStock: true, description: "Персидский ковёр с классическим орнаментом. Ручное узелковое плетение." },
+  42: { material: "Лён", colors: ["Молочный", "Серый", "Бежевый"], colorPalette: ["#efe7d2", "#9aa0a6", "#d8c9a8"], rating: 4.6, reviews: 178, deliveryDays: 5, warrantyMonths: 12, inStock: true, description: "Льняные шторы с подкладом. Пара 280 см. На люверсах." },
+  43: { material: "Шерсть мериноса", colors: ["Серый", "Молочный"], colorPalette: ["#9aa0a6", "#efe7d2"], rating: 4.7, reviews: 234, deliveryDays: 3, warrantyMonths: 6, inStock: true, description: "Плед из шерсти мериноса с бахромой." },
+
+  50: { material: "Живое растение", colors: ["Зелёный"], colorPalette: ["#3d7a5f"], rating: 4.6, reviews: 87, popular: true, deliveryDays: 2, warrantyMonths: 0, inStock: true, description: "Монстера деликатесная высотой до 160 см. Кашпо в комплекте. Уход — раз в неделю." },
+  51: { material: "Живое растение", colors: ["Зелёный"], colorPalette: ["#2f6347"], rating: 4.5, reviews: 65, deliveryDays: 2, warrantyMonths: 0, inStock: true, description: "Фикус лировидный. Высота до 180 см. Любит рассеянный свет." },
+  52: { material: "Живое растение", colors: ["Зелёный"], colorPalette: ["#7da87a"], rating: 4.4, reviews: 123, deliveryDays: 2, warrantyMonths: 0, inStock: true, description: "Набор из 3 суккулентов в керамических кашпо." },
+
+  60: { material: "МДФ, кварц", colors: ["Белый кварц", "Чёрный кварц"], colorPalette: ["#f5f5f5", "#1a1a1a"], rating: 4.8, reviews: 34, isNew: true, discount: 10, oldPrice: 158000, deliveryDays: 21, warrantyMonths: 60, inStock: true, description: "Кухонный остров со столешницей из кварцевого агломерата. Встроенные розетки." },
+  61: { material: "Металл, экокожа", colors: ["Чёрный", "Коричневый"], colorPalette: ["#1a1a1a", "#5a3a28"], rating: 4.5, reviews: 167, popular: true, deliveryDays: 5, warrantyMonths: 18, inStock: true, description: "Барный стул с регулировкой высоты. Поворотный механизм 360°." },
+  62: { material: "Дуб", colors: ["Натуральный дуб"], colorPalette: ["#b08858"], rating: 4.6, reviews: 78, deliveryDays: 10, warrantyMonths: 24, inStock: true, description: "Квадратный кухонный стол на 4 персоны. Массив дуба." },
+
+  70: { material: "Керамика", colors: ["Белый матовый"], colorPalette: ["#f5f5f5"], rating: 4.7, reviews: 145, deliveryDays: 7, warrantyMonths: 60, inStock: true, description: "Накладная керамическая раковина с матовой поверхностью." },
+  71: { material: "Стекло, LED", colors: ["Хром"], colorPalette: ["#cdd2d6"], rating: 4.6, reviews: 98, isNew: true, deliveryDays: 5, warrantyMonths: 36, inStock: true, description: "Зеркало для ванной с LED-подсветкой и подогревом. Сенсорное управление." },
+  72: { material: "ЛДСП влагостойкая", colors: ["Белый", "Дуб"], colorPalette: ["#f5f5f5", "#b08858"], rating: 4.5, reviews: 112, deliveryDays: 7, warrantyMonths: 24, inStock: true, description: "Тумба под раковину с двумя ящиками. Влагостойкое покрытие." },
+};
+
+// Применяем обогащение к базовому каталогу
+FURNITURE_CATALOG.forEach((item) => {
+  const patch = ENRICHMENT[item.id];
+  if (patch) Object.assign(item, patch);
+});
+
+// ─── Хелперы фильтрации ────────────────────────────────────────────────────
+
 /** Группировка по категориям — для UI */
 export function groupByCategory(items: FurnitureItem[]): Record<Category, FurnitureItem[]> {
   const out = {} as Record<Category, FurnitureItem[]>;
@@ -134,4 +227,97 @@ export function byStyleTag(tag: StyleTag): FurnitureItem[] {
 /** Получить элемент по id */
 export function getFurnitureById(id: number): FurnitureItem | undefined {
   return FURNITURE_CATALOG.find((f) => f.id === id);
+}
+
+/** Уникальные бренды */
+export function getAllBrands(): string[] {
+  return Array.from(new Set(FURNITURE_CATALOG.map((f) => f.brand))).sort();
+}
+
+/** Минимальная и максимальная цена */
+export function getPriceRange(): { min: number; max: number } {
+  const prices = FURNITURE_CATALOG.map((f) => f.priceNum);
+  return { min: Math.min(...prices), max: Math.max(...prices) };
+}
+
+export type SortBy = "popular" | "price-asc" | "price-desc" | "rating" | "new";
+
+export interface CatalogFilters {
+  search?: string;
+  category?: Category | "all";
+  brands?: string[];
+  styleTags?: StyleTag[];
+  minPrice?: number;
+  maxPrice?: number;
+  minRating?: number;
+  inStockOnly?: boolean;
+  hasDiscount?: boolean;
+  sortBy?: SortBy;
+}
+
+/** Главная функция фильтрации/сортировки */
+export function filterCatalog(filters: CatalogFilters): FurnitureItem[] {
+  let result = [...FURNITURE_CATALOG];
+
+  if (filters.search && filters.search.trim()) {
+    const q = filters.search.toLowerCase().trim();
+    result = result.filter(
+      (f) =>
+        f.name.toLowerCase().includes(q) ||
+        f.brand.toLowerCase().includes(q) ||
+        f.material?.toLowerCase().includes(q) ||
+        f.category.toLowerCase().includes(q),
+    );
+  }
+  if (filters.category && filters.category !== "all") {
+    result = result.filter((f) => f.category === filters.category);
+  }
+  if (filters.brands && filters.brands.length > 0) {
+    result = result.filter((f) => filters.brands!.includes(f.brand));
+  }
+  if (filters.styleTags && filters.styleTags.length > 0) {
+    result = result.filter((f) =>
+      f.styleTags?.some((t) => filters.styleTags!.includes(t)),
+    );
+  }
+  if (typeof filters.minPrice === "number") {
+    result = result.filter((f) => f.priceNum >= filters.minPrice!);
+  }
+  if (typeof filters.maxPrice === "number") {
+    result = result.filter((f) => f.priceNum <= filters.maxPrice!);
+  }
+  if (typeof filters.minRating === "number") {
+    result = result.filter((f) => (f.rating ?? 0) >= filters.minRating!);
+  }
+  if (filters.inStockOnly) {
+    result = result.filter((f) => f.inStock !== false);
+  }
+  if (filters.hasDiscount) {
+    result = result.filter((f) => (f.discount ?? 0) > 0);
+  }
+
+  switch (filters.sortBy) {
+    case "price-asc":
+      result.sort((a, b) => a.priceNum - b.priceNum);
+      break;
+    case "price-desc":
+      result.sort((a, b) => b.priceNum - a.priceNum);
+      break;
+    case "rating":
+      result.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+      break;
+    case "new":
+      result.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
+      break;
+    case "popular":
+    default:
+      result.sort((a, b) => {
+        const ap = (a.popular ? 1 : 0) * 1000 + (a.reviews ?? 0);
+        const bp = (b.popular ? 1 : 0) * 1000 + (b.reviews ?? 0);
+        return bp - ap;
+      });
+      break;
+  }
+
+  return result;
 }
