@@ -1,4 +1,7 @@
 {
+  "partners-finder": "https://functions.poehali.dev/20f0f8db-38d0-44ee-9ae8-16abec8d49fd",
+  "crm": "https://functions.poehali.dev/670c4048-1474-45cd-a4db-046fc2dd0381",
+  "sales-agent": "https://functions.poehali.dev/4aa95b17-ab9a-4159-b62c-f5d97fe922c2",
   "staging-vision": "https://functions.poehali.dev/f9591f44-eaaa-44d7-bcb4-ead0c5b910f3",
   "staging-analyze": "https://functions.poehali.dev/1eba511f-2195-46e9-b37a-a15e0a816b9d",
   "ai-manager": "https://functions.poehali.dev/00d79c53-37be-4a9c-8b3f-2b4d8a172e01",

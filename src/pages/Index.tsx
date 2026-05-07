@@ -10,7 +10,7 @@ import StylesSection from "@/components/sections/StylesSection";
 import StagingSection from "@/components/sections/StagingSection";
 import OpeningsSection from "@/components/sections/OpeningsSection";
 import PartnersSection from "@/components/sections/PartnersSection";
-import AdminSection from "@/components/sections/AdminSection";
+import AdminOffice from "@/components/admin/AdminOffice";
 import ScenarioRunner from "@/components/ScenarioRunner";
 import AIManager from "@/components/AIManager";
 import SectionSEO from "@/components/SectionSEO";
@@ -186,7 +186,7 @@ export default function Index() {
       case "staging": return <StagingSection />;
       case "export": return <ExportSection />;
       case "partners": return <PartnersSection />;
-      case "admin": return <AdminSection />;
+      case "admin": return <AdminOffice />;
       case "profile": return <ProfileSection user={user} onLogout={logout} />;
       case "help": return <HelpSection />;
       default: return <HomeSection onNavigate={(s) => setActive(s as Section)} userName={user?.name} />;

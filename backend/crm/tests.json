@@ -1,0 +1,11 @@
+{
+  "tests": [
+    { "name": "OPTIONS", "method": "OPTIONS", "path": "/", "expectedStatus": 200 },
+    { "name": "Dashboard", "method": "GET", "path": "/?resource=dashboard", "expectedStatus": 200 },
+    { "name": "List leads", "method": "GET", "path": "/?resource=leads", "expectedStatus": 200 },
+    { "name": "Create lead", "method": "POST", "path": "/?resource=leads", "body": {"name":"Тест","email":"t@t.ru","company":"OOO Тест"}, "expectedStatus": 200 },
+    { "name": "List deals", "method": "GET", "path": "/?resource=deals", "expectedStatus": 200 },
+    { "name": "List activities", "method": "GET", "path": "/?resource=activities", "expectedStatus": 200 },
+    { "name": "Unknown resource", "method": "GET", "path": "/?resource=foo", "expectedStatus": 404 }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "tests": [
+    { "name": "OPTIONS", "method": "OPTIONS", "path": "/", "expectedStatus": 200 },
+    { "name": "GET logs", "method": "GET", "path": "/?resource=logs", "expectedStatus": 200 },
+    { "name": "Unknown action", "method": "POST", "path": "/", "body": {"action":"xxx"}, "expectedStatus": 400 }
+  ]
+}

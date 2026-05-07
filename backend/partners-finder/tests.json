@@ -1,0 +1,7 @@
+{
+  "tests": [
+    { "name": "OPTIONS", "method": "OPTIONS", "path": "/", "expectedStatus": 200 },
+    { "name": "List partners empty", "method": "GET", "path": "/", "expectedStatus": 200 },
+    { "name": "List partners by category", "method": "GET", "path": "/?category=designer", "expectedStatus": 200 }
+  ]
+}
