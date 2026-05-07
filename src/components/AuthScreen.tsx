@@ -12,9 +12,14 @@ export default function AuthScreen({ onAuth }: { onAuth: (user: User) => void })
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [consent, setConsent] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (authMode === "register" && !consent) {
+      setError("Для регистрации необходимо согласие на обработку персональных данных");
+      return;
+    }
     setError(""); setLoading(true);
     const body: Record<string, string> = { email, password };
     if (authMode === "register") body.name = name;
@@ -173,6 +178,27 @@ export default function AuthScreen({ onAuth }: { onAuth: (user: User) => void })
                 />
               </div>
 
+              {authMode === "register" && (
+                <label className="flex items-start gap-2 cursor-pointer select-none pt-1">
+                  <input
+                    type="checkbox"
+                    checked={consent}
+                    onChange={(e) => setConsent(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded border-border accent-primary shrink-0"
+                  />
+                  <span className="text-[11px] text-muted-foreground leading-relaxed">
+                    Я даю согласие на обработку персональных данных в соответствии с{" "}
+                    <a href="/legal/privacy" target="_blank" rel="noopener" className="text-primary hover:underline">
+                      Политикой конфиденциальности
+                    </a>{" "}
+                    и принимаю{" "}
+                    <a href="/legal/terms" target="_blank" rel="noopener" className="text-primary hover:underline">
+                      Пользовательское соглашение
+                    </a>.
+                  </span>
+                </label>
+              )}
+
               {error && (
                 <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2 text-xs text-destructive flex items-center gap-2">
                   <Icon name="AlertCircle" size={14} />
@@ -181,7 +207,7 @@ export default function AuthScreen({ onAuth }: { onAuth: (user: User) => void })
               )}
 
               <button
-                type="submit" disabled={loading}
+                type="submit" disabled={loading || (authMode === "register" && !consent)}
                 className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2 mt-1"
               >
                 {loading ? <Icon name="Loader2" size={16} className="animate-spin" /> : <Icon name="ArrowRight" size={16} />}

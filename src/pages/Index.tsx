@@ -17,6 +17,7 @@ import SectionSEO from "@/components/SectionSEO";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import SiteFooter from "@/components/SiteFooter";
 import ContentProtection from "@/components/ContentProtection";
+import CookieBanner from "@/components/CookieBanner";
 import type { ScenarioSection } from "@/lib/scenarios";
 import type { SectionId } from "@/lib/seo";
 
@@ -321,6 +322,7 @@ export default function Index() {
       </main>
 
       <ContentProtection />
+      <CookieBanner />
 
       <ScenarioRunner
         activeSection={active}

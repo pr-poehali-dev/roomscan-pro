@@ -29,7 +29,7 @@ export const SCENARIOS: ScenarioFlow[] = [
     goal: "Подобрать диван, который точно впишется в гостиную",
     icon: "Sofa",
     color: "from-blue-500/20 to-purple-500/20",
-    outcome: "Гарантия габаритов · 0% возврата",
+    outcome: "Точные размеры · меньше возвратов",
     estimate: "10–15 минут",
     steps: [
       {
@@ -71,7 +71,7 @@ export const SCENARIOS: ScenarioFlow[] = [
     goal: "Согласовать проект с заказчиком за 2 дня вместо 2 недель",
     icon: "PencilRuler",
     color: "from-primary/20 to-cyan-500/20",
-    outcome: "Цикл согласования: −80%",
+    outcome: "Быстрее согласование с заказчиком",
     estimate: "30–60 минут",
     steps: [
       {

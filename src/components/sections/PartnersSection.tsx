@@ -83,9 +83,9 @@ const TIERS: Tier[] = [
 ];
 
 const BENEFITS = [
-  { icon: "TrendingUp", title: "Снижение возвратов",         desc: "Покупатели проверяют габариты до заказа — возвраты падают на 70%" },
+  { icon: "TrendingUp", title: "Снижение возвратов",         desc: "Покупатели сверяют габариты с реальной комнатой до заказа" },
   { icon: "Eye",        title: "Тёплый трафик",              desc: "Пользователь приходит к вам с конкретным интерьером и нуждой" },
-  { icon: "Users",      title: "Аудитория ремонта и стройки", desc: "До 50 000 владельцев квартир в активной фазе обустройства" },
+  { icon: "Users",      title: "Аудитория ремонта и стройки", desc: "Владельцы квартир в активной фазе обустройства" },
   { icon: "Bot",        title: "AI-рекомендации",            desc: "Ваши товары попадают в подборки по стилю и размерам" },
 ];
 
@@ -367,7 +367,16 @@ export default function PartnersSection() {
             </button>
 
             <p className="text-[10px] text-muted-foreground text-center">
-              Нажимая кнопку, вы соглашаетесь с обработкой персональных данных в соответствии с ФЗ-152.
+              Нажимая кнопку, вы соглашаетесь с обработкой персональных данных в соответствии
+              с{" "}
+              <a href="/legal/privacy" target="_blank" rel="noopener" className="text-primary hover:underline">
+                Политикой конфиденциальности
+              </a>{" "}
+              и{" "}
+              <a href="/legal/terms" target="_blank" rel="noopener" className="text-primary hover:underline">
+                Пользовательским соглашением
+              </a>{" "}
+              (152-ФЗ).
             </p>
           </div>
         )}

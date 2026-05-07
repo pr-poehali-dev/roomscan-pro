@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import Icon from "@/components/ui/icon";
 
 /**
@@ -15,7 +16,7 @@ export default function SiteFooter() {
       itemType="https://schema.org/Organization"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           {/* Бренд и описание */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -54,6 +55,35 @@ export default function SiteFooter() {
               <li><a href="#calc" className="text-foreground hover:text-primary transition-colors">Калькулятор сметы</a></li>
               <li><a href="#staging" className="text-foreground hover:text-primary transition-colors">Хоумстейджинг</a></li>
               <li><a href="#catalog" className="text-foreground hover:text-primary transition-colors">Каталог мебели</a></li>
+            </ul>
+          </div>
+
+          {/* Документы */}
+          <div>
+            <p className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground mb-2">
+              Документы
+            </p>
+            <ul className="space-y-1.5 text-xs">
+              <li>
+                <Link to="/legal/privacy" className="text-foreground hover:text-primary transition-colors">
+                  Политика конфиденциальности
+                </Link>
+              </li>
+              <li>
+                <Link to="/legal/terms" className="text-foreground hover:text-primary transition-colors">
+                  Пользовательское соглашение
+                </Link>
+              </li>
+              <li>
+                <Link to="/legal/cookies" className="text-foreground hover:text-primary transition-colors">
+                  Политика cookie
+                </Link>
+              </li>
+              <li>
+                <Link to="/legal/consent" className="text-foreground hover:text-primary transition-colors">
+                  Согласие на обработку ПД
+                </Link>
+              </li>
             </ul>
           </div>
 

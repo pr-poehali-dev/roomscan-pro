@@ -104,7 +104,7 @@ export function calcStagingScenarios(input: StagingInput): StagingScenario[] {
     {
       goal: "max_price",
       label: "Продать дорого",
-      desc: "Полный стейджинг — продаётся на 8-15% выше рынка",
+      desc: "Полный стейджинг — прогноз +8…15% к цене (зависит от региона)",
       budget: { min: Math.round(sumCost(max) * 0.95), max: Math.round(sumCost(max) * 1.15) },
       expectedUplift: Math.round(sumImpact(max) * 10) / 10,
       daysApprox: 14,
