@@ -8,6 +8,9 @@ import { exportEstimatePDF } from "@/lib/pdfExport";
 import TierSelector from "@/components/calc/TierSelector";
 import EstimateGroupCard from "@/components/calc/EstimateGroupCard";
 import RoomInputs from "@/components/calc/RoomInputs";
+import TemplatePicker from "@/components/calc/TemplatePicker";
+import type { EstimateTemplate } from "@/lib/estimateTemplates";
+import { notify } from "@/lib/notify";
 
 /**
  * Расширенный калькулятор сметы.
@@ -34,6 +37,12 @@ export default function CalcSection() {
 
   const setRegion = (regionId: string) => {
     setRoom((r) => ({ ...r, regionId }));
+  };
+
+  const applyTemplate = (t: EstimateTemplate) => {
+    setRoom((r) => ({ ...t.room, regionId: r.regionId }));
+    setTier(t.recommendedTier);
+    notify.success(`Шаблон «${t.name}» применён`, t.note);
   };
 
   // Если скан появился пока пользователь на странице — предложим подставить
@@ -99,6 +108,9 @@ export default function CalcSection() {
           </button>
         </div>
       )}
+
+      {/* Готовые шаблоны: новостройка / вторичка */}
+      <TemplatePicker onPick={applyTemplate} />
 
       <TierSelector value={tier} onChange={setTier} />
 

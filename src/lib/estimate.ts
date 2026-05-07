@@ -68,10 +68,21 @@ const TIER_RATE: Record<Tier, {
   works: number; materials: number; days: number;
   warranty: string; label: string; desc: string;
 }> = {
-  econom:   { works: 0.78, materials: 0.70, days: 0.85, warranty: "1 год",  label: "Эконом",   desc: "Косметический ремонт. Замена покрытий, базовые материалы." },
+  econom:   { works: 0.70, materials: 0.65, days: 0.85, warranty: "1 год",  label: "Эконом",   desc: "Косметический ремонт. Замена покрытий, базовые материалы." },
   standart: { works: 1.00, materials: 1.00, days: 1.00, warranty: "3 года", label: "Стандарт", desc: "Капитальный ремонт. Выравнивание стен, замена сантехники, электрики." },
-  premium:  { works: 1.55, materials: 2.20, days: 1.35, warranty: "5 лет",  label: "Премиум",  desc: "Евроремонт. Дизайн-проект, премиум-материалы, авторский надзор." },
+  premium:  { works: 1.40, materials: 1.85, days: 1.35, warranty: "5 лет",  label: "Премиум",  desc: "Евроремонт. Дизайн-проект, премиум-материалы, авторский надзор." },
 };
+
+/**
+ * Множитель цен на 2026 год к базовым ставкам, заложенным в BASE_PRICES.
+ * Откалиброван по эталону Самары (worksK=0.70, materialsK=0.91, типовая комната 30 м²):
+ *   Эконом   ≈ 15 000 ₽/м²
+ *   Стандарт ≈ 23 000 ₽/м²
+ *   Премиум  ≈ 28 500 ₽/м²
+ *
+ * При необходимости легко поднять/снизить общий уровень цен — меняйте только эту константу.
+ */
+const YEAR_2026_MULTIPLIER = 1.90;
 
 export const TIERS: Tier[] = ["econom", "standart", "premium"];
 export const TIER_META = TIER_RATE;
@@ -134,8 +145,9 @@ function priced(
   region: ReturnType<typeof getRegion>,
 ): { price: number; worksShare: number } {
   const k = TIER_RATE[tier];
-  const w = base.works * k.works * region.worksK;
-  const m = base.materials * k.materials * region.materialsK;
+  const Y = YEAR_2026_MULTIPLIER;
+  const w = base.works * k.works * region.worksK * Y;
+  const m = base.materials * k.materials * region.materialsK * Y;
   const total = w + m;
   const worksShare = total > 0 ? w / total : 1;
   return { price: Math.round(total), worksShare };
