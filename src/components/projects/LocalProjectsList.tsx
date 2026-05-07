@@ -4,6 +4,7 @@ import { listProjects, deleteProject, type SavedProject } from "@/lib/projectsSt
 import { formatRub } from "@/lib/estimate";
 import { exportProjectPDF } from "@/lib/pdfExport";
 import { notify, confirmAction } from "@/lib/notify";
+import ProjectProgress from "./ProjectProgress";
 
 interface Props {
   onOpen?: (p: SavedProject) => void;
@@ -11,13 +12,15 @@ interface Props {
   selectable?: boolean;
   selected?: Set<string>;
   onToggleSelect?: (id: string) => void;
+  /** Навигация по разделам сайта (для кнопок шагов прогресса) */
+  onNavigate?: (section: string) => void;
 }
 
 /**
  * Список локально сохранённых проектов (без авторизации).
  * Показывается в секции «Мои проекты» в гостевом режиме.
  */
-export default function LocalProjectsList({ onOpen, selectable, selected, onToggleSelect }: Props) {
+export default function LocalProjectsList({ onOpen, selectable, selected, onToggleSelect, onNavigate }: Props) {
   const [projects, setProjects] = useState<SavedProject[]>([]);
 
   useEffect(() => {
@@ -100,6 +103,9 @@ export default function LocalProjectsList({ onOpen, selectable, selected, onTogg
                     </span>
                   )}
                 </div>
+
+                {/* Прогресс шагов проекта */}
+                <ProjectProgress project={p} onNavigate={onNavigate} />
               </div>
 
               <div className="flex items-center gap-1 shrink-0">

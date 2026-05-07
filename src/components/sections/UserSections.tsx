@@ -213,7 +213,7 @@ function GuestProjectsView({ hasLocal, onNavigate }: { hasLocal: boolean; onNavi
         </div>
       )}
 
-      {tab === "list" && hasLocal && <LocalProjectsList />}
+      {tab === "list" && hasLocal && <LocalProjectsList onNavigate={onNavigate} />}
       {tab === "compare" && canCompare && <ProjectsCompare />}
 
       {wizardOpen && (
