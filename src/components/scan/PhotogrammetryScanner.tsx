@@ -3,6 +3,7 @@ import Icon from "@/components/ui/icon";
 import { apiFetch } from "@/lib/api";
 import { saveLastScan } from "@/lib/scanStore";
 import PointCloud3D, { type Point3D, type RoomBox } from "./PointCloud3D";
+import MobileQRBlock from "./MobileQRBlock";
 import ScannerViewport from "./photogrammetry/ScannerViewport";
 import ScannerControls from "./photogrammetry/ScannerControls";
 import ScanResultPanel from "./photogrammetry/ScanResultPanel";
@@ -361,6 +362,8 @@ export default function PhotogrammetryScanner({ onComplete }: { onComplete: (res
           </div>
         </div>
       )}
+
+      {inIframe && phase === "idle" && <MobileQRBlock />}
 
       <ScannerViewport
         videoRef={videoRef}
