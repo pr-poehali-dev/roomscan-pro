@@ -11,6 +11,8 @@ import StagingSection from "@/components/sections/StagingSection";
 import OpeningsSection from "@/components/sections/OpeningsSection";
 import PartnersSection from "@/components/sections/PartnersSection";
 import PricingSection from "@/components/sections/PricingSection";
+import EngineeringSection from "@/components/sections/EngineeringSection";
+import ModularHousesSection from "@/components/sections/ModularHousesSection";
 import AdminOffice from "@/components/admin/AdminOffice";
 import ScenarioRunner from "@/components/ScenarioRunner";
 import AIManager from "@/components/AIManager";
@@ -33,6 +35,8 @@ type Section =
   | "calc"
   | "openings"
   | "staging"
+  | "engineering"
+  | "modular-houses"
   | "export"
   | "pricing"
   | "partners"
@@ -51,6 +55,8 @@ const navItemsAll: { id: Section; label: string; icon: string; hideInGuest?: boo
   { id: "calc", label: "Смета ремонта", icon: "Calculator" },
   { id: "openings", label: "Окна и двери", icon: "DoorOpen" },
   { id: "staging", label: "Хоумстейджинг", icon: "TrendingUp" },
+  { id: "engineering", label: "Инженерные узлы", icon: "Settings2" },
+  { id: "modular-houses", label: "Модульные дома", icon: "Boxes" },
   { id: "export", label: "Экспорт", icon: "Share2" },
   { id: "pricing", label: "Тарифы", icon: "Wallet" },
   { id: "partners", label: "Партнёрам", icon: "Handshake" },
@@ -73,7 +79,8 @@ function getInitialSection(): Section {
   const hash = window.location.hash.replace("#", "") as Section;
   const valid: Section[] = [
     "home", "scan", "usecases", "projects", "planner", "catalog",
-    "styles", "calc", "openings", "staging", "export", "partners", "admin", "profile", "help",
+    "styles", "calc", "openings", "staging", "engineering", "modular-houses",
+    "export", "pricing", "partners", "admin", "profile", "help",
   ];
   return valid.includes(hash) ? hash : "home";
 }
@@ -199,6 +206,8 @@ export default function Index() {
       case "calc": return <CalcSection />;
       case "openings": return <OpeningsSection />;
       case "staging": return <StagingSection />;
+      case "engineering": return <EngineeringSection />;
+      case "modular-houses": return <ModularHousesSection />;
       case "export": return <ExportSection />;
       case "pricing": return <PricingSection />;
       case "partners": return <PartnersSection />;
