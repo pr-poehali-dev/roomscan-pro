@@ -57,8 +57,18 @@ export default function FurnitureDetailsModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Шапка с превью */}
-        <div className="relative bg-gradient-to-br from-secondary to-primary/5 aspect-[16/9] flex items-center justify-center">
-          <Icon name={item.icon} size={120} className="text-primary/40" />
+        <div className={`relative aspect-[16/9] flex items-center justify-center overflow-hidden ${
+          item.imageUrl ? "bg-white" : "bg-gradient-to-br from-secondary to-primary/5"
+        }`}>
+          {item.imageUrl ? (
+            <img
+              src={item.imageUrl}
+              alt={item.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <Icon name={item.icon} size={120} className="text-primary/40" />
+          )}
 
           <button
             onClick={onClose}

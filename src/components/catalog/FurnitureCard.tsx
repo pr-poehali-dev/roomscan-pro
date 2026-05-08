@@ -32,18 +32,27 @@ export default function FurnitureCard({
     >
       {/* Превью */}
       <div
-        className={`relative aspect-video flex items-center justify-center transition-colors cursor-pointer ${
-          inCart ? "bg-primary/10" : "bg-secondary group-hover:bg-primary/5"
+        className={`relative aspect-video flex items-center justify-center transition-colors cursor-pointer overflow-hidden ${
+          inCart ? "bg-primary/10" : item.imageUrl ? "bg-white" : "bg-secondary group-hover:bg-primary/5"
         }`}
         onClick={() => onOpenDetails(item)}
       >
-        <Icon
-          name={item.icon}
-          size={48}
-          className={`transition-all group-hover:scale-110 ${
-            inCart ? "text-primary" : "text-border group-hover:text-primary/40"
-          }`}
-        />
+        {item.imageUrl ? (
+          <img
+            src={item.imageUrl}
+            alt={item.name}
+            loading="lazy"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <Icon
+            name={item.icon}
+            size={48}
+            className={`transition-all group-hover:scale-110 ${
+              inCart ? "text-primary" : "text-border group-hover:text-primary/40"
+            }`}
+          />
+        )}
 
         {/* Бейджи */}
         <div className="absolute top-2 left-2 flex flex-col gap-1">
