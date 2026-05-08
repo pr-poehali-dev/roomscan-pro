@@ -6,6 +6,7 @@ export const CRM_URL = "https://functions.poehali.dev/670c4048-1474-45cd-a4db-04
 export const PARTNERS_FINDER_URL = "https://functions.poehali.dev/20f0f8db-38d0-44ee-9ae8-16abec8d49fd";
 export const SALES_AGENT_URL = "https://functions.poehali.dev/4aa95b17-ab9a-4159-b62c-f5d97fe922c2";
 export const ADMIN_AUTH_URL = "https://functions.poehali.dev/73a4c875-2194-4128-bb1a-72f318c5b902";
+export const ADMIN_QUOTES_URL = "https://functions.poehali.dev/84d17595-8e80-4f04-93cd-6593929b1094";
 
 const ADMIN_TOKEN_KEY = "roomscan:admin-token";
 const ADMIN_LOGIN_KEY = "roomscan:admin-login";
@@ -275,4 +276,50 @@ export const salesAgentApi = {
     if (agent) p.set("agent", agent);
     return adminFetch<{ items: AILog[] }>(`${SALES_AGENT_URL}?${p}`);
   },
+};
+
+/* ──────── ЗАЯВКИ КЛИЕНТОВ ──────── */
+
+export type QuoteKind = "engineering" | "modular_house";
+export type QuoteStatus = "new" | "in_work" | "done" | "rejected";
+
+export interface QuoteRequest {
+  id: number;
+  kind: QuoteKind;
+  project_title: string;
+  client_name: string;
+  client_phone: string | null;
+  client_email: string | null;
+  comment: string | null;
+  total_price: number;
+  status: QuoteStatus;
+  sent_to_telegram: boolean;
+  sent_to_max: boolean;
+  admin_note: string | null;
+  snapshot: { items?: { name: string; quantity: number; price?: number }[] } | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface QuotesListResp {
+  items: QuoteRequest[];
+  total: number;
+  stats: Partial<Record<QuoteStatus, number>>;
+}
+
+export const quotesApi = {
+  list: (params?: { q?: string; kind?: QuoteKind | "all"; status?: QuoteStatus | "all" }) => {
+    const p = new URLSearchParams();
+    if (params?.q) p.set("q", params.q);
+    if (params?.kind && params.kind !== "all") p.set("kind", params.kind);
+    if (params?.status && params.status !== "all") p.set("status", params.status);
+    return adminFetch<QuotesListResp>(`${ADMIN_QUOTES_URL}?${p.toString()}`);
+  },
+  update: (id: number, body: { status?: QuoteStatus; admin_note?: string }) =>
+    adminFetch<{ ok: boolean; item: { id: number; status: QuoteStatus; admin_note: string | null } }>(
+      `${ADMIN_QUOTES_URL}?id=${id}`,
+      { method: "POST", body: JSON.stringify(body) },
+    ),
+  remove: (id: number) =>
+    adminFetch<{ ok: boolean }>(`${ADMIN_QUOTES_URL}?id=${id}`, { method: "DELETE" }),
 };

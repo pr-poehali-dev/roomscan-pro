@@ -1,0 +1,30 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Reject without admin token",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 401
+    },
+    {
+      "name": "Reject update without auth",
+      "method": "POST",
+      "path": "/?id=1",
+      "headers": {"Content-Type": "application/json"},
+      "body": {"status": "in_work"},
+      "expectedStatus": 401
+    },
+    {
+      "name": "Reject delete without auth",
+      "method": "DELETE",
+      "path": "/?id=1",
+      "expectedStatus": 401
+    }
+  ]
+}

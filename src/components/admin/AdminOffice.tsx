@@ -2,16 +2,18 @@ import { useEffect, useState } from "react";
 import Icon from "@/components/ui/icon";
 import AdminDashboard from "./AdminDashboard";
 import AdminCRM from "./AdminCRM";
+import AdminQuotes from "./AdminQuotes";
 import AdminPartners from "./AdminPartners";
 import AdminSalesAgent from "./AdminSalesAgent";
 import AdminLogin from "./AdminLogin";
 import { adminAuthApi, clearAdminToken, getAdminLogin, getAdminToken } from "@/lib/adminApi";
 import { notify } from "@/lib/notify";
 
-type Tab = "dashboard" | "crm" | "partners" | "ai";
+type Tab = "dashboard" | "quotes" | "crm" | "partners" | "ai";
 
 const TABS: { id: Tab; label: string; icon: string; desc: string }[] = [
   { id: "dashboard", label: "Дашборд",   icon: "LayoutDashboard", desc: "Метрики и воронка" },
+  { id: "quotes",    label: "Заявки",    icon: "Inbox",            desc: "Клиенты с сайта" },
   { id: "crm",       label: "CRM",       icon: "Users",            desc: "Лиды, сделки, активности" },
   { id: "partners",  label: "Партнёры",  icon: "Building2",        desc: "AI-автопоиск партнёров" },
   { id: "ai",        label: "AI-агент",  icon: "Bot",              desc: "Письма и переговоры" },
@@ -114,6 +116,7 @@ export default function AdminOffice() {
       {/* Контент таба */}
       <div className="animate-fade-in" key={tab}>
         {tab === "dashboard" && <AdminDashboard />}
+        {tab === "quotes"    && <AdminQuotes />}
         {tab === "crm"       && <AdminCRM />}
         {tab === "partners"  && <AdminPartners />}
         {tab === "ai"        && <AdminSalesAgent />}
