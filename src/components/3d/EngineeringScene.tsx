@@ -144,7 +144,12 @@ function EquipmentMesh({
   const isCylinder =
     item.category === "expansion_tank" ||
     item.category === "boiler_tank" ||
-    item.category === "chimney";
+    item.category === "chimney" ||
+    item.category === "gas_cylinder" ||
+    item.category === "evaporator";
+
+  // Газгольдер — горизонтальный цилиндр (длина по Z)
+  const isHorizontalTank = item.category === "gas_tank";
 
   const draggable = !!onMove;
   const renderPos = livePos ?? position;
@@ -206,26 +211,30 @@ function EquipmentMesh({
         document.body.style.cursor = "default";
       }}
     >
-      <mesh castShadow receiveShadow>
-        {isCylinder ? (
+      <mesh castShadow receiveShadow rotation={isHorizontalTank ? [Math.PI / 2, 0, 0] : [0, 0, 0]}>
+        {isHorizontalTank ? (
+          <cylinderGeometry args={[Math.min(sx, sy) / 2, Math.min(sx, sy) / 2, sz, 32]} />
+        ) : isCylinder ? (
           <cylinderGeometry args={[Math.min(sx, sz) / 2, Math.min(sx, sz) / 2, sy, 24]} />
         ) : (
           <boxGeometry args={[sx, sy, sz]} />
         )}
         <meshStandardMaterial
           color={item.color}
-          metalness={0.35}
-          roughness={0.5}
+          metalness={isHorizontalTank ? 0.7 : 0.35}
+          roughness={isHorizontalTank ? 0.35 : 0.5}
           emissive={isSelected || dragging ? "#1ea54a" : "#000"}
           emissiveIntensity={dragging ? 0.45 : isSelected ? 0.25 : 0}
         />
       </mesh>
 
       {(isSelected || dragging) && (
-        <lineSegments>
+        <lineSegments rotation={isHorizontalTank ? [Math.PI / 2, 0, 0] : [0, 0, 0]}>
           <edgesGeometry
             args={[
-              isCylinder
+              isHorizontalTank
+                ? new THREE.CylinderGeometry(Math.min(sx, sy) / 2, Math.min(sx, sy) / 2, sz, 32)
+                : isCylinder
                 ? new THREE.CylinderGeometry(Math.min(sx, sz) / 2, Math.min(sx, sz) / 2, sy, 24)
                 : new THREE.BoxGeometry(sx, sy, sz),
             ]}

@@ -18,6 +18,12 @@ export type EquipmentCategory =
   | "controller"       // автоматика
   | "chimney"          // дымоход
   | "pipe"             // трубы / монтаж
+  | "gas_tank"         // газгольдер (СУГ, подземный/наземный)
+  | "gas_cylinder"     // баллон газовый
+  | "gas_regulator"    // редуктор / РДНК
+  | "gas_meter"        // счётчик газа
+  | "gas_detector"     // сигнализатор / газоанализатор
+  | "evaporator"       // испаритель СУГ
   | "service";         // работы
 
 export interface EquipmentItem {
@@ -249,6 +255,172 @@ export const EQUIPMENT: EquipmentItem[] = [
     color: "#95a5a6",
   },
 
+  // ГАЗГОЛЬДЕРЫ (СУГ — пропан-бутан, автономная газификация)
+  {
+    id: "gas-tank-2700",
+    category: "gas_tank",
+    name: "Газгольдер Real-Invest 2700 л",
+    brand: "Реал-Инвест",
+    specs: "2700 л · подземный · ВДГО",
+    description:
+      "Стандартный объём для дома до 200 м². Подземное размещение, заправка раз в 6-8 месяцев. Высокие горловины для удобного обслуживания.",
+    size: [1.25, 1.25, 4.6],
+    price: 165000,
+    unit: "шт",
+    color: "#d97706",
+    sku: "RI-2700-G",
+  },
+  {
+    id: "gas-tank-4850",
+    category: "gas_tank",
+    name: "Газгольдер Chemet 4850 л",
+    brand: "Chemet",
+    specs: "4850 л · подземный · с мультиклапаном",
+    description:
+      "Польский газгольдер премиум-класса для домов 250-500 м². Срок службы 30 лет. Мультиклапан Rego, высокая горловина.",
+    size: [1.4, 1.4, 5.7],
+    price: 295000,
+    unit: "шт",
+    color: "#d97706",
+    sku: "CH-4850",
+  },
+  {
+    id: "gas-tank-6400",
+    category: "gas_tank",
+    name: "Газгольдер Antonio Merloni 6400 л",
+    brand: "Antonio Merloni",
+    specs: "6400 л · подземный · итальянское качество",
+    description:
+      "Для крупных коттеджей 500-700 м² или мини-производств. Стандарт EN 12542. Антикоррозийное покрытие.",
+    size: [1.5, 1.5, 6.4],
+    price: 385000,
+    unit: "шт",
+    color: "#d97706",
+  },
+
+  // БАЛЛОНЫ ГАЗОВЫЕ
+  {
+    id: "gas-cyl-50",
+    category: "gas_cylinder",
+    name: "Баллон газовый 50 л (стальной)",
+    specs: "50 л · 1.6 МПа · ГОСТ 15860",
+    description:
+      "Стандартный пропан-бутановый баллон. Используется для отопления, ГВС или подключения к плите. Высота 1300 мм.",
+    size: [0.3, 1.3, 0.3],
+    price: 4200,
+    unit: "шт",
+    color: "#dc2626",
+  },
+  {
+    id: "gas-cyl-composite",
+    category: "gas_cylinder",
+    name: "Композитный баллон HEXAGON Ragasco 33 л",
+    brand: "Ragasco",
+    specs: "33 л · норвежский · взрывобезопасный",
+    description:
+      "Лёгкий полупрозрачный композитный баллон. Не ржавеет, не взрывается при пожаре, виден остаток газа. Срок службы 20 лет.",
+    size: [0.3, 0.6, 0.3],
+    price: 9800,
+    unit: "шт",
+    color: "#fbbf24",
+  },
+  {
+    id: "gas-cyl-rampa-4",
+    category: "gas_cylinder",
+    name: "Газовая рампа на 4 баллона",
+    specs: "Коллектор + клапаны + редуктор · 4 × 50 л",
+    description:
+      "Готовая баллонная установка для дома до 80 м². Автоматическое переключение между группами баллонов.",
+    size: [1.6, 1.4, 0.4],
+    price: 38500,
+    unit: "компл",
+    color: "#dc2626",
+  },
+
+  // РЕДУКТОРЫ И РЕГУЛЯТОРЫ
+  {
+    id: "gas-reg-rdnk",
+    category: "gas_regulator",
+    name: "Регулятор давления РДНК-50",
+    specs: "Q до 50 м³/ч · вход до 1.2 МПа · ГРПШ",
+    description:
+      "Регулятор низкого давления. Снижает входное давление с магистрали или газгольдера до 3-5 кПа для котла.",
+    size: [0.25, 0.32, 0.18],
+    price: 18500,
+    unit: "шт",
+    color: "#475569",
+  },
+  {
+    id: "gas-reg-cavagna",
+    category: "gas_regulator",
+    name: "Редуктор Cavagna 1.5 кг/ч",
+    brand: "Cavagna Group",
+    specs: "1.5 кг/ч · 30 мбар · с предохранителем",
+    description:
+      "Итальянский бытовой редуктор на пропан-бутан. Защита от превышения давления (PRV) и перетока (OPSO).",
+    size: [0.12, 0.1, 0.08],
+    price: 3400,
+    unit: "шт",
+    color: "#475569",
+  },
+
+  // СЧЁТЧИКИ ГАЗА
+  {
+    id: "gas-meter-bk-g4",
+    category: "gas_meter",
+    name: "Счётчик газа BK-G4 ELSTER",
+    brand: "Elster",
+    specs: "Q 0.04-6 м³/ч · бытовой · с термокомпенсацией",
+    description:
+      "Мембранный счётчик на дом до 200 м². Класс точности 1.5. Сертификация ОИТ, поверка раз в 12 лет.",
+    size: [0.22, 0.22, 0.16],
+    price: 6800,
+    unit: "шт",
+    color: "#0ea5e9",
+  },
+
+  // СИГНАЛИЗАТОРЫ ГАЗА
+  {
+    id: "gas-detector-kenar",
+    category: "gas_detector",
+    name: "Сигнализатор СИКЗ-И-СО-ПБ Kenar",
+    brand: "Кенар",
+    specs: "Метан + СО + клапан · 220 В",
+    description:
+      "Российский сертифицированный сигнализатор. При утечке газа или превышении CO автоматически перекрывает магистраль клапаном.",
+    size: [0.13, 0.09, 0.05],
+    price: 7500,
+    unit: "компл",
+    color: "#facc15",
+  },
+  {
+    id: "gas-detector-seitron",
+    category: "gas_detector",
+    name: "Сигнализатор Seitron RGYMET",
+    brand: "Seitron",
+    specs: "Метан · итальянский · с реле",
+    description:
+      "Итальянский настенный газоанализатор для котельной. Звуковой и световой сигнал, выход на электромагнитный клапан.",
+    size: [0.12, 0.08, 0.04],
+    price: 5200,
+    unit: "шт",
+    color: "#facc15",
+  },
+
+  // ИСПАРИТЕЛИ СУГ
+  {
+    id: "gas-evap-200",
+    category: "evaporator",
+    name: "Испаритель СУГ 200 кг/ч",
+    specs: "200 кг/ч · электрический · 24 кВт",
+    description:
+      "Принудительный испаритель для зимней эксплуатации газгольдера. Решает проблему «газ не идёт в мороз» при больших расходах.",
+    size: [0.55, 1.1, 0.45],
+    price: 285000,
+    unit: "шт",
+    color: "#fb7185",
+  },
+
   // РАБОТЫ
   {
     id: "service-install",
@@ -259,6 +431,30 @@ export const EQUIPMENT: EquipmentItem[] = [
       "Полный комплекс работ: разводка трубопроводов, установка и подключение оборудования, опрессовка, настройка автоматики, ввод в эксплуатацию.",
     size: [0, 0, 0],
     price: 95000,
+    unit: "услуга",
+    color: "#000",
+  },
+  {
+    id: "service-gas-project",
+    category: "service",
+    name: "Проект газоснабжения дома",
+    specs: "Согласование с газовой службой · от 14 дней",
+    description:
+      "Разработка и согласование проектной документации в Газпром Газораспределение. Включает технические условия, рабочий проект, экспертизу.",
+    size: [0, 0, 0],
+    price: 45000,
+    unit: "услуга",
+    color: "#000",
+  },
+  {
+    id: "service-gas-install",
+    category: "service",
+    name: "Монтаж газгольдера + обвязка",
+    specs: "Котлован · обвязка · испытания · акт",
+    description:
+      "Земляные работы, установка газгольдера, монтаж газопровода низкого давления до котла, опрессовка, ввод в эксплуатацию.",
+    size: [0, 0, 0],
+    price: 145000,
     unit: "услуга",
     color: "#000",
   },
@@ -365,6 +561,71 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       { equipmentId: "chimney-coax", position: [0.7, 2.4, 0.5], count: 2 },
     ],
   },
+  {
+    id: "tpl-gasholder-2700",
+    name: "Автономная газификация · 200 м²",
+    purpose: "Газгольдер 2700 л + котёл BAXI · решение «под ключ» SUPER ГАЗ",
+    forArea: "до 200 м²",
+    power: "24 кВт + 2700 л СУГ",
+    roomSize: [6.0, 2.7, 3.0],
+    icon: "Fuel",
+    layout: [
+      { equipmentId: "gas-tank-2700", position: [0.4, 0.7, 0.7] },
+      { equipmentId: "gas-reg-rdnk", position: [2.6, 1.4, 0.3] },
+      { equipmentId: "gas-meter-bk-g4", position: [3.0, 1.4, 0.3] },
+      { equipmentId: "boiler-baxi-24", position: [3.5, 1.0, 0.4] },
+      { equipmentId: "tank-drazice-100", position: [4.5, 0.5, 0.4] },
+      { equipmentId: "pump-grundfos-25-40", position: [3.3, 0.6, 0.4] },
+      { equipmentId: "expansion-reflex-12", position: [5.2, 0.6, 0.4] },
+      { equipmentId: "safety-watts", position: [3.6, 1.7, 0.4] },
+      { equipmentId: "gas-detector-kenar", position: [4.8, 1.9, 0.4] },
+      { equipmentId: "controller-zont", position: [5.4, 1.7, 0.3] },
+      { equipmentId: "chimney-coax", position: [3.5, 2.0, 0.4] },
+    ],
+  },
+  {
+    id: "tpl-gasholder-4850",
+    name: "Газгольдер 4850 л · дом 350 м²",
+    purpose: "СУГ Chemet + конденсационный котёл · полная автоматика",
+    forArea: "250-400 м²",
+    power: "50 кВт + 4850 л СУГ",
+    roomSize: [7.0, 2.8, 3.5],
+    icon: "Flame",
+    layout: [
+      { equipmentId: "gas-tank-4850", position: [0.4, 0.7, 0.7] },
+      { equipmentId: "gas-reg-rdnk", position: [3.4, 1.5, 0.5] },
+      { equipmentId: "gas-meter-bk-g4", position: [3.8, 1.5, 0.5] },
+      { equipmentId: "boiler-protherm-50", position: [4.3, 0.7, 0.5] },
+      { equipmentId: "tank-drazice-200", position: [5.5, 0.7, 0.5] },
+      { equipmentId: "pump-wilo-yonos", position: [4.1, 0.4, 0.5], count: 2 },
+      { equipmentId: "expansion-reflex-25", position: [6.2, 0.8, 0.5] },
+      { equipmentId: "manifold-5", position: [4.5, 1.8, 0.5] },
+      { equipmentId: "safety-watts", position: [4.6, 1.7, 0.5] },
+      { equipmentId: "gas-detector-seitron", position: [3.6, 2.1, 0.5] },
+      { equipmentId: "controller-zont", position: [6.2, 1.8, 0.4] },
+      { equipmentId: "chimney-coax", position: [4.3, 2.2, 0.5] },
+    ],
+  },
+  {
+    id: "tpl-cylinder",
+    name: "Дача · баллонная установка",
+    purpose: "Композитные баллоны + котёл · быстрый старт без газгольдера",
+    forArea: "до 100 м²",
+    power: "24 кВт · 4 баллона",
+    roomSize: [2.6, 2.4, 2.4],
+    icon: "Cylinder",
+    layout: [
+      { equipmentId: "gas-cyl-rampa-4", position: [0.4, 0.7, 0.3] },
+      { equipmentId: "gas-reg-cavagna", position: [2.0, 1.3, 0.3] },
+      { equipmentId: "gas-meter-bk-g4", position: [1.7, 1.4, 0.3] },
+      { equipmentId: "boiler-baxi-24", position: [1.2, 1.0, 0.4] },
+      { equipmentId: "pump-grundfos-25-40", position: [1.0, 0.6, 0.4] },
+      { equipmentId: "expansion-reflex-12", position: [2.2, 0.6, 0.4] },
+      { equipmentId: "safety-watts", position: [1.5, 1.7, 0.4] },
+      { equipmentId: "gas-detector-kenar", position: [0.5, 1.9, 0.3] },
+      { equipmentId: "chimney-coax", position: [1.2, 2.0, 0.4] },
+    ],
+  },
 ];
 
 /* ────────────────── HELPERS ────────────────── */
@@ -409,6 +670,19 @@ export function buildBom(template: NodeTemplate, regionK = 1): BomRow[] {
   map.set(pipes.id, { item: pipes, quantity: 1, total: Math.round(pipes.price * regionK) });
   map.set(install.id, { item: install, quantity: 1, total: Math.round(install.price * regionK) });
 
+  // Если в шаблоне есть газгольдер — авто-добавляем услуги SUPER ГАЗ:
+  // проект газоснабжения + монтаж газгольдера с обвязкой
+  const hasGasHolder = template.layout.some((p) => {
+    const eq = getEquipment(p.equipmentId);
+    return eq?.category === "gas_tank";
+  });
+  if (hasGasHolder) {
+    const project = getEquipment("service-gas-project");
+    const gasInstall = getEquipment("service-gas-install");
+    if (project) map.set(project.id, { item: project, quantity: 1, total: Math.round(project.price * regionK) });
+    if (gasInstall) map.set(gasInstall.id, { item: gasInstall, quantity: 1, total: Math.round(gasInstall.price * regionK) });
+  }
+
   return Array.from(map.values());
 }
 
@@ -436,5 +710,11 @@ export const CATEGORY_LABELS: Record<EquipmentCategory, string> = {
   controller: "Автоматика",
   chimney: "Дымоход",
   pipe: "Трубопроводы",
+  gas_tank: "Газгольдер",
+  gas_cylinder: "Баллон СУГ",
+  gas_regulator: "Редуктор / РДНК",
+  gas_meter: "Счётчик газа",
+  gas_detector: "Сигнализатор газа",
+  evaporator: "Испаритель",
   service: "Работы",
 };
