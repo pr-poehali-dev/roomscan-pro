@@ -1,5 +1,5 @@
-import { Suspense, ReactNode } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Suspense, ReactNode, useEffect } from "react";
+import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls, Grid, Environment } from "@react-three/drei";
 import Icon from "@/components/ui/icon";
 
@@ -17,6 +17,18 @@ interface Props {
   hideGrid?: boolean;
   /** Дополнительный класс контейнера */
   className?: string;
+  /** Колбэк, через который наружу передаётся canvas (для PDF-снимков) */
+  onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
+}
+
+/** Внутренний хук — пробрасывает canvas из контекста three наружу */
+function CanvasReporter({ onReady }: { onReady?: (c: HTMLCanvasElement | null) => void }) {
+  const { gl } = useThree();
+  useEffect(() => {
+    onReady?.(gl.domElement);
+    return () => onReady?.(null);
+  }, [gl, onReady]);
+  return null;
 }
 
 /**
@@ -31,6 +43,7 @@ export default function Scene3D({
   gridSize = 20,
   hideGrid = false,
   className = "",
+  onCanvasReady,
 }: Props) {
   return (
     <div
@@ -41,8 +54,9 @@ export default function Scene3D({
         shadows
         camera={{ position: cameraPosition, fov: 50 }}
         dpr={[1, 2]}
-        gl={{ antialias: true, alpha: false }}
+        gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
       >
+        <CanvasReporter onReady={onCanvasReady} />
         <color attach="background" args={["#eef2f7"]} />
         <fog attach="fog" args={["#eef2f7", 25, 60]} />
 

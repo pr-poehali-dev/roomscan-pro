@@ -1,0 +1,31 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "List projects (empty user)",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Create project",
+      "method": "POST",
+      "path": "/",
+      "headers": {"X-User-Id": "1", "Content-Type": "application/json"},
+      "body": {
+        "title": "Test boiler",
+        "template_id": "tpl-house-100",
+        "layout": [{"equipmentId": "boiler-baxi-24", "position": [0.5, 1, 0.4]}],
+        "total_price": 250000
+      },
+      "expectedStatus": 201,
+      "expectedBody": {"title": "Test boiler", "template_id": "tpl-house-100"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

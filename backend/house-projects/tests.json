@@ -1,0 +1,32 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "List projects",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Create house project",
+      "method": "POST",
+      "path": "/",
+      "headers": {"X-User-Id": "1", "Content-Type": "application/json"},
+      "body": {
+        "title": "Мой дом",
+        "base_project_id": "house-family-50",
+        "layout": [{"moduleId": "mod-living-18", "position": [0, 0]}],
+        "total_area": 18,
+        "grand_total": 1500000
+      },
+      "expectedStatus": 201,
+      "expectedBody": {"title": "Мой дом"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

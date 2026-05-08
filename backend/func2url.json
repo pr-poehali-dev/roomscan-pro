@@ -1,4 +1,7 @@
 {
+  "send-quote": "https://functions.poehali.dev/64b55cbd-8657-4dad-8529-a44f9c1d7199",
+  "house-projects": "https://functions.poehali.dev/d3afca03-e4b6-4ca0-b2b9-70b2ddd526b5",
+  "eng-projects": "https://functions.poehali.dev/006fd31a-3056-4ae4-ad05-7f4e409133b1",
   "yookassa-yookassa": "https://functions.poehali.dev/d6579c94-d9f5-44bd-b628-dc62b09aec70",
   "yookassa-yookassa-webhook": "https://functions.poehali.dev/a82bc731-e484-4309-a358-086fca3c2eed",
   "admin-auth": "https://functions.poehali.dev/73a4c875-2194-4128-bb1a-72f318c5b902",

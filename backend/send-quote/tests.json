@@ -1,0 +1,43 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Reject without name",
+      "method": "POST",
+      "path": "/",
+      "headers": {"Content-Type": "application/json"},
+      "body": {"client_phone": "+79991234567"},
+      "expectedStatus": 400
+    },
+    {
+      "name": "Reject without phone and email",
+      "method": "POST",
+      "path": "/",
+      "headers": {"Content-Type": "application/json"},
+      "body": {"client_name": "Иван"},
+      "expectedStatus": 400
+    },
+    {
+      "name": "Accept valid quote",
+      "method": "POST",
+      "path": "/",
+      "headers": {"Content-Type": "application/json"},
+      "body": {
+        "kind": "engineering",
+        "project_title": "Котельная 24 кВт",
+        "client_name": "Тест Тестов",
+        "client_phone": "+79990001122",
+        "total_price": 350000,
+        "snapshot": {"items": [{"name": "BAXI Eco 24F", "quantity": 1}]}
+      },
+      "expectedStatus": 200,
+      "expectedBody": {"ok": true},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
