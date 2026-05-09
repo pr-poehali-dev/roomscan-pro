@@ -1,0 +1,36 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "GET not allowed",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 405,
+      "expectedBody": { "error": "method_not_allowed" },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST without body returns 400",
+      "method": "POST",
+      "path": "/",
+      "body": {},
+      "expectedStatus": 400,
+      "expectedBody": { "error": "image_required" },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST with bad image_url returns 502 from provider",
+      "method": "POST",
+      "path": "/",
+      "body": { "image_url": "https://example.invalid/no.jpg" },
+      "expectedStatus": 502,
+      "expectedBody": { "error": "vision_failed" },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

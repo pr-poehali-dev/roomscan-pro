@@ -3,8 +3,9 @@ import Icon from "@/components/ui/icon";
 import WebXRScanner from "./WebXRScanner";
 import PhotogrammetryScanner from "./PhotogrammetryScanner";
 import MobileQRBlock from "./MobileQRBlock";
+import RoomVisionDetector from "@/components/vision/RoomVisionDetector";
 
-type Method = "choose" | "webxr" | "photo";
+type Method = "choose" | "webxr" | "photo" | "vision";
 
 interface Measurement {
   width: number;
@@ -47,7 +48,7 @@ export default function ScanSection() {
       {method === "choose" && (
         <div className="space-y-4 animate-fade-in">
           {/* Сравнение методов */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Вариант C — WebXR */}
             <button
               onClick={() => setMethod("webxr")}
@@ -129,6 +130,51 @@ export default function ScanSection() {
                 Выбрать <Icon name="ArrowRight" size={15} />
               </div>
             </button>
+
+            {/* Вариант D — AI Vision (NEW) */}
+            <button
+              onClick={() => setMethod("vision")}
+              className="bg-card border border-primary/40 rounded-xl p-5 text-left hover:border-primary transition-all group space-y-3 relative"
+            >
+              <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full shadow-md">
+                NEW · AI
+              </span>
+              <div className="flex items-start justify-between">
+                <div className="w-12 h-12 bg-primary/10 border border-primary/30 rounded-xl flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <Icon name="ScanSearch" size={22} className="text-primary" />
+                </div>
+                <span className="text-xs font-mono bg-primary/10 text-primary px-2.5 py-1 rounded-full">
+                  Вариант D
+                </span>
+              </div>
+              <div>
+                <p className="font-bold text-foreground text-lg">AI-детекция по фото</p>
+                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                  Загрузите одно фото — нейросеть распознает мебель, окна, двери и
+                  сразу создаст план в Планировщике.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                {[
+                  { icon: "Zap", text: "Самый быстрый — 5 секунд", ok: true },
+                  { icon: "Smartphone", text: "Любое устройство", ok: true },
+                  { icon: "Wand2", text: "Авто-расстановка мебели", ok: true },
+                  { icon: "Crosshair", text: "Не считает точные размеры", ok: null },
+                ].map((f) => (
+                  <div key={f.text} className="flex items-center gap-2 text-xs">
+                    <Icon
+                      name={f.ok === true ? "CheckCircle2" : f.ok === false ? "XCircle" : "Info"}
+                      size={13}
+                      className={f.ok === true ? "text-primary" : f.ok === false ? "text-destructive" : "text-yellow-500"}
+                    />
+                    <span className="text-muted-foreground">{f.text}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 text-primary text-sm font-semibold group-hover:gap-3 transition-all">
+                Выбрать <Icon name="ArrowRight" size={15} />
+              </div>
+            </button>
           </div>
 
           {/* Последний результат */}
@@ -195,6 +241,21 @@ export default function ScanSection() {
             </div>
           </div>
           <PhotogrammetryScanner onComplete={handleComplete} />
+        </div>
+      )}
+
+      {method === "vision" && (
+        <div className="animate-fade-in">
+          <div className="flex items-center gap-3 mb-4 bg-card border border-border rounded-xl px-4 py-3">
+            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+              <Icon name="ScanSearch" size={16} className="text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">AI-детекция объектов · GPT-4 Vision</p>
+              <p className="text-xs text-muted-foreground font-mono">Авто-импорт мебели и проёмов в план</p>
+            </div>
+          </div>
+          <RoomVisionDetector />
         </div>
       )}
     </div>
