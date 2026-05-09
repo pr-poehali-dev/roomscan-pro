@@ -47,7 +47,7 @@ export default function FloorPlanEditor({ onNavigateCatalog }: Props = {}) {
     importPlanJson,
   } = useFloorPlanState();
 
-  const [view, setView] = useState<"2d" | "3d">("2d");
+  const [view, setView] = useState<"2d" | "3d" | "split">("2d");
   const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
   const [mobilePropsOpen, setMobilePropsOpen] = useState(false);
 
@@ -117,7 +117,7 @@ export default function FloorPlanEditor({ onNavigateCatalog }: Props = {}) {
         {/* Центр — холст */}
         <div className="space-y-2 order-2 lg:order-2">
           <div className="flex items-center gap-2 flex-wrap">
-            {view === "2d" && (
+            {(view === "2d" || view === "split") && (
               <PlannerToolbar
                 tool={tool}
                 onToolChange={(t) => {
@@ -131,54 +131,106 @@ export default function FloorPlanEditor({ onNavigateCatalog }: Props = {}) {
                 canUndo={canUndo}
               />
             )}
-            <div className="ml-auto inline-flex bg-secondary rounded-lg p-0.5">
+            <div className="ml-auto inline-flex bg-secondary rounded-lg p-0.5 gap-0.5">
               <button
                 onClick={() => setView("2d")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${
                   view === "2d" ? "bg-card text-foreground shadow" : "text-muted-foreground hover:text-foreground"
                 }`}
+                title="Только 2D-план"
               >
                 <Icon name="LayoutGrid" size={13} />
                 2D
+              </button>
+              <button
+                onClick={() => setView("split")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${
+                  view === "split" ? "bg-card text-foreground shadow" : "text-muted-foreground hover:text-foreground"
+                }`}
+                title="Split-view: 2D-план и 3D-превью одновременно"
+              >
+                <Icon name="Columns2" size={13} />
+                Split
               </button>
               <button
                 onClick={() => setView("3d")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${
                   view === "3d" ? "bg-card text-foreground shadow" : "text-muted-foreground hover:text-foreground"
                 }`}
+                title="Только 3D-вид"
               >
                 <Icon name="Box" size={13} />
-                3D-вид
+                3D
               </button>
             </div>
           </div>
 
-          <div className="h-[65vh] min-h-[500px] bg-white border border-border rounded-xl overflow-hidden">
-            {view === "2d" ? (
-              <PlanCanvas
-                plan={plan}
-                onChange={handleChange}
-                tool={tool}
-                pendingFurniture={pendingFurn}
-                selected={selected}
-                onSelect={setSelected}
-                scale={scale}
-                offset={offset}
-                onOffsetChange={setOffset}
-              />
-            ) : (
-              <Suspense fallback={
-                <div className="w-full h-full flex items-center justify-center flex-col gap-2 text-muted-foreground">
-                  <Icon name="Loader2" size={28} className="animate-spin text-primary" />
-                  <p className="text-sm">Загружаю 3D-движок…</p>
-                </div>
-              }>
-                <PlanScene3D plan={plan} />
-              </Suspense>
-            )}
-          </div>
+          {view === "split" ? (
+            <div className="h-[65vh] min-h-[500px] grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="bg-white border border-border rounded-xl overflow-hidden">
+                <PlanCanvas
+                  plan={plan}
+                  onChange={handleChange}
+                  tool={tool}
+                  pendingFurniture={pendingFurn}
+                  selected={selected}
+                  onSelect={setSelected}
+                  scale={scale}
+                  offset={offset}
+                  onOffsetChange={setOffset}
+                />
+              </div>
+              <div className="bg-white border border-border rounded-xl overflow-hidden relative">
+                <span className="absolute top-2 left-2 z-10 bg-primary/90 text-primary-foreground text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded backdrop-blur-sm shadow">
+                  Live 3D
+                </span>
+                <Suspense fallback={
+                  <div className="w-full h-full flex items-center justify-center flex-col gap-2 text-muted-foreground">
+                    <Icon name="Loader2" size={28} className="animate-spin text-primary" />
+                    <p className="text-sm">Загружаю 3D-движок…</p>
+                  </div>
+                }>
+                  <PlanScene3D plan={plan} />
+                </Suspense>
+              </div>
+            </div>
+          ) : (
+            <div className="h-[65vh] min-h-[500px] bg-white border border-border rounded-xl overflow-hidden">
+              {view === "2d" ? (
+                <PlanCanvas
+                  plan={plan}
+                  onChange={handleChange}
+                  tool={tool}
+                  pendingFurniture={pendingFurn}
+                  selected={selected}
+                  onSelect={setSelected}
+                  scale={scale}
+                  offset={offset}
+                  onOffsetChange={setOffset}
+                />
+              ) : (
+                <Suspense fallback={
+                  <div className="w-full h-full flex items-center justify-center flex-col gap-2 text-muted-foreground">
+                    <Icon name="Loader2" size={28} className="animate-spin text-primary" />
+                    <p className="text-sm">Загружаю 3D-движок…</p>
+                  </div>
+                }>
+                  <PlanScene3D plan={plan} />
+                </Suspense>
+              )}
+            </div>
+          )}
 
           {view === "2d" && <Hints tool={tool} />}
+          {view === "split" && (
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-2 flex items-start gap-2">
+              <Icon name="Columns2" size={13} className="text-primary shrink-0 mt-0.5" />
+              <p className="text-[11px] text-foreground leading-relaxed">
+                <strong>Split-view:</strong> рисуете слева — мгновенно видите справа в 3D.
+                Идеально для презентации клиенту: «вот так это будет выглядеть».
+              </p>
+            </div>
+          )}
           {view === "3d" && (
             <div className="bg-primary/5 border border-primary/20 rounded-lg p-2 flex items-start gap-2">
               <Icon name="Sparkles" size={13} className="text-primary shrink-0 mt-0.5" />

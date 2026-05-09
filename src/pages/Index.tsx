@@ -33,6 +33,8 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import SiteFooter from "@/components/SiteFooter";
 import ContentProtection from "@/components/ContentProtection";
 import CookieBanner from "@/components/CookieBanner";
+import OnboardingTour from "@/components/onboarding/OnboardingTour";
+import { isOnboarded } from "@/lib/onboardingStore";
 import type { ScenarioSection } from "@/lib/scenarios";
 import type { SectionId } from "@/lib/seo";
 
@@ -126,6 +128,8 @@ export default function Index() {
   });
   const [user, setUser] = useState<User | null>(GUEST_MODE ? GUEST_USER : null);
   const [authChecked, setAuthChecked] = useState(GUEST_MODE);
+  // Онбординг — первый запуск, мини-тур из 3 шагов
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(() => !isOnboarded());
 
   const toggleCollapsed = () => {
     setCollapsed((v) => {
@@ -409,6 +413,13 @@ export default function Index() {
 
       <ContentProtection />
       <CookieBanner />
+
+      {showOnboarding && (
+        <OnboardingTour
+          onNavigate={(s) => setActive(s as Section)}
+          onClose={() => setShowOnboarding(false)}
+        />
+      )}
 
       <ScenarioRunner
         activeSection={active}

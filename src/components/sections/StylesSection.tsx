@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import { getLastScan, getCart, saveCart, type CartItemRef, type LastScan } from "@/lib/scanStore";
 import { getFurnitureById } from "@/lib/furnitureCatalog";
+import AIStyleGenerator from "@/components/styles/AIStyleGenerator";
 
 interface Style {
   id: string;
@@ -116,12 +117,24 @@ export default function StylesSection() {
     <div className="animate-fade-in space-y-6">
       <div>
         <p className="t-meta text-primary mb-1">
-          AI-генерация · 3 стиля
+          AI-генерация · реальная нейросеть FLUX
         </p>
         <h2 className="h-section text-foreground mb-2">Стили интерьера</h2>
         <p className="t-lead max-w-2xl">
-          Выберите стиль — мы подберём подходящую мебель из каталога и предложим
-          расстановку с учётом размеров вашей комнаты.
+          Загрузите фото своей комнаты — нейросеть покажет её в 8 разных стилях.
+          Или просто выберите стиль ниже, и мы подберём готовую мебель из каталога.
+        </p>
+      </div>
+
+      {/* AI-генератор: загрузка фото и стилизация через Replicate */}
+      <AIStyleGenerator />
+
+      <div className="border-t border-border pt-6">
+        <p className="t-meta text-primary mb-1.5">Альтернатива · Готовые наборы мебели</p>
+        <h3 className="h-block text-foreground mb-2">Подбор по стилям</h3>
+        <p className="text-sm text-muted-foreground mb-5 max-w-2xl">
+          Если AI-генератор недоступен или нужны реальные товары для покупки — выберите стиль
+          и получите готовый комплект мебели из каталога.
         </p>
       </div>
 

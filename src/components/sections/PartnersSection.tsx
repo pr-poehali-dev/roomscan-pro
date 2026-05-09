@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import { PARTNERS_URL } from "@/lib/api";
+import WhiteLabelPanel from "@/components/branding/WhiteLabelPanel";
 
 type PartnershipType = "catalog" | "api" | "branded" | "enterprise";
 
@@ -172,6 +173,9 @@ export default function PartnersSection() {
 
   return (
     <div className="animate-fade-in space-y-8">
+      {/* White-label панель — для дизайн-студий */}
+      <WhiteLabelPanel />
+
       {/* Hero */}
       <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl p-6">
         <p className="text-primary text-xs font-mono uppercase tracking-widest mb-2">

@@ -1,0 +1,45 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight returns CORS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "GET not allowed",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 405,
+      "expectedBody": { "error": "string" },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST without body returns 400",
+      "method": "POST",
+      "path": "/",
+      "body": {},
+      "expectedStatus": 400,
+      "expectedBody": { "error": "string" },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST with unknown style returns 400",
+      "method": "POST",
+      "path": "/",
+      "body": { "style": "unknown_xxx", "image_url": "https://example.com/a.jpg" },
+      "expectedStatus": 400,
+      "expectedBody": { "error": "unknown_style" },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST without image returns 400",
+      "method": "POST",
+      "path": "/",
+      "body": { "style": "scandi" },
+      "expectedStatus": 400,
+      "expectedBody": { "error": "string" },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

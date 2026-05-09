@@ -2,6 +2,10 @@ import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import { getLastScan, getCart, type LastScan, type CartItemRef } from "@/lib/scanStore";
 import { exportPlanToPDF, exportPlanToPNG } from "@/lib/planExporter";
+import {
+  downloadProcurementCsv,
+  countProcurementItems,
+} from "@/lib/procurementExport";
 
 // ─── ExportSection ────────────────────────────────────────────────────────────
 export function ExportSection() {
@@ -110,6 +114,18 @@ export function ExportSection() {
     exportPlanToPDF({ scan, cart }, `roomscan-plan-${Date.now()}.pdf`);
   };
 
+  const downloadProcurement = () => {
+    downloadProcurementCsv({
+      section: "all",
+      tileAreaM2: scan?.area ?? 20,
+      tileWastePercent: 10,
+      marginPercent: 0,
+      projectName: demoData.project,
+    });
+  };
+
+  const procurementCount = countProcurementItems();
+
   const formats = [
     {
       icon: "FileJson", label: "JSON", desc: "Структурированные данные для разработчиков и интеграций",
@@ -130,6 +146,13 @@ export function ExportSection() {
     {
       icon: "File", label: "PDF", desc: "A4 landscape · план комнаты + спецификация мебели",
       badge: "Реально", action: downloadPDF,
+    },
+    {
+      icon: "ClipboardList",
+      label: "Спецификация под закупку",
+      desc: `CSV для Excel: артикулы, бренды, размеры, цены, итог. ${procurementCount.total > 0 ? `Готово ${procurementCount.total} позиций.` : "Сначала добавьте товары в корзину или избранное."}`,
+      badge: "Pro",
+      action: procurementCount.total > 0 ? downloadProcurement : null,
     },
     {
       icon: "Box", label: "DWG / DXF", desc: "Файл AutoCAD для подрядчиков и проектировщиков",
