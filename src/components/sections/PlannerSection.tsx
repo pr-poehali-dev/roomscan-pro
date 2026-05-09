@@ -6,18 +6,6 @@ import PlannerDemoHeader from "@/components/planner/PlannerDemoHeader";
 import PlannerDemoCanvas from "@/components/planner/PlannerDemoCanvas";
 import ScannedRoomPlan from "@/components/planner/ScannedRoomPlan";
 
-const furnitureItems = [
-  { id: 1, name: "Диван угловой Loft", brand: "Arredo", size: "280×170 см", price: "89 400 ₽", priceNum: 89400, category: "Диваны", icon: "Sofa", w: 280, d: 170 },
-  { id: 2, name: "Обеденный стол Solid", brand: "Nord", size: "160×80 см", price: "34 200 ₽", priceNum: 34200, category: "Столы", icon: "Table2", w: 160, d: 80 },
-  { id: 3, name: "Кресло Arc", brand: "Arredo", size: "85×90 см", price: "22 800 ₽", priceNum: 22800, category: "Кресла", icon: "Armchair", w: 85, d: 90 },
-  { id: 4, name: "Шкаф-купе Forma", brand: "Space", size: "240×60 см", price: "67 600 ₽", priceNum: 67600, category: "Шкафы", icon: "Package", w: 240, d: 60 },
-  { id: 5, name: "Кровать Frame", brand: "Nord", size: "200×160 см", price: "58 000 ₽", priceNum: 58000, category: "Кровати", icon: "BedDouble", w: 200, d: 160 },
-  { id: 6, name: "Тумба TV Unit", brand: "Space", size: "180×40 см", price: "18 500 ₽", priceNum: 18500, category: "ТВ-зоны", icon: "Tv", w: 180, d: 40 },
-  { id: 7, name: "Стеллаж Open", brand: "Nord", size: "120×30 см", price: "12 900 ₽", priceNum: 12900, category: "Шкафы", icon: "BookOpen", w: 120, d: 30 },
-  { id: 8, name: "Пуф Round", brand: "Arredo", size: "60×60 см", price: "8 400 ₽", priceNum: 8400, category: "Кресла", icon: "Circle", w: 60, d: 60 },
-  { id: 9, name: "Журнальный столик Neo", brand: "Space", size: "100×50 см", price: "14 200 ₽", priceNum: 14200, category: "Столы", icon: "Table", w: 100, d: 50 },
-];
-
 interface Room { x: number; y: number; w: number; h: number; label: string; area: string; }
 interface PlacedItem { id: number; name: string; x: number; y: number; w: number; h: number; icon: string; }
 
@@ -30,10 +18,8 @@ const defaultRooms: Room[] = [
 ];
 
 export default function PlannerSection({
-  cartItems,
   onNavigate,
 }: {
-  cartItems?: typeof furnitureItems;
   onNavigate?: (section: string) => void;
 }) {
   const [tab, setTab] = useState<"editor" | "demo">("editor");

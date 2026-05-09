@@ -182,15 +182,18 @@ export default function CatalogSection() {
         </div>
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={() => setShowOnlyFavs((v) => !v)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
+            aria-pressed={showOnlyFavs}
+            aria-label={`Избранное: ${favorites.length}${showOnlyFavs ? ", показано — нажмите для возврата к каталогу" : " — показать только избранное"}`}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${
               showOnlyFavs
                 ? "bg-red-500/10 text-red-500 border-red-500/30"
                 : "bg-card text-muted-foreground border-border hover:text-red-500 hover:border-red-500/30"
             }`}
             title="Показать избранное"
           >
-            <Icon name="Heart" size={14} className={showOnlyFavs ? "fill-current" : ""} />
+            <Icon name="Heart" size={14} className={showOnlyFavs ? "fill-current" : ""} aria-hidden="true" />
             <span className="text-sm font-bold">{favorites.length}</span>
           </button>
           {cart.length > 0 && (

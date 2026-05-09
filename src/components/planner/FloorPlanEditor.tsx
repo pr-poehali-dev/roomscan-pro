@@ -1,4 +1,4 @@
-import { Suspense, lazy, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import Icon from "@/components/ui/icon";
 import PlanCanvas from "./PlanCanvas";
 import PlannerToolbar from "./PlannerToolbar";
@@ -48,6 +48,23 @@ export default function FloorPlanEditor({ onNavigateCatalog }: Props = {}) {
   } = useFloorPlanState();
 
   const [view, setView] = useState<"2d" | "3d">("2d");
+  const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
+  const [mobilePropsOpen, setMobilePropsOpen] = useState(false);
+
+  // Когда выбрали элемент на мобиле — авто-открыть панель свойств
+  useEffect(() => {
+    if (selected && typeof window !== "undefined" && window.innerWidth < 1024) {
+      setMobilePropsOpen(true);
+    }
+  }, [selected]);
+
+  // После выбора мебели в каталоге на мобиле — закрыть drawer, чтобы видеть холст
+  useEffect(() => {
+    if (pendingFurn && mobileCatalogOpen) {
+      setMobileCatalogOpen(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingFurn]);
 
   return (
     <div className="space-y-3">
@@ -70,13 +87,35 @@ export default function FloorPlanEditor({ onNavigateCatalog }: Props = {}) {
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_280px] gap-3">
-        {/* Левая колонка — каталог */}
-        <div className="space-y-3 order-2 lg:order-1">
+        {/* Левая колонка — каталог (только десктоп) */}
+        <div className="hidden lg:block space-y-3 lg:order-1">
           <FurnitureCatalog selected={pendingFurn} onSelect={setPendingFurn} />
         </div>
 
+        {/* Мобильные быстрые действия (только < lg) */}
+        <div className="flex lg:hidden gap-2 order-1">
+          <button
+            type="button"
+            onClick={() => setMobileCatalogOpen(true)}
+            aria-label="Открыть каталог мебели"
+            className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground px-3 py-2.5 rounded-lg text-sm font-bold shadow"
+          >
+            <Icon name="Sofa" size={14} aria-hidden="true" />
+            Каталог
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobilePropsOpen(true)}
+            aria-label="Открыть свойства и статистику плана"
+            className="flex-1 flex items-center justify-center gap-2 bg-card border border-border text-foreground px-3 py-2.5 rounded-lg text-sm font-bold"
+          >
+            <Icon name="SlidersHorizontal" size={14} aria-hidden="true" />
+            Свойства
+          </button>
+        </div>
+
         {/* Центр — холст */}
-        <div className="space-y-2 order-1 lg:order-2">
+        <div className="space-y-2 order-2 lg:order-2">
           <div className="flex items-center gap-2 flex-wrap">
             {view === "2d" && (
               <PlannerToolbar
@@ -151,8 +190,8 @@ export default function FloorPlanEditor({ onNavigateCatalog }: Props = {}) {
           )}
         </div>
 
-        {/* Правая колонка — свойства + статистика */}
-        <div className="space-y-3 order-3">
+        {/* Правая колонка — свойства + статистика (только десктоп) */}
+        <div className="hidden lg:block space-y-3 lg:order-3">
           <PropertiesPanel
             plan={plan}
             selected={selected}
@@ -162,6 +201,90 @@ export default function FloorPlanEditor({ onNavigateCatalog }: Props = {}) {
 
           <FloorPlanStats stats={stats} />
         </div>
+      </div>
+
+      {/* Мобильный drawer: Каталог */}
+      {mobileCatalogOpen && (
+        <MobileBottomDrawer
+          title="Каталог мебели"
+          onClose={() => setMobileCatalogOpen(false)}
+        >
+          <FurnitureCatalog selected={pendingFurn} onSelect={setPendingFurn} />
+        </MobileBottomDrawer>
+      )}
+
+      {/* Мобильный drawer: Свойства + Статистика */}
+      {mobilePropsOpen && (
+        <MobileBottomDrawer
+          title={selected ? "Свойства элемента" : "Статистика плана"}
+          onClose={() => setMobilePropsOpen(false)}
+        >
+          <div className="space-y-3">
+            <PropertiesPanel
+              plan={plan}
+              selected={selected}
+              onChange={handleChange}
+              onDeselect={() => setSelected(null)}
+            />
+            <FloorPlanStats stats={stats} />
+          </div>
+        </MobileBottomDrawer>
+      )}
+    </div>
+  );
+}
+
+/** Лёгкий нижний drawer для мобильных без зависимостей. */
+function MobileBottomDrawer({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  // Блокируем body scroll, пока drawer открыт
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 lg:hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+    >
+      <button
+        type="button"
+        aria-label="Закрыть панель"
+        onClick={onClose}
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
+      />
+      <div className="absolute inset-x-0 bottom-0 bg-card border-t border-border rounded-t-2xl max-h-[85vh] flex flex-col shadow-2xl animate-slide-in-up">
+        <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-border">
+          <div className="absolute left-1/2 -translate-x-1/2 top-1.5 w-10 h-1 bg-border rounded-full" />
+          <h3 className="font-bold text-foreground text-sm mt-2">{title}</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Закрыть"
+            className="text-muted-foreground hover:text-foreground p-1 -mr-1 mt-2"
+          >
+            <Icon name="X" size={18} aria-hidden="true" />
+          </button>
+        </div>
+        <div className="overflow-y-auto p-4 flex-1">{children}</div>
       </div>
     </div>
   );

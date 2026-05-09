@@ -1,27 +1,45 @@
 /**
  * Хранилище избранных товаров (Wishlist).
- * Простой localStorage + событие "roomscan:favorites:changed" для синхронизации UI.
+ * localStorage + событие "roomscan:favorites:changed" для синхронизации UI.
+ *
+ * In-memory cache: парсим JSON только один раз и при внешних изменениях.
+ * Это критично, потому что isFavorite() вызывается для каждой карточки
+ * каталога на каждом рендере (80+ раз на список).
  */
 
 const KEY = "roomscan:favorites";
 const EVENT = "roomscan:favorites:changed";
 
-function safeRead(): number[] {
-  if (typeof window === "undefined") return [];
+let cache: Set<number> | null = null;
+
+function loadFromStorage(): Set<number> {
+  if (typeof window === "undefined") return new Set();
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return [];
+    if (!raw) return new Set();
     const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr.filter((n) => typeof n === "number") : [];
+    return new Set(Array.isArray(arr) ? arr.filter((n) => typeof n === "number") : []);
   } catch {
-    return [];
+    return new Set();
   }
 }
 
-function safeWrite(ids: number[]) {
-  if (typeof window === "undefined") return;
+function ensureCache(): Set<number> {
+  if (cache === null) cache = loadFromStorage();
+  return cache;
+}
+
+// Подписка на изменения из других вкладок (storage event) и собственных событий
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) => {
+    if (e.key === KEY) cache = loadFromStorage();
+  });
+}
+
+function persist() {
+  if (typeof window === "undefined" || !cache) return;
   try {
-    localStorage.setItem(KEY, JSON.stringify(ids));
+    localStorage.setItem(KEY, JSON.stringify(Array.from(cache)));
     window.dispatchEvent(new CustomEvent(EVENT));
   } catch {
     /* quota */
@@ -29,28 +47,28 @@ function safeWrite(ids: number[]) {
 }
 
 export function getFavorites(): number[] {
-  return safeRead();
+  return Array.from(ensureCache());
 }
 
 export function isFavorite(id: number): boolean {
-  return safeRead().includes(id);
+  return ensureCache().has(id);
 }
 
 export function toggleFavorite(id: number): boolean {
-  const list = safeRead();
-  const idx = list.indexOf(id);
-  if (idx >= 0) {
-    list.splice(idx, 1);
-    safeWrite(list);
+  const set = ensureCache();
+  if (set.has(id)) {
+    set.delete(id);
+    persist();
     return false;
   }
-  list.push(id);
-  safeWrite(list);
+  set.add(id);
+  persist();
   return true;
 }
 
 export function clearFavorites() {
-  safeWrite([]);
+  cache = new Set();
+  persist();
 }
 
 export const FAVORITES_EVENT = EVENT;

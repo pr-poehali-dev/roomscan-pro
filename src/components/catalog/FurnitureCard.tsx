@@ -29,23 +29,36 @@ export default function FurnitureCard({
   const palette = item.colorPalette ?? [];
 
   return (
-    <div
+    <article
+      aria-label={`${item.name}, ${item.brand}, ${item.price}`}
       className={`bg-card border rounded-2xl overflow-hidden transition-all group flex flex-col ${
         inCart ? "border-primary/40 shadow-lg shadow-primary/5" : "border-border hover:border-primary/30 hover:shadow-md"
       }`}
     >
       {/* Превью */}
       <div
-        className={`relative aspect-video flex items-center justify-center transition-colors cursor-pointer overflow-hidden ${
+        role="button"
+        tabIndex={0}
+        aria-label={`Открыть карточку «${item.name}»`}
+        className={`relative aspect-video w-full flex items-center justify-center transition-colors overflow-hidden cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
           inCart ? "bg-primary/10" : item.imageUrl ? "bg-white" : "bg-secondary group-hover:bg-primary/5"
         }`}
         onClick={() => onOpenDetails(item)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onOpenDetails(item);
+          }
+        }}
       >
         {item.imageUrl ? (
           <img
             src={item.imageUrl}
             alt={item.name}
             loading="lazy"
+            decoding="async"
+            width={600}
+            height={337}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
@@ -79,11 +92,14 @@ export default function FurnitureCard({
 
         {/* Избранное */}
         <button
+          type="button"
+          aria-label={isFav ? `Убрать «${item.name}» из избранного` : `Добавить «${item.name}» в избранное`}
+          aria-pressed={isFav}
           onClick={(e) => {
             e.stopPropagation();
             onToggleFav(item.id);
           }}
-          className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all backdrop-blur-sm ${
+          className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${
             isFav
               ? "bg-red-500 text-white scale-100"
               : "bg-white/80 text-muted-foreground hover:text-red-500 hover:scale-110"
@@ -120,12 +136,17 @@ export default function FurnitureCard({
           )}
         </div>
 
-        <p
-          className="font-bold text-foreground mb-1 cursor-pointer hover:text-primary transition-colors line-clamp-1"
-          onClick={() => onOpenDetails(item)}
+        <h3
+          className="font-bold text-foreground mb-1 line-clamp-1 m-0"
         >
-          {item.name}
-        </p>
+          <button
+            type="button"
+            onClick={() => onOpenDetails(item)}
+            className="text-left w-full hover:text-primary transition-colors focus-visible:outline-none focus-visible:text-primary"
+          >
+            {item.name}
+          </button>
+        </h3>
         <p className="text-xs text-muted-foreground mb-2">
           {item.size}
           {item.material && <span> · {item.material}</span>}
@@ -167,31 +188,37 @@ export default function FurnitureCard({
           <div className="flex items-center gap-1.5">
             {onAddToPlan3D && (
               <button
+                type="button"
                 onClick={() => onAddToPlan3D(item.id)}
                 disabled={item.inStock === false}
+                aria-label={`Добавить «${item.name}» в 3D-сцену планировщика`}
                 title="Добавить в 3D-планировщик"
-                className={`text-xs px-2 py-1.5 rounded-lg flex items-center gap-1 font-semibold border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                className={`text-xs px-2 py-1.5 rounded-lg flex items-center gap-1 font-semibold border transition-all disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                   addedToPlan3D
                     ? "bg-emerald-500 text-white border-emerald-500 scale-95"
                     : "border-border text-muted-foreground hover:text-emerald-600 hover:border-emerald-500/40"
                 }`}
               >
-                <Icon name={addedToPlan3D ? "Check" : "Box"} size={12} />
+                <Icon name={addedToPlan3D ? "Check" : "Box"} size={12} aria-hidden="true" />
                 {addedToPlan3D ? "В сцене" : "3D"}
               </button>
             )}
             <button
+              type="button"
               onClick={() => onOpenAR(item)}
+              aria-label={`Посмотреть «${item.name}» в дополненной реальности`}
               title="AR-просмотр (Android Chrome)"
-              className="text-xs px-2 py-1.5 rounded-lg flex items-center gap-1 font-semibold border border-border text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
+              className="text-xs px-2 py-1.5 rounded-lg flex items-center gap-1 font-semibold border border-border text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
-              <Icon name="View" size={12} />
+              <Icon name="View" size={12} aria-hidden="true" />
               AR
             </button>
             <button
+              type="button"
               onClick={() => onAddToCart(item.id)}
               disabled={item.inStock === false}
-              className={`text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+              aria-label={inCart ? `Убрать «${item.name}» из плана` : `Добавить «${item.name}» в план покупок`}
+              className={`text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                 justAdded
                   ? "bg-primary text-primary-foreground scale-95"
                   : inCart
@@ -199,12 +226,12 @@ export default function FurnitureCard({
                   : "bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground"
               }`}
             >
-              <Icon name={inCart ? "Check" : "Plus"} size={12} />
+              <Icon name={inCart ? "Check" : "Plus"} size={12} aria-hidden="true" />
               {justAdded ? "Добавлено!" : inCart ? "В плане" : "В план"}
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </article>
   );
 }

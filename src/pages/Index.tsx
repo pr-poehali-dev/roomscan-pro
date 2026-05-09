@@ -1,19 +1,30 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import Icon from "@/components/ui/icon";
 import { AUTH_URL, User, getToken, clearToken, apiFetch } from "@/lib/api";
 import AuthScreen from "@/components/AuthScreen";
-import { ScanSection, PlannerSection, CatalogSection, CalcSection, ExportSection, HelpSection } from "@/components/sections/ContentSections";
-import { ProjectsSection, ProfileSection } from "@/components/sections/UserSections";
-import UseCasesSection from "@/components/sections/UseCasesSection";
+// Главная и Проекты — eager (нужны сразу при входе)
 import HomeSection from "@/components/sections/HomeSection";
-import StylesSection from "@/components/sections/StylesSection";
-import StagingSection from "@/components/sections/StagingSection";
-import OpeningsSection from "@/components/sections/OpeningsSection";
-import PartnersSection from "@/components/sections/PartnersSection";
-import PricingSection from "@/components/sections/PricingSection";
-import EngineeringSection from "@/components/sections/EngineeringSection";
-import ModularHousesSection from "@/components/sections/ModularHousesSection";
-import AdminOffice from "@/components/admin/AdminOffice";
+import { ProjectsSection, ProfileSection } from "@/components/sections/UserSections";
+// Все остальные секции — lazy, чтобы первичный бандл был лёгким
+const ScanSection = lazy(() => import("@/components/scan/ScanSection"));
+const PlannerSection = lazy(() => import("@/components/sections/PlannerSection"));
+const CatalogSection = lazy(() => import("@/components/sections/CatalogSection"));
+const CalcSection = lazy(() => import("@/components/sections/CalcSection"));
+const ExportSection = lazy(() =>
+  import("@/components/sections/ExportHelpSection").then((m) => ({ default: m.ExportSection })),
+);
+const HelpSection = lazy(() =>
+  import("@/components/sections/ExportHelpSection").then((m) => ({ default: m.HelpSection })),
+);
+const UseCasesSection = lazy(() => import("@/components/sections/UseCasesSection"));
+const StylesSection = lazy(() => import("@/components/sections/StylesSection"));
+const StagingSection = lazy(() => import("@/components/sections/StagingSection"));
+const OpeningsSection = lazy(() => import("@/components/sections/OpeningsSection"));
+const PartnersSection = lazy(() => import("@/components/sections/PartnersSection"));
+const PricingSection = lazy(() => import("@/components/sections/PricingSection"));
+const EngineeringSection = lazy(() => import("@/components/sections/EngineeringSection"));
+const ModularHousesSection = lazy(() => import("@/components/sections/ModularHousesSection"));
+const AdminOffice = lazy(() => import("@/components/admin/AdminOffice"));
 import ScenarioRunner from "@/components/ScenarioRunner";
 import AIManager from "@/components/AIManager";
 import SectionSEO from "@/components/SectionSEO";
@@ -23,6 +34,22 @@ import ContentProtection from "@/components/ContentProtection";
 import CookieBanner from "@/components/CookieBanner";
 import type { ScenarioSection } from "@/lib/scenarios";
 import type { SectionId } from "@/lib/seo";
+
+/** Лёгкий fallback на время подгрузки секции */
+function SectionSkeleton() {
+  return (
+    <div className="animate-pulse space-y-4" role="status" aria-label="Загрузка раздела">
+      <div className="h-8 w-1/3 bg-secondary rounded-lg" />
+      <div className="h-4 w-2/3 bg-secondary rounded" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+        <div className="h-40 bg-secondary rounded-xl" />
+        <div className="h-40 bg-secondary rounded-xl" />
+        <div className="h-40 bg-secondary rounded-xl" />
+      </div>
+      <span className="sr-only">Загружаем раздел…</span>
+    </div>
+  );
+}
 
 type Section =
   | "home"
@@ -367,7 +394,9 @@ export default function Index() {
         <div className="flex-1 overflow-y-auto">
           <div className="p-6 lg:p-8">
             <div key={active} className="animate-fade-in">
-              {renderSection()}
+              <Suspense fallback={<SectionSkeleton />}>
+                {renderSection()}
+              </Suspense>
             </div>
           </div>
           <SiteFooter />

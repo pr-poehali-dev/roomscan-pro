@@ -110,7 +110,15 @@ export default function CatalogLinkBanner({ furnitureCount, onNavigateCatalog }:
             >
               <div className="w-9 h-9 rounded-md overflow-hidden bg-secondary flex items-center justify-center shrink-0">
                 {sku?.imageUrl ? (
-                  <img src={sku.imageUrl} alt="" className="w-full h-full object-cover" />
+                  <img
+                    src={sku.imageUrl}
+                    alt=""
+                    width={36}
+                    height={36}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <Icon name={f.icon} size={14} className="text-muted-foreground" />
                 )}
