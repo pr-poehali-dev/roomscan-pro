@@ -29,7 +29,13 @@ const defaultRooms: Room[] = [
   { x: 120, y: 140, w: 60, h: 100, label: "Коридор", area: "8.6 м²" },
 ];
 
-export default function PlannerSection({ cartItems }: { cartItems?: typeof furnitureItems }) {
+export default function PlannerSection({
+  cartItems,
+  onNavigate,
+}: {
+  cartItems?: typeof furnitureItems;
+  onNavigate?: (section: string) => void;
+}) {
   const [tab, setTab] = useState<"editor" | "demo">("editor");
   const [activeTool, setActiveTool] = useState("select");
   const [view, setView] = useState<"2D" | "3D">("2D");
@@ -98,7 +104,7 @@ export default function PlannerSection({ cartItems }: { cartItems?: typeof furni
           <PlannerTabs tab={tab} onChange={setTab} />
         </div>
 
-        <FloorPlanEditor />
+        <FloorPlanEditor onNavigateCatalog={onNavigate ? () => onNavigate("catalog") : undefined} />
       </div>
     );
   }

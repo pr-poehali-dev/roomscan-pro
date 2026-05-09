@@ -200,7 +200,7 @@ export default function Index() {
       case "projects": return <ProjectsSection token={getToken()} onNavigate={(s) => setActive(s as Section)} />;
       case "scan": return <ScanSection />;
       case "usecases": return <UseCasesSection onNavigate={(s) => setActive(s as Section)} />;
-      case "planner": return <PlannerSection />;
+      case "planner": return <PlannerSection onNavigate={(s) => setActive(s as Section)} />;
       case "catalog": return <CatalogSection />;
       case "styles": return <StylesSection />;
       case "calc": return <CalcSection />;

@@ -6,6 +6,7 @@ import FurnitureCatalog from "./FurnitureCatalog";
 import PropertiesPanel from "./PropertiesPanel";
 import FloorPlanHeader from "./FloorPlanHeader";
 import { FloorPlanStats, Hints } from "./FloorPlanStats";
+import CatalogLinkBanner from "./CatalogLinkBanner";
 import { useFloorPlanState } from "./useFloorPlanState";
 
 // Three.js — тяжёлая зависимость, грузим лениво только при включении 3D
@@ -19,7 +20,12 @@ const PlanScene3D = lazy(() => import("./PlanScene3D"));
  *
  * Все изменения автоматически сохраняются в localStorage.
  */
-export default function FloorPlanEditor() {
+interface Props {
+  /** Внешний обработчик перехода в раздел каталога (опционально). */
+  onNavigateCatalog?: () => void;
+}
+
+export default function FloorPlanEditor({ onNavigateCatalog }: Props = {}) {
   const {
     plan, setPlan,
     tool, setTool,
@@ -45,6 +51,12 @@ export default function FloorPlanEditor() {
 
   return (
     <div className="space-y-3">
+      {/* Связка с каталогом мебели */}
+      <CatalogLinkBanner
+        furnitureCount={stats.furniture}
+        onNavigateCatalog={onNavigateCatalog}
+      />
+
       {/* Шапка: имя плана и быстрые действия */}
       <FloorPlanHeader
         plan={plan}
