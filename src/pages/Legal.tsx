@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import Icon from "@/components/ui/icon";
 import {
   COOKIE_POLICY,
@@ -33,14 +34,16 @@ export default function Legal() {
     if (doc && DOCS.some((d) => d.id === doc)) setActive(doc as DocId);
   }, [doc]);
 
-  useEffect(() => {
-    document.title = `${current.title} · RoomScan AI`;
-  });
-
   const current = DOCS.find((d) => d.id === active)!;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <Helmet>
+        <title>{current.title} · RoomScan AI — юридическая информация</title>
+        <meta name="description" content={`${current.title}. ${current.meta}. Соответствует 152-ФЗ, 149-ФЗ, 38-ФЗ.`} />
+        <link rel="canonical" href={`https://roomscan-ai.ru/legal/${current.id}`} />
+        <meta name="robots" content="index, follow" />
+      </Helmet>
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3 flex-wrap">
           <button

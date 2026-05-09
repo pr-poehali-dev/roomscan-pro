@@ -1,7 +1,22 @@
+import { Suspense, lazy } from "react";
 import Icon from "@/components/ui/icon";
-import HeroDemo3D from "./HeroDemo3D";
 import PartnersMarquee from "./PartnersMarquee";
 import ContinueWorkBlock from "@/components/home/ContinueWorkBlock";
+
+// Тяжёлая Three.js-демка ленится: уменьшает размер первого бандла,
+// показываем placeholder того же размера до подгрузки сцены.
+const HeroDemo3D = lazy(() => import("./HeroDemo3D"));
+
+function HeroDemo3DSkeleton() {
+  return (
+    <div
+      className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#0a1410] to-[#050807]"
+      aria-hidden="true"
+    >
+      <Icon name="Loader2" size={28} className="text-primary/60 animate-spin" />
+    </div>
+  );
+}
 
 interface Props {
   onNavigate: (section: string) => void;
@@ -167,7 +182,9 @@ export default function HomeSection({ onNavigate, userName }: Props) {
               <div className="relative aspect-square max-w-[500px] mx-auto rounded-2xl overflow-hidden bg-gradient-to-br from-[#0a1410] to-[#050807] border border-primary/20 shadow-2xl shadow-primary/10">
                 {/* Внутреннее свечение */}
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none z-10" />
-                <HeroDemo3D />
+                <Suspense fallback={<HeroDemo3DSkeleton />}>
+                  <HeroDemo3D />
+                </Suspense>
               </div>
               <p className="text-center text-xs font-mono uppercase tracking-widest text-white/40 mt-4">
                 Так выглядит ваша комната после сканирования
