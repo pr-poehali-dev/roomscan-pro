@@ -8,7 +8,7 @@ import {
 } from "@/lib/modular-houses";
 import { getHouseFullSpec } from "@/lib/house-specs";
 import { formatRub } from "@/lib/engineering";
-import FloorPlanSVG from "./FloorPlanSVG";
+import BlueprintsGallery from "./BlueprintsGallery";
 
 interface Props {
   project: ModularHouseProject;
@@ -274,44 +274,19 @@ function DrawingsTab({
   layout: HousePlacement[];
   variantName?: string;
 }) {
-  const variants = project.variants ?? [
-    { id: "A", name: "Базовая", description: "", layout: project.layout },
-  ];
-
   return (
     <div className="space-y-4">
       <div className="flex items-start gap-2 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-lg p-2.5 text-xs">
         <Icon name="Info" size={13} className="text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
         <p className="text-blue-900 dark:text-blue-200">
-          План этажа в масштабе. Для каждого варианта планировки — свой чертёж.
+          Архитектурные чертежи в масштабе: план этажа, фасады, разрез.
           Высота потолков — {project.construction === "futuristic" ? "3.0" : "2.7"} м,
-          толщина наружных стен — {project.construction === "futuristic" ? "280" : project.construction === "modular" ? "200" : "200"} мм.
+          толщина наружных стен — {project.construction === "futuristic" ? "280" : "200"} мм.
+          Скачивайте каждый чертёж в SVG.
         </p>
       </div>
 
-      <FloorPlanSVG
-        layout={layout}
-        title={`План этажа · вариант ${variantName ?? "A"}`}
-        size={480}
-      />
-
-      {variants.length > 1 && (
-        <div>
-          <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-2 mt-4">
-            Все варианты планировок
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {variants.map((v) => (
-              <FloorPlanSVG
-                key={v.id}
-                layout={v.layout}
-                title={`Вариант ${v.id} · ${v.name}`}
-                size={280}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      <BlueprintsGallery project={project} layout={layout} variantName={variantName} />
     </div>
   );
 }
