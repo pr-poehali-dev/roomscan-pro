@@ -71,6 +71,9 @@ export default function PlanScene3D({ plan, wallHeight = 270 }: Props) {
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
+    // Лёгкий объёмный туман для атмосферной глубины (далёкие объекты бледнеют)
+    scene.fog = new THREE.Fog(0xeef2f6, 25, 80);
+
     // Небо-градиент через большой sphere
     const skyGeom = new THREE.SphereGeometry(50, 32, 16);
     const skyMat = new THREE.ShaderMaterial({
@@ -99,34 +102,79 @@ export default function PlanScene3D({ plan, wallHeight = 270 }: Props) {
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 200);
     cameraRef.current = camera;
 
-    // Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    // Renderer — высокое качество
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true,
+      powerPreference: "high-performance",
+      stencil: false,
+    });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(width, height);
     renderer.shadowMap.enabled = showShadows;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.VSMShadowMap; // более мягкие тени, чем PCF
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
+    renderer.toneMappingExposure = 1.0;
     wrap.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Освещение
-    scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-    const sun = new THREE.DirectionalLight(0xffffff, 1.0);
-    sun.position.set(8, 14, 6);
+    // IBL — Image Based Lighting через PMREM из процедурного неба
+    // Это даёт реалистичные отражения на металле, стекле, глянцевых поверхностях
+    const pmremGen = new THREE.PMREMGenerator(renderer);
+    pmremGen.compileEquirectangularShader();
+    // Простая equirect-текстура неба
+    const envCanvas = document.createElement("canvas");
+    envCanvas.width = 512; envCanvas.height = 256;
+    const ec = envCanvas.getContext("2d")!;
+    const grad = ec.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, "#a8c8e8");   // верх — голубое небо
+    grad.addColorStop(0.45, "#e0e8f0"); // горизонт — светлое
+    grad.addColorStop(0.55, "#d8d4cc"); // переход
+    grad.addColorStop(1, "#8a7860");    // низ — тёплая земля
+    ec.fillStyle = grad;
+    ec.fillRect(0, 0, 512, 256);
+    const envTex = new THREE.CanvasTexture(envCanvas);
+    envTex.mapping = THREE.EquirectangularReflectionMapping;
+    envTex.colorSpace = THREE.SRGBColorSpace;
+    const envMap = pmremGen.fromEquirectangular(envTex).texture;
+    scene.environment = envMap;
+    envTex.dispose();
+    pmremGen.dispose();
+
+    // Трёхточечное освещение (key + fill + rim)
+    // Ambient — мягкий заполняющий свет
+    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+
+    // Key light — основной источник (имитирует солнце через окно)
+    const sun = new THREE.DirectionalLight(0xfff5e6, 2.2);
+    sun.position.set(7, 12, 5);
     sun.castShadow = showShadows;
     sun.shadow.mapSize.set(2048, 2048);
-    sun.shadow.camera.left = -15;
-    sun.shadow.camera.right = 15;
-    sun.shadow.camera.top = 15;
-    sun.shadow.camera.bottom = -15;
+    sun.shadow.camera.left = -12;
+    sun.shadow.camera.right = 12;
+    sun.shadow.camera.top = 12;
+    sun.shadow.camera.bottom = -12;
     sun.shadow.camera.near = 0.5;
-    sun.shadow.camera.far = 50;
+    sun.shadow.camera.far = 40;
+    sun.shadow.bias = -0.0005;
+    sun.shadow.normalBias = 0.02;
+    sun.shadow.radius = 6; // VSM blur
     scene.add(sun);
-    const fill = new THREE.PointLight(0xffeacc, 0.3, 30);
-    fill.position.set(-5, 4, -5);
+
+    // Fill light — мягкий с противоположной стороны (имитирует отражённый свет)
+    const fill = new THREE.DirectionalLight(0xc8d8e8, 0.6);
+    fill.position.set(-6, 5, -4);
     scene.add(fill);
+
+    // Rim light — задний контровой свет (выделяет силуэты)
+    const rim = new THREE.DirectionalLight(0xfff0d0, 0.4);
+    rim.position.set(-3, 4, 8);
+    scene.add(rim);
+
+    // Hemisphere — небо/земля для естественного цветового градиента
+    const hemi = new THREE.HemisphereLight(0xb8d4e8, 0xc8a878, 0.5);
+    scene.add(hemi);
 
     // Группа для всего интерьера (чтобы можно было полностью пересобирать)
     const room = new THREE.Group();

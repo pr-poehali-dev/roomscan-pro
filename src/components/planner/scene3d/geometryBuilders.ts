@@ -3,11 +3,14 @@ import type { FloorPlan, FurnitureItem, Wall } from "@/lib/floorPlan";
 import { dist, pointOnWall } from "@/lib/floorPlanGeom";
 import {
   CM,
+  makeFloorMaps,
+  makeWallMaps,
   makeFloorTexture,
   makeWallTexture,
   type FloorStyle,
   type WallStyle,
 } from "./textures";
+import { buildRealisticFurniture } from "./realisticFurniture";
 
 /**
  * «Строители» Three-объектов для 3D-планировщика:
@@ -228,12 +231,22 @@ export function rebuildRoom(
   const fW = (maxX - minX) * CM;
   const fD = (maxY - minY) * CM;
 
-  // Пол
+  // Пол — PBR с normalMap и roughnessMap
+  const floorMaps = makeFloorMaps(floorStyle);
   const floorMat = new THREE.MeshStandardMaterial({
-    map: makeFloorTexture(floorStyle),
-    roughness: 0.85,
+    map: floorMaps.map,
+    normalMap: floorMaps.normalMap,
+    normalScale: new THREE.Vector2(0.6, 0.6),
+    roughnessMap: floorMaps.roughnessMap,
+    roughness: floorStyle === "tile" ? 0.3 : 0.7,
     metalness: 0.05,
+    envMapIntensity: 0.7,
   });
+  // Подгоняем повторение под размер пола
+  const repeatScale = Math.max(2, Math.min(fW, fD) / 1.2);
+  for (const t of [floorMaps.map, floorMaps.normalMap, floorMaps.roughnessMap]) {
+    t.repeat.set(repeatScale, repeatScale);
+  }
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(fW, fD), floorMat);
   floor.rotation.x = -Math.PI / 2;
   floor.position.set((minX + maxX) / 2 * CM, 0, (minY + maxY) / 2 * CM);
@@ -252,13 +265,26 @@ export function rebuildRoom(
   ceiling.position.set((minX + maxX) / 2 * CM, wallHeight * CM, (minY + maxY) / 2 * CM);
   room.add(ceiling);
 
-  // Стены с проёмами
+  // Стены с проёмами — PBR
+  const wallMaps = makeWallMaps(wallStyle);
   const wallMat = new THREE.MeshStandardMaterial({
-    map: makeWallTexture(wallStyle),
-    roughness: 0.85,
+    map: wallMaps.map,
+    normalMap: wallMaps.normalMap,
+    normalScale: new THREE.Vector2(0.4, 0.4),
+    roughnessMap: wallMaps.roughnessMap,
+    roughness: 0.9,
     metalness: 0.0,
     side: THREE.DoubleSide,
+    envMapIntensity: 0.4,
   });
+
+  // Плинтус — тёмный декоративный элемент по периметру комнаты
+  const baseboardMat = new THREE.MeshStandardMaterial({
+    color: 0xfafaf7,
+    roughness: 0.5,
+  });
+  const BASEBOARD_H = 0.08;
+  const BASEBOARD_T = 0.015;
 
   for (const wall of plan.walls) {
     const len = dist(wall.a, wall.b);
@@ -279,14 +305,41 @@ export function rebuildRoom(
     const group = buildWallGroup(wall, wallHeight, ops, wallMat);
     room.add(group);
 
+    // Плинтус — низкая планка вдоль стены
+    const angle = Math.atan2(wall.b.y - wall.a.y, wall.b.x - wall.a.x);
+    const wallLenM = len * CM;
+    const baseboard = new THREE.Mesh(
+      new THREE.BoxGeometry(wallLenM, BASEBOARD_H, BASEBOARD_T),
+      baseboardMat,
+    );
+    baseboard.position.set(
+      (wall.a.x + wall.b.x) / 2 * CM,
+      BASEBOARD_H / 2,
+      (wall.a.y + wall.b.y) / 2 * CM,
+    );
+    baseboard.rotation.y = -angle;
+    // Сдвигаем плинтус так, чтобы он торчал чуть в комнату
+    const offsetX = -Math.sin(angle) * (wall.thickness * CM / 2 + BASEBOARD_T / 2);
+    const offsetZ = -Math.cos(angle) * (wall.thickness * CM / 2 + BASEBOARD_T / 2);
+    baseboard.position.x += offsetX;
+    baseboard.position.z += offsetZ;
+    baseboard.castShadow = true;
+    baseboard.receiveShadow = true;
+    room.add(baseboard);
+
     // Дверной блок (рама)
     for (const op of plan.openings.filter((o) => o.wallId === wall.id)) {
       const center = pointOnWall(wall, op.t);
-      const angle = Math.atan2(wall.b.y - wall.a.y, wall.b.x - wall.a.x);
       const isDoor = op.kind === "door";
       if (isDoor) {
-        // Полотно двери (открыто на 90°)
-        const doorMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.7 });
+        // Полотно двери (открыто на 90°) — реалистичное дерево
+        const doorMat = new THREE.MeshPhysicalMaterial({
+          color: 0x8b5a2b,
+          roughness: 0.55,
+          metalness: 0.05,
+          clearcoat: 0.3,
+          clearcoatRoughness: 0.5,
+        });
         const door = new THREE.Mesh(
           new THREE.BoxGeometry(op.width * CM, 200 * CM, 4 * CM),
           doorMat,
@@ -296,20 +349,33 @@ export function rebuildRoom(
         const pivot = new THREE.Group();
         pivot.add(door);
         door.position.x = (op.width * CM) / 2;
-        pivot.rotation.y = -Math.PI / 2.5; // приоткрыта
+        pivot.rotation.y = -Math.PI / 2.5;
         const wrap = new THREE.Group();
         wrap.add(pivot);
-        // Сдвиг к краю проёма
         pivot.position.x = -op.width * CM / 2;
         wrap.position.set(center.x * CM, 0, center.y * CM);
         wrap.rotation.y = -angle;
         room.add(wrap);
+
+        // Дверная ручка
+        const handle = new THREE.Mesh(
+          new THREE.SphereGeometry(0.025, 12, 8),
+          new THREE.MeshStandardMaterial({ color: 0xc0a060, roughness: 0.2, metalness: 0.9 }),
+        );
+        handle.position.set(0, 100 * CM, 0);
+        // позиционируем у двери
+        const handleWrap = new THREE.Group();
+        handleWrap.add(handle);
+        handle.position.set(op.width * CM * 0.85, 0, 0.04);
+        handleWrap.position.copy(pivot.position);
+        handleWrap.rotation.copy(pivot.rotation);
+        wrap.add(handleWrap);
       }
     }
   }
 
-  // Мебель
+  // Мебель — реалистичная PBR
   for (const item of plan.furniture) {
-    room.add(buildFurniture(item));
+    room.add(buildRealisticFurniture(item));
   }
 }
