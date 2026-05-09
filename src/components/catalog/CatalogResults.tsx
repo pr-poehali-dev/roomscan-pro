@@ -1,5 +1,6 @@
+import { useCallback } from "react";
 import Icon from "@/components/ui/icon";
-import FurnitureCard from "@/components/catalog/FurnitureCard";
+import VirtualFurnitureGrid from "@/components/catalog/VirtualFurnitureGrid";
 import {
   FURNITURE_CATALOG,
   type FurnitureItem,
@@ -46,6 +47,19 @@ export default function CatalogResults({
   onTryOnRoom,
   onResetAll,
 }: Props) {
+  const openAr = useCallback(
+    (it: FurnitureItem) => {
+      setArItem({
+        id: it.id,
+        name: it.name,
+        width: it.w / 100,
+        depth: it.d / 100,
+        height: it.h / 100,
+      });
+    },
+    [setArItem],
+  );
+
   return (
     <>
       {/* Результат поиска */}
@@ -70,32 +84,19 @@ export default function CatalogResults({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((item) => (
-            <FurnitureCard
-              key={item.id}
-              item={item}
-              inCart={cart.includes(item.id)}
-              justAdded={added === item.id}
-              addedToPlan3D={planAdded === item.id}
-              isFav={favorites.includes(item.id)}
-              onAddToCart={addToCart}
-              onAddToPlan3D={addToPlan3D}
-              onToggleFav={onToggleFav}
-              onOpenDetails={setDetails}
-              onOpenAR={(it) =>
-                setArItem({
-                  id: it.id,
-                  name: it.name,
-                  width: it.w / 100,
-                  depth: it.d / 100,
-                  height: it.h / 100,
-                })
-              }
-              onTryOnRoom={onTryOnRoom}
-            />
-          ))}
-        </div>
+        <VirtualFurnitureGrid
+          items={filtered}
+          cart={cart}
+          added={added}
+          planAdded={planAdded}
+          favorites={favorites}
+          addToCart={addToCart}
+          addToPlan3D={addToPlan3D}
+          onToggleFav={onToggleFav}
+          onOpenDetails={setDetails}
+          onOpenAR={openAr}
+          onTryOnRoom={onTryOnRoom}
+        />
       )}
 
       {/* Корзина внизу */}
