@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, lazy, Suspense } from "react";
 import { toast } from "sonner";
+import Icon from "@/components/ui/icon";
 import { saveCart, getCart, type CartItemRef } from "@/lib/scanStore";
 import type { ARFurniture } from "@/components/ar/ARFurnitureView";
 
@@ -268,21 +269,21 @@ export default function CatalogSection() {
 
       {/* Модалки */}
       {arItem && (
-        <ErrorBoundary>
-          <Suspense fallback={null}>
+        <ErrorBoundary inline onReset={closeAr}>
+          <Suspense fallback={<ModalLoader />}>
             <ARFurnitureView item={arItem} onClose={closeAr} />
           </Suspense>
         </ErrorBoundary>
       )}
       {tryOnItem && (
-        <ErrorBoundary>
-          <Suspense fallback={null}>
+        <ErrorBoundary inline onReset={closeTryOn}>
+          <Suspense fallback={<ModalLoader />}>
             <RoomTryOn item={tryOnItem} onClose={closeTryOn} />
           </Suspense>
         </ErrorBoundary>
       )}
       {details && (
-        <ErrorBoundary>
+        <ErrorBoundary inline onReset={closeDetails}>
           <FurnitureDetailsModal
             item={details}
             inCart={cart.includes(details.id)}
@@ -298,6 +299,18 @@ export default function CatalogSection() {
           />
         </ErrorBoundary>
       )}
+    </div>
+  );
+}
+
+/** Видимый индикатор загрузки ленивой модалки (3D / AR / RoomTryOn) */
+function ModalLoader() {
+  return (
+    <div className="fixed inset-0 z-50 bg-background/85 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-card border border-border rounded-2xl shadow-xl px-6 py-5 flex items-center gap-3">
+        <Icon name="Loader2" size={20} className="text-primary animate-spin" />
+        <p className="text-sm font-bold text-foreground">Загружаю интерфейс…</p>
+      </div>
     </div>
   );
 }

@@ -41,11 +41,19 @@ export default function FurnitureDetailsModal({
   onTryOnRoom,
   onSelectRelated,
 }: Props) {
-  const related = useMemo(() => getRelatedItems(item, 4), [item]);
+  const related = useMemo(() => {
+    try {
+      return getRelatedItems(item, 4);
+    } catch {
+      return [];
+    }
+  }, [item]);
 
-  // Цена комплекта (текущий + рекомендованные)
+  // Цена комплекта (текущий + рекомендованные) — с защитой от undefined
   const bundlePrice = useMemo(
-    () => item.priceNum + related.reduce((s, r) => s + r.priceNum, 0),
+    () =>
+      (item.priceNum ?? 0) +
+      related.reduce((s, r) => s + (r.priceNum ?? 0), 0),
     [item, related],
   );
   const bundleDiscount = Math.round(bundlePrice * 0.07); // условно 7% за комплект

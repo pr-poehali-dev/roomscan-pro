@@ -42,7 +42,9 @@ export default function FurnitureCard({
     <article
       aria-label={`${item.name}, ${item.brand}, ${item.price}`}
       className={`bg-card border rounded-2xl overflow-hidden transition-all group flex flex-col ${
-        inCart ? "border-primary/40 shadow-lg shadow-primary/5" : "border-border hover:border-primary/30 hover:shadow-md"
+        inCart
+          ? "border-primary/50 shadow-lg shadow-primary/10"
+          : "border-border hover:border-primary/50 hover:shadow-lg hover:-translate-y-0.5"
       }`}
     >
       <FurnitureCardPreview

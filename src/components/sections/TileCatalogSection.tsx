@@ -270,7 +270,7 @@ export default function TileCatalogSection() {
 
       {/* Модалка деталей */}
       {details && (
-        <ErrorBoundary>
+        <ErrorBoundary inline onReset={closeDetails}>
           <TileDetailsModal
             tile={details}
             isFav={favorites.includes(details.id)}
