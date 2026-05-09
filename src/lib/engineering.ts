@@ -45,6 +45,16 @@ export interface EquipmentItem {
   color: string;
   /** Артикул / код производителя */
   sku?: string;
+  /** Фотореалистичное изображение оборудования (URL) */
+  image?: string;
+  /** Мощность / производительность (для подсчёта в конструкторе) */
+  power?: number;
+  /** Единица мощности */
+  powerUnit?: "кВт" | "л" | "м³/ч" | "л/ч";
+  /** Совместимость: для какого размера дома (м²) подходит */
+  forArea?: [number, number];
+  /** Теги для фильтрации каталога */
+  tags?: string[];
 }
 
 /* ────────────────── ОБОРУДОВАНИЕ ────────────────── */
@@ -64,6 +74,11 @@ export const EQUIPMENT: EquipmentItem[] = [
     unit: "шт",
     color: "#e8e8ea",
     sku: "7659670",
+    image: "https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/files/68023442-4325-4e8c-9d38-2f509080ca78.jpg",
+    power: 24,
+    powerUnit: "кВт",
+    forArea: [80, 200],
+    tags: ["газовый", "настенный", "двухконтурный", "турбо"],
   },
   {
     id: "boiler-protherm-50",
@@ -76,7 +91,12 @@ export const EQUIPMENT: EquipmentItem[] = [
     size: [0.6, 1.4, 0.65],
     price: 245000,
     unit: "шт",
-  color: "#cfd5dc",
+    color: "#cfd5dc",
+    image: "https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/files/68023442-4325-4e8c-9d38-2f509080ca78.jpg",
+    power: 50,
+    powerUnit: "кВт",
+    forArea: [200, 500],
+    tags: ["газовый", "напольный", "конденсационный", "премиум"],
   },
   {
     id: "boiler-vitodens-100",
@@ -91,6 +111,11 @@ export const EQUIPMENT: EquipmentItem[] = [
     unit: "шт",
     color: "#f5f5f7",
     sku: "B1HE068",
+    image: "https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/files/68023442-4325-4e8c-9d38-2f509080ca78.jpg",
+    power: 35,
+    powerUnit: "кВт",
+    forArea: [150, 350],
+    tags: ["газовый", "настенный", "конденсационный", "премиум", "wifi"],
   },
 
   // НАСОСЫ
@@ -106,6 +131,9 @@ export const EQUIPMENT: EquipmentItem[] = [
     price: 14500,
     unit: "шт",
     color: "#ff6f3c",
+    image: "https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/files/3e47e1b0-e346-49fd-bbc6-fe691bf4ad5f.jpg",
+    forArea: [80, 200],
+    tags: ["циркуляционный", "стандарт"],
   },
   {
     id: "pump-wilo-yonos",
@@ -119,6 +147,9 @@ export const EQUIPMENT: EquipmentItem[] = [
     price: 26500,
     unit: "шт",
     color: "#1ea54a",
+    image: "https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/files/3e47e1b0-e346-49fd-bbc6-fe691bf4ad5f.jpg",
+    forArea: [100, 350],
+    tags: ["циркуляционный", "энергоэффективный", "класс A"],
   },
 
   // БОЙЛЕРЫ
@@ -134,6 +165,11 @@ export const EQUIPMENT: EquipmentItem[] = [
     price: 42000,
     unit: "шт",
     color: "#5a8db8",
+    image: "https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/files/99d8ee92-ad22-405d-9cd8-1aa8d51411b1.jpg",
+    power: 100,
+    powerUnit: "л",
+    forArea: [80, 180],
+    tags: ["косвенный нагрев", "эмаль"],
   },
   {
     id: "tank-drazice-200",
@@ -146,6 +182,11 @@ export const EQUIPMENT: EquipmentItem[] = [
     price: 68000,
     unit: "шт",
     color: "#5a8db8",
+    image: "https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/files/99d8ee92-ad22-405d-9cd8-1aa8d51411b1.jpg",
+    power: 200,
+    powerUnit: "л",
+    forArea: [180, 350],
+    tags: ["косвенный нагрев", "эмаль", "семья 4-5 чел"],
   },
 
   // РАСШИРИТЕЛЬНЫЕ БАКИ
@@ -160,6 +201,11 @@ export const EQUIPMENT: EquipmentItem[] = [
     price: 4800,
     unit: "шт",
     color: "#c0392b",
+    image: "https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/files/2013af27-245f-4a76-bd71-c7ed610213d2.jpg",
+    power: 12,
+    powerUnit: "л",
+    forArea: [80, 200],
+    tags: ["мембранный", "EPDM"],
   },
   {
     id: "expansion-reflex-25",
@@ -172,6 +218,11 @@ export const EQUIPMENT: EquipmentItem[] = [
     price: 7200,
     unit: "шт",
     color: "#c0392b",
+    image: "https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/files/2013af27-245f-4a76-bd71-c7ed610213d2.jpg",
+    power: 25,
+    powerUnit: "л",
+    forArea: [200, 500],
+    tags: ["мембранный", "EPDM"],
   },
 
   // КОЛЛЕКТОРЫ
@@ -185,6 +236,9 @@ export const EQUIPMENT: EquipmentItem[] = [
     price: 18500,
     unit: "шт",
     color: "#7d8a99",
+    image: "https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/files/1198e316-c643-4352-aa18-d283ecfb9f58.jpg",
+    forArea: [80, 250],
+    tags: ["распределение", "3 контура"],
   },
   {
     id: "manifold-5",
@@ -197,6 +251,9 @@ export const EQUIPMENT: EquipmentItem[] = [
     price: 36800,
     unit: "шт",
     color: "#7d8a99",
+    image: "https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/files/1198e316-c643-4352-aa18-d283ecfb9f58.jpg",
+    forArea: [200, 700],
+    tags: ["гидрострелка", "5 контуров", "балансировка"],
   },
 
   // ГРУППА БЕЗОПАСНОСТИ
@@ -211,6 +268,8 @@ export const EQUIPMENT: EquipmentItem[] = [
     price: 3900,
     unit: "компл",
     color: "#d4a017",
+    image: "https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/files/0a99b17f-35ea-4e27-822c-0c8632129251.jpg",
+    tags: ["безопасность", "обязательно"],
   },
 
   // ФИЛЬТРЫ
@@ -225,6 +284,8 @@ export const EQUIPMENT: EquipmentItem[] = [
     price: 8200,
     unit: "шт",
     color: "#34495e",
+    image: "https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/files/89ef309d-8f91-494f-b525-9f05689b8aa6.jpg",
+    tags: ["фильтрация", "магнитный", "самопромывной"],
   },
 
   // АВТОМАТИКА
@@ -240,6 +301,8 @@ export const EQUIPMENT: EquipmentItem[] = [
     price: 12500,
     unit: "шт",
     color: "#16a085",
+    image: "https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/files/7436f52a-60dc-43a8-bfbb-3efbbd3e3038.jpg",
+    tags: ["умный дом", "GSM", "Wi-Fi", "удалённое управление"],
   },
 
   // ДЫМОХОДЫ
@@ -253,6 +316,8 @@ export const EQUIPMENT: EquipmentItem[] = [
     price: 4200,
     unit: "м",
     color: "#95a5a6",
+    image: "https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/files/43acc208-0130-476e-bc37-779401ba66fa.jpg",
+    tags: ["коаксиал", "60/100"],
   },
 
   // ГАЗГОЛЬДЕРЫ (СУГ — пропан-бутан, автономная газификация)
@@ -269,6 +334,11 @@ export const EQUIPMENT: EquipmentItem[] = [
     unit: "шт",
     color: "#d97706",
     sku: "RI-2700-G",
+    image: "https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/files/2ffe4407-a02f-4dfb-92eb-fdb451c15486.jpg",
+    power: 2700,
+    powerUnit: "л",
+    forArea: [100, 250],
+    tags: ["СУГ", "подземный", "автономная газификация"],
   },
   {
     id: "gas-tank-4850",
@@ -283,6 +353,11 @@ export const EQUIPMENT: EquipmentItem[] = [
     unit: "шт",
     color: "#d97706",
     sku: "CH-4850",
+    image: "https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/files/2ffe4407-a02f-4dfb-92eb-fdb451c15486.jpg",
+    power: 4850,
+    powerUnit: "л",
+    forArea: [250, 500],
+    tags: ["СУГ", "подземный", "премиум"],
   },
   {
     id: "gas-tank-6400",
@@ -296,6 +371,11 @@ export const EQUIPMENT: EquipmentItem[] = [
     price: 385000,
     unit: "шт",
     color: "#d97706",
+    image: "https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/files/2ffe4407-a02f-4dfb-92eb-fdb451c15486.jpg",
+    power: 6400,
+    powerUnit: "л",
+    forArea: [500, 800],
+    tags: ["СУГ", "подземный", "крупный коттедж"],
   },
 
   // БАЛЛОНЫ ГАЗОВЫЕ
@@ -349,6 +429,8 @@ export const EQUIPMENT: EquipmentItem[] = [
     price: 18500,
     unit: "шт",
     color: "#475569",
+    image: "https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/files/4ba087c4-1f7c-4bf7-a593-08778494fd28.jpg",
+    tags: ["регулятор", "ГРПШ", "СУГ"],
   },
   {
     id: "gas-reg-cavagna",
@@ -392,6 +474,8 @@ export const EQUIPMENT: EquipmentItem[] = [
     price: 7500,
     unit: "компл",
     color: "#facc15",
+    image: "https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/files/9837951c-2dcd-45a9-a1d1-4edf15916d3b.jpg",
+    tags: ["безопасность", "сигнализация", "автоматическое отключение"],
   },
   {
     id: "gas-detector-seitron",

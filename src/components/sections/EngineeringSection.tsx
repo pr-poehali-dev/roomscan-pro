@@ -22,6 +22,11 @@ import EngHeader from "./engineering/EngHeader";
 import EngScenePanel from "./engineering/EngScenePanel";
 import EngSidebar from "./engineering/EngSidebar";
 import { EquipmentPicker, ProjectsList } from "./engineering/EngModals";
+import EquipmentCatalog from "./engineering/EquipmentCatalog";
+import EquipmentBuilder from "./engineering/EquipmentBuilder";
+import Icon from "@/components/ui/icon";
+
+type EngMode = "templates" | "catalog" | "builder";
 
 /**
  * Раздел «Инженерные узлы»: 3D + drag-and-drop + сохранение в БД + PDF + Telegram-заявка.
@@ -35,6 +40,7 @@ import { EquipmentPicker, ProjectsList } from "./engineering/EngModals";
  * Логика и поведение 1:1 совпадают с прежней монолитной версией.
  */
 export default function EngineeringSection() {
+  const [mode, setMode] = useState<EngMode>("templates");
   const [tplIndex, setTplIndex] = useState(0);
   const baseTpl = NODE_TEMPLATES[tplIndex];
 
@@ -180,6 +186,40 @@ export default function EngineeringSection() {
     <div id="engineering" className="container mx-auto px-4 py-10 max-w-[1400px]">
       <EngHeader tplIndex={tplIndex} onSelectTpl={handleSelectTpl} />
 
+      {/* Переключатель режимов */}
+      <div className="flex flex-wrap gap-2 mb-5 mt-1">
+        <ModeButton
+          active={mode === "templates"}
+          onClick={() => setMode("templates")}
+          icon="LayoutGrid"
+          label="Готовые узлы"
+          hint="6 типовых сборок 3D"
+        />
+        <ModeButton
+          active={mode === "catalog"}
+          onClick={() => setMode("catalog")}
+          icon="Package"
+          label="Каталог"
+          hint="Все позиции с фото"
+        />
+        <ModeButton
+          active={mode === "builder"}
+          onClick={() => setMode("builder")}
+          icon="Hammer"
+          label="Конструктор"
+          hint="Drag-and-drop сборка"
+        />
+      </div>
+
+      {mode === "catalog" && (
+        <EquipmentCatalog />
+      )}
+
+      {mode === "builder" && (
+        <EquipmentBuilder />
+      )}
+
+      {mode === "templates" && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <EngScenePanel
           baseTpl={baseTpl}
@@ -211,6 +251,7 @@ export default function EngineeringSection() {
           onOpenQuote={() => setQuoteOpen(true)}
         />
       </div>
+      )}
 
       {picker && <EquipmentPicker onPick={addEquipment} onClose={() => setPicker(false)} />}
       {projectsOpen && (
@@ -231,5 +272,44 @@ export default function EngineeringSection() {
         items={quoteItems}
       />
     </div>
+  );
+}
+
+/* ────────────── ВНУТРЕННИЙ КОМПОНЕНТ ────────────── */
+
+function ModeButton({
+  active,
+  onClick,
+  icon,
+  label,
+  hint,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: string;
+  label: string;
+  hint: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex-1 sm:flex-none flex items-center gap-2.5 px-4 py-2.5 rounded-lg border-2 transition-all ${
+        active
+          ? "bg-primary text-primary-foreground border-primary shadow-md"
+          : "bg-card border-border text-foreground hover:border-primary/40"
+      }`}
+    >
+      <Icon name={icon} size={18} className={active ? "" : "text-primary"} />
+      <div className="text-left">
+        <p className="text-sm font-bold leading-tight">{label}</p>
+        <p
+          className={`text-[10px] font-mono leading-tight ${
+            active ? "text-primary-foreground/80" : "text-muted-foreground"
+          }`}
+        >
+          {hint}
+        </p>
+      </div>
+    </button>
   );
 }
