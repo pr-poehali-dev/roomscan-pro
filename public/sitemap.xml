@@ -50,6 +50,13 @@
   </url>
 
   <url>
+    <loc>https://roomscan-ai.ru/#tiles</loc>
+    <lastmod>2026-05-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
     <loc>https://roomscan-ai.ru/#styles</loc>
     <lastmod>2026-05-09</lastmod>
     <changefreq>weekly</changefreq>

@@ -9,6 +9,7 @@ import { ProjectsSection, ProfileSection } from "@/components/sections/UserSecti
 const ScanSection = lazy(() => import("@/components/scan/ScanSection"));
 const PlannerSection = lazy(() => import("@/components/sections/PlannerSection"));
 const CatalogSection = lazy(() => import("@/components/sections/CatalogSection"));
+const TileCatalogSection = lazy(() => import("@/components/sections/TileCatalogSection"));
 const CalcSection = lazy(() => import("@/components/sections/CalcSection"));
 const ExportSection = lazy(() =>
   import("@/components/sections/ExportHelpSection").then((m) => ({ default: m.ExportSection })),
@@ -58,6 +59,7 @@ type Section =
   | "projects"
   | "planner"
   | "catalog"
+  | "tiles"
   | "styles"
   | "calc"
   | "openings"
@@ -78,6 +80,7 @@ const navItemsAll: { id: Section; label: string; icon: string; hideInGuest?: boo
   { id: "projects", label: "Мои проекты", icon: "FolderOpen" },
   { id: "planner", label: "Планировщик", icon: "LayoutGrid" },
   { id: "catalog", label: "Каталог мебели", icon: "Sofa" },
+  { id: "tiles", label: "Каталог плитки", icon: "Grid2x2" },
   { id: "styles", label: "AI-стили", icon: "Wand2" },
   { id: "calc", label: "Смета ремонта", icon: "Calculator" },
   { id: "openings", label: "Окна и двери", icon: "DoorOpen" },
@@ -105,7 +108,7 @@ function getInitialSection(): Section {
   if (typeof window === "undefined") return "home";
   const hash = window.location.hash.replace("#", "") as Section;
   const valid: Section[] = [
-    "home", "scan", "usecases", "projects", "planner", "catalog",
+    "home", "scan", "usecases", "projects", "planner", "catalog", "tiles",
     "styles", "calc", "openings", "staging", "engineering", "modular-houses",
     "export", "pricing", "partners", "admin", "profile", "help",
   ];
@@ -229,6 +232,7 @@ export default function Index() {
       case "usecases": return <UseCasesSection onNavigate={(s) => setActive(s as Section)} />;
       case "planner": return <PlannerSection onNavigate={(s) => setActive(s as Section)} />;
       case "catalog": return <CatalogSection />;
+      case "tiles": return <TileCatalogSection />;
       case "styles": return <StylesSection />;
       case "calc": return <CalcSection />;
       case "openings": return <OpeningsSection />;
