@@ -67,18 +67,28 @@ export default function ARFurnitureView({ item, onClose }: Props) {
   useEffect(() => { selectedIdxRef.current = selectedIdx; }, [selectedIdx]);
   useEffect(() => { gestureModeRef.current = gestureMode; }, [gestureMode]);
 
-  // Проверяем поддержку
+  // Проверяем поддержку (с таймаутом, чтобы не висеть в "checking" бесконечно)
   useEffect(() => {
+    let cancelled = false;
+
     const check = async () => {
       // @ts-expect-error — webxr namespace
       if (typeof navigator === "undefined" || !navigator.xr) {
+        if (cancelled) return;
         setStatus("unsupported");
-        setError("WebXR не поддерживается этим браузером. Используйте Chrome на Android.");
+        setError("WebXR не поддерживается этим браузером. AR доступен на Android Chrome 90+ с ARCore.");
         return;
       }
       try {
-        // @ts-expect-error — xr namespace
-        const supported = await navigator.xr.isSessionSupported("immersive-ar");
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Таймаут проверки AR")), 3000),
+        );
+        const supportPromise =
+          // @ts-expect-error — xr namespace
+          navigator.xr.isSessionSupported("immersive-ar") as Promise<boolean>;
+
+        const supported = await Promise.race([supportPromise, timeoutPromise]);
+        if (cancelled) return;
         if (!supported) {
           setStatus("unsupported");
           setError("AR-режим не поддерживается. Нужен Android-смартфон с ARCore.");
@@ -86,12 +96,29 @@ export default function ARFurnitureView({ item, onClose }: Props) {
           setStatus("ready");
         }
       } catch (e) {
+        if (cancelled) return;
         setStatus("unsupported");
         setError(e instanceof Error ? e.message : "AR недоступен");
       }
     };
     check();
+
+    return () => { cancelled = true; };
   }, []);
+
+  // Закрытие по Esc + блокировка скролла страницы
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [onClose]);
 
   const startAR = async () => {
     if (!containerRef.current) return;
@@ -320,8 +347,18 @@ export default function ARFurnitureView({ item, onClose }: Props) {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center p-4">
-      <div ref={containerRef} className="relative w-full max-w-2xl bg-card border border-border rounded-xl overflow-hidden shadow-2xl">
+    <div
+      className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={(e) => {
+        // Закрытие по клику на бэкдроп (только если AR-сессия не активна)
+        if (e.target === e.currentTarget && status !== "active") onClose();
+      }}
+    >
+      <div
+        ref={containerRef}
+        className="relative w-full max-w-2xl bg-card border border-border rounded-xl overflow-hidden shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-3">
