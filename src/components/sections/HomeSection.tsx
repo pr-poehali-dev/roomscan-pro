@@ -138,7 +138,7 @@ export default function HomeSection({ onNavigate, userName }: Props) {
               </a>
 
               {/* Главный заголовок */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.05] tracking-tight mb-6">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.02] tracking-tight mb-6">
                 Превратите{" "}
                 <span className="relative inline-block">
                   <span className="relative z-10 text-primary">любую комнату</span>
@@ -148,8 +148,8 @@ export default function HomeSection({ onNavigate, userName }: Props) {
                 в 3D-проект с AI
               </h1>
 
-              <p className="text-base lg:text-lg text-white/70 mb-8 leading-relaxed">
-                {userName && userName !== "Гость" ? `${userName}, отсканируйте` : "Отсканируйте"} помещение за 30 секунд,
+              <p className="text-base lg:text-lg text-white/70 mb-8 leading-relaxed max-w-xl">
+                {userName && userName !== "Гость" ? `${userName}, отсканируйте` : "Отсканируйте"} помещение за&nbsp;30&nbsp;секунд,
                 расставьте мебель, получите смету и&nbsp;поделитесь готовым проектом — всё&nbsp;в&nbsp;одном&nbsp;окне.
               </p>
 
@@ -157,7 +157,7 @@ export default function HomeSection({ onNavigate, userName }: Props) {
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={() => onNavigate("scan")}
-                  className="group inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-6 py-4 rounded-xl transition-all hover:scale-[1.02] shadow-lg shadow-primary/20"
+                  className="group inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-6 py-4 rounded-xl transition-all hover:scale-[1.02] shadow-lg shadow-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f1419]"
                 >
                   <Icon name="ScanLine" size={20} />
                   Начать сканирование
@@ -169,7 +169,7 @@ export default function HomeSection({ onNavigate, userName }: Props) {
                 </button>
                 <button
                   onClick={() => onNavigate("usecases")}
-                  className="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/15 text-white font-semibold px-6 py-4 rounded-xl transition-all backdrop-blur-sm"
+                  className="inline-flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/15 text-white font-semibold px-6 py-4 rounded-xl transition-all backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f1419]"
                 >
                   <Icon name="Play" size={18} className="text-primary" />
                   Сценарии использования
@@ -186,20 +186,20 @@ export default function HomeSection({ onNavigate, userName }: Props) {
                   <HeroDemo3D />
                 </Suspense>
               </div>
-              <p className="text-center text-xs font-mono uppercase tracking-widest text-white/40 mt-4">
+              <p className="text-center text-[10px] font-mono uppercase tracking-[0.18em] text-white/40 mt-4">
                 Так выглядит ваша комната после сканирования
               </p>
             </div>
           </div>
 
           {/* Статистика */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 pt-8 border-t border-white/10">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 pt-8 border-t border-white/10">
             {STATS.map((s) => (
               <div key={s.label}>
-                <p className="text-2xl lg:text-4xl font-black text-white mb-1">
+                <p className="text-2xl lg:text-4xl font-black text-white mb-1.5 t-num leading-none">
                   {s.value}
                 </p>
-                <p className="text-xs lg:text-sm text-white/50 uppercase tracking-wider font-mono">
+                <p className="text-[10px] lg:text-xs text-white/50 uppercase tracking-[0.18em] font-mono">
                   {s.label}
                 </p>
               </div>
@@ -220,14 +220,10 @@ export default function HomeSection({ onNavigate, userName }: Props) {
       <section className="px-6 lg:px-12 max-w-6xl mx-auto w-full">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-8">
           <div>
-            <p className="text-primary text-xs font-mono uppercase tracking-widest mb-2">
-              Возможности
-            </p>
-            <h2 className="text-3xl lg:text-4xl font-black text-foreground">
-              Всё для дизайна интерьера
-            </h2>
+            <p className="t-meta text-primary mb-2">Возможности</p>
+            <h2 className="h-block text-foreground">Всё для дизайна интерьера</h2>
           </div>
-          <p className="text-sm text-muted-foreground max-w-md">
+          <p className="text-sm text-muted-foreground max-w-md leading-relaxed">
             Восемь инструментов, которые заменят дизайнера, замерщика, риелтора и&nbsp;сметчика
           </p>
         </div>
@@ -237,10 +233,10 @@ export default function HomeSection({ onNavigate, userName }: Props) {
             <button
               key={f.id}
               onClick={() => onNavigate(f.id)}
-              className="group relative text-left bg-card border border-border hover:border-primary/40 rounded-2xl p-6 transition-all hover:shadow-xl hover:-translate-y-0.5"
+              className="group relative text-left card-base card-hover p-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               {f.badge && (
-                <span className="absolute top-4 right-4 bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded">
+                <span className="absolute top-4 right-4 bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-[0.18em] px-2 py-0.5 rounded">
                   {f.badge}
                 </span>
               )}
@@ -251,9 +247,9 @@ export default function HomeSection({ onNavigate, userName }: Props) {
                   className="text-primary group-hover:text-primary-foreground transition-colors"
                 />
               </div>
-              <h3 className="text-lg font-bold text-foreground mb-1.5">{f.title}</h3>
+              <h3 className="h-card text-foreground mb-1.5">{f.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed mb-4">{f.desc}</p>
-              <div className="flex items-center gap-1.5 text-primary text-xs font-bold uppercase tracking-wider">
+              <div className="flex items-center gap-1.5 text-primary text-[11px] font-bold uppercase tracking-[0.18em]">
                 Открыть
                 <Icon
                   name="ArrowRight"
@@ -274,14 +270,10 @@ export default function HomeSection({ onNavigate, userName }: Props) {
         <div className="bg-gradient-to-br from-primary/5 to-transparent border border-primary/20 rounded-3xl p-8 lg:p-12">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-10">
             <div>
-              <p className="text-primary text-xs font-mono uppercase tracking-widest mb-2">
-                Процесс
-              </p>
-              <h2 className="text-3xl lg:text-4xl font-black text-foreground">
-                Как это работает
-              </h2>
+              <p className="t-meta text-primary mb-2">Процесс</p>
+              <h2 className="h-block text-foreground">Как это работает</h2>
             </div>
-            <p className="text-sm text-muted-foreground max-w-md">
+            <p className="text-sm text-muted-foreground max-w-md leading-relaxed">
               От пустой комнаты до готового проекта — четыре шага
             </p>
           </div>
@@ -294,7 +286,7 @@ export default function HomeSection({ onNavigate, userName }: Props) {
                 )}
                 <div className="relative">
                   <div className="w-12 h-12 bg-card border-2 border-primary/30 rounded-xl flex items-center justify-center mb-4 relative z-10">
-                    <span className="text-sm font-mono font-bold text-primary">
+                    <span className="text-sm t-num font-bold text-primary">
                       {step.num}
                     </span>
                   </div>

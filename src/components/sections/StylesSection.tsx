@@ -115,11 +115,11 @@ export default function StylesSection() {
   return (
     <div className="animate-fade-in space-y-6">
       <div>
-        <p className="text-muted-foreground text-sm font-mono uppercase tracking-widest mb-1">
+        <p className="t-meta text-primary mb-1">
           AI-генерация · 3 стиля
         </p>
-        <h2 className="text-3xl font-bold mb-2">Стили интерьера</h2>
-        <p className="text-muted-foreground max-w-2xl">
+        <h2 className="h-section text-foreground mb-2">Стили интерьера</h2>
+        <p className="t-lead max-w-2xl">
           Выберите стиль — мы подберём подходящую мебель из каталога и предложим
           расстановку с учётом размеров вашей комнаты.
         </p>
@@ -133,8 +133,8 @@ export default function StylesSection() {
             <button
               key={s.id}
               onClick={() => setSelected(s.id)}
-              className={`text-left bg-card border rounded-xl p-5 transition-all ${
-                isActive ? "border-primary/50 shadow-lg shadow-primary/5" : "border-border hover:border-primary/30"
+              className={`text-left card-base card-hover p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                isActive ? "card-active shadow-lg shadow-primary/5" : ""
               }`}
             >
               <div className="flex items-start justify-between mb-3">
@@ -147,7 +147,7 @@ export default function StylesSection() {
                   <Icon name="CheckCircle2" size={18} className="text-primary" />
                 )}
               </div>
-              <p className="font-bold text-foreground text-lg mb-1">{s.name}</p>
+              <p className="h-card text-foreground mb-1">{s.name}</p>
               <p className="text-xs text-muted-foreground mb-3">{s.tagline}</p>
               <div className="flex gap-1 mb-3">
                 {s.palette.map((c, i) => (
@@ -158,8 +158,8 @@ export default function StylesSection() {
                   />
                 ))}
               </div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
-                {s.recommended.length} предметов · бренд: {s.brandTags.join(", ")}
+              <p className="t-meta">
+                <span className="t-num">{s.recommended.length}</span> предметов · бренд: {s.brandTags.join(", ")}
               </p>
             </button>
           );
@@ -167,17 +167,17 @@ export default function StylesSection() {
       </div>
 
       {/* Детали выбранного стиля */}
-      <div className="bg-card border border-primary/20 rounded-lg p-5 space-y-4">
+      <div className="card-base border-primary/20 p-5 space-y-4">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-1">
+            <p className="t-meta mb-1">
               Выбранный стиль
             </p>
-            <h3 className="text-2xl font-bold flex items-center gap-2">
+            <h3 className="h-block text-foreground flex items-center gap-2">
               <Icon name={style.icon} size={20} className="text-primary" />
               {style.name}
             </h3>
-            <p className="text-sm text-muted-foreground mt-1">{style.description}</p>
+            <p className="t-lead mt-1">{style.description}</p>
           </div>
           <button
             onClick={applyStyle}
@@ -195,8 +195,8 @@ export default function StylesSection() {
         {/* Эвристики раскладки */}
         {scan ? (
           <div>
-            <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-2">
-              Авто-раскладка для вашей комнаты ({scan.width}×{scan.length} м)
+            <p className="t-meta mb-2">
+              Авто-раскладка для вашей комнаты (<span className="t-num">{scan.width}×{scan.length}</span> м)
             </p>
             <div className="space-y-1.5">
               {layoutTips.map((tip, i) => (
@@ -218,8 +218,8 @@ export default function StylesSection() {
 
         {/* Превью предметов стиля */}
         <div>
-          <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-2">
-            Подобрано к стилю — {styleTotalPrice.toLocaleString("ru-RU")} ₽
+          <p className="t-meta mb-2">
+            Подобрано к стилю — <span className="t-num">{styleTotalPrice.toLocaleString("ru-RU")} ₽</span>
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {style.recommended.map((id) => {
@@ -231,7 +231,7 @@ export default function StylesSection() {
                   <Icon name={it.icon} size={16} className="text-primary shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground truncate">{it.name}</p>
-                    <p className="text-[10px] font-mono text-muted-foreground">
+                    <p className="t-num text-[10px] text-muted-foreground">
                       {it.price.toLocaleString("ru-RU")} ₽
                     </p>
                   </div>
@@ -244,12 +244,12 @@ export default function StylesSection() {
 
       {/* Текущая корзина */}
       {cart.length > 0 && (
-        <div className="bg-card border border-border rounded-lg p-4">
+        <div className="card-base p-4">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+            <p className="t-meta">
               В корзине
             </p>
-            <span className="text-sm font-bold text-primary">
+            <span className="t-num text-sm font-bold text-primary">
               {cart.length} поз. · {totalPrice.toLocaleString("ru-RU")} ₽
             </span>
           </div>

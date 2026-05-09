@@ -30,33 +30,33 @@ export default function PricingSection() {
     <div className="animate-fade-in space-y-8">
       {/* Шапка */}
       <div className="text-center max-w-3xl mx-auto">
-        <p className="text-xs font-mono uppercase tracking-widest text-primary mb-2">Тарифы</p>
-        <h2 className="text-3xl sm:text-4xl font-black text-foreground">
-          Выберите подходящий план
-        </h2>
-        <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+        <p className="t-meta text-primary mb-3">Тарифы</p>
+        <h2 className="h-section text-foreground">Выберите подходящий план</h2>
+        <p className="t-lead mt-3 max-w-2xl mx-auto">
           Free — для разовых задач. PRO — для профессионалов. BUSINESS — для студий и агентств.
           Все тарифы можно отменить в любой момент.
         </p>
 
         {/* Тоггл периода оплаты */}
-        <div className="inline-flex items-center bg-secondary rounded-full p-1 mt-5">
+        <div className="inline-flex items-center bg-secondary rounded-full p-1 mt-6">
           <button
             onClick={() => setYearly(false)}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-              !yearly ? "bg-card text-foreground shadow" : "text-muted-foreground"
+            aria-pressed={!yearly}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              !yearly ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             Помесячно
           </button>
           <button
             onClick={() => setYearly(true)}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
-              yearly ? "bg-card text-foreground shadow" : "text-muted-foreground"
+            aria-pressed={yearly}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              yearly ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             Год
-            <span className="bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+            <span className="bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full t-num">
               −20%
             </span>
           </button>
@@ -72,9 +72,9 @@ export default function PricingSection() {
 
       {/* Сравнительная таблица */}
       <div className="max-w-5xl mx-auto pt-4">
-        <div className="text-center mb-4">
-          <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Подробное сравнение</p>
-          <h3 className="text-2xl font-black text-foreground mt-1">Что входит в каждый тариф</h3>
+        <div className="text-center mb-6">
+          <p className="t-meta mb-2">Подробное сравнение</p>
+          <h3 className="h-block text-foreground">Что входит в каждый тариф</h3>
         </div>
 
         <div className="bg-card border border-border rounded-2xl overflow-hidden">
@@ -119,7 +119,7 @@ export default function PricingSection() {
             { icon: "RefreshCw",   title: "7 дней на возврат",   text: "Не подошёл PRO/BUSINESS — вернём 100% оплаты в первые 7 дней" },
             { icon: "Lock",        title: "152-ФЗ + защита",     text: "Все данные хранятся на серверах в РФ, шифрование TLS, оплата через защищённый шлюз" },
           ].map((g) => (
-            <div key={g.title} className="bg-card border border-border rounded-xl p-4">
+            <div key={g.title} className="card-base p-4">
               <Icon name={g.icon} size={18} className="text-primary mb-2" />
               <p className="font-bold text-foreground text-sm">{g.title}</p>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{g.text}</p>
@@ -194,18 +194,18 @@ function PlanCard({ plan, yearly, onSelect }: { plan: Plan; yearly: boolean; onS
 
       <div className="my-4">
         <div className="flex items-baseline gap-1">
-          <span className="text-4xl font-black text-foreground">{formatRubMonth(price)}</span>
+          <span className="text-4xl font-black text-foreground t-num leading-none">{formatRubMonth(price)}</span>
           {price > 0 && (
-            <span className="text-sm text-muted-foreground font-mono">/мес</span>
+            <span className="text-sm text-muted-foreground t-num">/мес</span>
           )}
         </div>
         {yearly && plan.priceMonthly > 0 && (
-          <p className="text-[11px] text-emerald-600 font-mono mt-1">
+          <p className="text-[11px] text-emerald-600 t-num mt-1.5">
             Экономия {formatRubMonth((plan.priceMonthly - plan.priceYearly) * 12)} в год
           </p>
         )}
         {!yearly && plan.priceMonthly === 0 && (
-          <p className="text-[11px] text-muted-foreground font-mono mt-1">
+          <p className="text-[11px] text-muted-foreground font-mono mt-1.5">
             Без скрытых платежей
           </p>
         )}

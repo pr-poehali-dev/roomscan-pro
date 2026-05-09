@@ -119,16 +119,16 @@ export default function TileCatalogSection() {
     <div id="tiles" className="container mx-auto px-4 py-10 max-w-[1400px]">
       {/* Заголовок */}
       <div className="mb-6">
-        <p className="text-[10px] font-mono uppercase tracking-widest text-primary mb-1">
+        <p className="t-meta text-primary mb-1">
           Модуль · Отделочные материалы
         </p>
-        <h1 className="text-3xl md:text-4xl font-black text-foreground mb-2 flex items-center gap-3 flex-wrap">
+        <h1 className="h-section text-foreground mb-2 flex items-center gap-3 flex-wrap">
           <span className="w-11 h-11 rounded-xl bg-primary/15 flex items-center justify-center">
             <Icon name="Grid2x2" size={22} className="text-primary" />
           </span>
           Каталог плитки и напольных покрытий
         </h1>
-        <p className="text-sm text-muted-foreground max-w-3xl">
+        <p className="t-lead max-w-3xl">
           {stats.total} реальных моделей: керамогранит, мрамор, имитация дерева, бетон,
           марокканская плитка, terrazzo, herringbone, brick. Расчёт стоимости с запасом 10%
           на подрезку и связка с планировщиком — выберите отделку прямо для своей комнаты.
@@ -137,23 +137,23 @@ export default function TileCatalogSection() {
 
       {/* Сводные плашки */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <div className="bg-card border border-border rounded-xl p-3">
+        <div className="card-base p-3">
           <p className="text-[10px] font-mono uppercase text-muted-foreground">Всего моделей</p>
-          <p className="text-xl font-black text-foreground mt-1">{stats.total}</p>
+          <p className="t-num text-xl font-black text-foreground mt-1">{stats.total}</p>
         </div>
-        <div className="bg-card border border-border rounded-xl p-3">
+        <div className="card-base p-3">
           <p className="text-[10px] font-mono uppercase text-muted-foreground">Хитов продаж</p>
-          <p className="text-xl font-black text-yellow-500 mt-1">{stats.onSale}</p>
+          <p className="t-num text-xl font-black text-yellow-500 mt-1">{stats.onSale}</p>
         </div>
-        <div className="bg-card border border-border rounded-xl p-3">
+        <div className="card-base p-3">
           <p className="text-[10px] font-mono uppercase text-muted-foreground">Цена от</p>
-          <p className="text-xl font-black text-primary mt-1 font-mono">
+          <p className="t-num text-xl font-black text-primary mt-1">
             {stats.minPrice.toLocaleString("ru-RU")} ₽/м²
           </p>
         </div>
-        <div className="bg-card border border-border rounded-xl p-3">
+        <div className="card-base p-3">
           <p className="text-[10px] font-mono uppercase text-muted-foreground">В избранном</p>
-          <p className="text-xl font-black text-red-500 mt-1">{favorites.length}</p>
+          <p className="t-num text-xl font-black text-red-500 mt-1">{favorites.length}</p>
         </div>
       </div>
 
@@ -251,7 +251,7 @@ export default function TileCatalogSection() {
               ))}
             </div>
           ) : (
-            <div className="bg-card border-2 border-dashed border-border rounded-xl p-12 text-center">
+            <div className="card-base border-2 border-dashed p-12 text-center">
               <Icon name="SearchX" size={32} className="text-muted-foreground mx-auto mb-2" />
               <p className="text-sm font-bold text-foreground">Ничего не найдено</p>
               <p className="text-xs text-muted-foreground mt-1">
