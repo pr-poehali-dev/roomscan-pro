@@ -11,9 +11,9 @@ import {
   type TileStyle,
   type TileSurface,
 } from "@/lib/tile-library";
+import TileCard from "@/components/tiles/TileCard";
 import TileFilters from "@/components/tiles/TileFilters";
 import TileDetailsModal from "@/components/tiles/TileDetailsModal";
-import VirtualTileGrid from "@/components/tiles/VirtualTileGrid";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 const FAV_KEY = "roomscan:tile-favorites";
@@ -244,12 +244,17 @@ export default function TileCatalogSection() {
 
           {/* Сетка карточек */}
           {filtered.length > 0 ? (
-            <VirtualTileGrid
-              items={filtered}
-              favorites={favorites}
-              onOpen={openDetails}
-              onToggleFav={toggleFav}
-            />
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+              {filtered.map((tile) => (
+                <TileCard
+                  key={tile.id}
+                  tile={tile}
+                  isFav={favorites.includes(tile.id)}
+                  onOpen={openDetails}
+                  onToggleFav={toggleFav}
+                />
+              ))}
+            </div>
           ) : (
             <div className="card-base border-2 border-dashed p-12 text-center">
               <Icon name="SearchX" size={32} className="text-muted-foreground mx-auto mb-2" />

@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import Icon from "@/components/ui/icon";
-import VirtualFurnitureGrid from "@/components/catalog/VirtualFurnitureGrid";
+import FurnitureCard from "@/components/catalog/FurnitureCard";
 import {
   FURNITURE_CATALOG,
   type FurnitureItem,
@@ -84,19 +84,24 @@ export default function CatalogResults({
           </button>
         </div>
       ) : (
-        <VirtualFurnitureGrid
-          items={filtered}
-          cart={cart}
-          added={added}
-          planAdded={planAdded}
-          favorites={favorites}
-          addToCart={addToCart}
-          addToPlan3D={addToPlan3D}
-          onToggleFav={onToggleFav}
-          onOpenDetails={setDetails}
-          onOpenAR={openAr}
-          onTryOnRoom={onTryOnRoom}
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((item) => (
+            <FurnitureCard
+              key={item.id}
+              item={item}
+              inCart={cart.includes(item.id)}
+              justAdded={added === item.id}
+              addedToPlan3D={planAdded === item.id}
+              isFav={favorites.includes(item.id)}
+              onAddToCart={addToCart}
+              onAddToPlan3D={addToPlan3D}
+              onToggleFav={onToggleFav}
+              onOpenDetails={setDetails}
+              onOpenAR={openAr}
+              onTryOnRoom={onTryOnRoom}
+            />
+          ))}
+        </div>
       )}
 
       {/* Корзина внизу */}
