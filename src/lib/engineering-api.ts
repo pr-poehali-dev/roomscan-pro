@@ -4,6 +4,7 @@
  */
 import { NodePlacement } from "./engineering";
 import { HousePlacement } from "./modular-houses";
+import { BuilderComposition } from "./equipment-builder";
 
 const ENG_URL = "https://functions.poehali.dev/006fd31a-3056-4ae4-ad05-7f4e409133b1";
 const HOUSE_URL = "https://functions.poehali.dev/d3afca03-e4b6-4ca0-b2b9-70b2ddd526b5";
@@ -108,6 +109,61 @@ export async function deleteEngProject(id: number): Promise<void> {
     headers: headers(),
   });
   if (!r.ok) throw new Error("delete failed");
+}
+
+/* ───────── Builder Compositions (хранятся в той же таблице eng_projects) ───────── */
+
+/** Префикс template_id для композиций пользовательского конструктора */
+export const BUILDER_TEMPLATE_PREFIX = "builder:";
+
+export interface BuilderProjectDTO {
+  id: number;
+  title: string;
+  template_id: string;
+  total_price: number;
+  notes?: string | null;
+  composition?: BuilderComposition;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Только композиции конструктора (template_id начинается с "builder:") */
+export async function listBuilderProjects(): Promise<BuilderProjectDTO[]> {
+  const all = await listEngProjects();
+  return all
+    .filter((p) => p.template_id?.startsWith(BUILDER_TEMPLATE_PREFIX))
+    .map((p) => ({ ...p, composition: undefined }));
+}
+
+export async function getBuilderProject(id: number): Promise<BuilderProjectDTO> {
+  const r = await fetch(`${ENG_URL}?id=${id}`, { headers: headers() });
+  if (!r.ok) throw new Error("get failed");
+  const data = await r.json();
+  return {
+    ...data,
+    composition: data.layout as BuilderComposition,
+  };
+}
+
+export async function saveBuilderProject(
+  composition: BuilderComposition,
+  totalPrice: number,
+  existingId?: number,
+): Promise<BuilderProjectDTO> {
+  const payload = {
+    title: composition.name,
+    template_id: `${BUILDER_TEMPLATE_PREFIX}custom`,
+    layout: composition as unknown as NodePlacement[],
+    total_price: totalPrice,
+  };
+  const url = existingId ? `${ENG_URL}?id=${existingId}` : ENG_URL;
+  const r = await fetch(url, {
+    method: existingId ? "PUT" : "POST",
+    headers: headers(),
+    body: JSON.stringify(payload),
+  });
+  if (!r.ok) throw new Error(existingId ? "update failed" : "create failed");
+  return r.json();
 }
 
 /* ───────── House Projects ───────── */
