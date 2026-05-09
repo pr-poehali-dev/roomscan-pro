@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { toast } from "sonner";
 import Icon from "@/components/ui/icon";
 import { saveCart, getCart, type CartItemRef } from "@/lib/scanStore";
 import ARFurnitureView, { type ARFurniture } from "@/components/ar/ARFurnitureView";
@@ -8,10 +9,14 @@ import {
   getAllBrands,
   getPriceRange,
   filterCatalog,
+  STYLE_LABELS,
+  STYLE_ORDER,
   type Category,
   type SortBy,
+  type StyleTag,
   type FurnitureItem,
 } from "@/lib/furnitureCatalog";
+import { addCatalogItemToFloorPlan } from "@/lib/catalogToPlan";
 import {
   getFavorites,
   toggleFavorite,
@@ -30,10 +35,21 @@ const SORT_OPTIONS: { id: SortBy; label: string; icon: string }[] = [
 
 export default function CatalogSection() {
   const [filter, setFilter] = useState<"Все" | Category>("Все");
+  const [styleFilter, setStyleFilter] = useState<StyleTag | "all">("all");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("popular");
   const [showFilters, setShowFilters] = useState(false);
   const [showOnlyFavs, setShowOnlyFavs] = useState(false);
+  const [planAdded, setPlanAdded] = useState<number | null>(null);
+
+  // Подсчёт SKU по стилям — для бейджей в табах
+  const styleCounts = useMemo(() => {
+    const map = new Map<StyleTag, number>();
+    FURNITURE_CATALOG.forEach((f) => {
+      f.styleTags?.forEach((t) => map.set(t, (map.get(t) ?? 0) + 1));
+    });
+    return map;
+  }, []);
 
   const priceRange = useMemo(() => getPriceRange(), []);
   const allBrands = useMemo(() => getAllBrands(), []);
@@ -57,6 +73,7 @@ export default function CatalogSection() {
     let list = filterCatalog({
       search,
       category: filter === "Все" ? "all" : filter,
+      styleTags: styleFilter === "all" ? undefined : [styleFilter],
       brands: selectedBrands.length > 0 ? selectedBrands : undefined,
       minPrice: minPrice > priceRange.min ? minPrice : undefined,
       maxPrice: maxPrice < priceRange.max ? maxPrice : undefined,
@@ -70,6 +87,7 @@ export default function CatalogSection() {
   }, [
     search,
     filter,
+    styleFilter,
     selectedBrands,
     minPrice,
     maxPrice,
@@ -116,6 +134,19 @@ export default function CatalogSection() {
 
   const onToggleFav = useCallback((id: number) => {
     toggleFavorite(id);
+  }, []);
+
+  /** Добавить SKU прямо в 3D-планировщик (localStorage + событие). */
+  const addToPlan3D = useCallback((id: number) => {
+    const item = FURNITURE_CATALOG.find((f) => f.id === id);
+    if (!item) return;
+    addCatalogItemToFloorPlan(item);
+    setPlanAdded(id);
+    setTimeout(() => setPlanAdded(null), 1500);
+    toast.success(`«${item.name}» — в 3D-сцене`, {
+      description: "Откройте раздел Планировщик 3D, чтобы увидеть и переставить",
+      duration: 3500,
+    });
   }, []);
 
   const totalPrice = cart.reduce((sum, id) => {
@@ -351,6 +382,68 @@ export default function CatalogSection() {
         </div>
       )}
 
+      {/* Стили — фильтр-табы */}
+      <div className="mb-3">
+        <div className="flex items-center gap-2 mb-2">
+          <Icon name="Palette" size={14} className="text-muted-foreground" />
+          <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+            Стиль интерьера
+          </p>
+          {styleFilter !== "all" && (
+            <button
+              onClick={() => setStyleFilter("all")}
+              className="text-xs text-primary font-semibold hover:underline ml-auto"
+            >
+              Сбросить стиль
+            </button>
+          )}
+        </div>
+        <div className="flex gap-2 flex-wrap overflow-x-auto pb-1">
+          <button
+            onClick={() => setStyleFilter("all")}
+            className={`text-xs px-4 py-2 rounded-lg border font-semibold transition-colors whitespace-nowrap ${
+              styleFilter === "all"
+                ? "bg-foreground text-background border-foreground"
+                : "bg-card text-foreground border-border hover:border-primary/40"
+            }`}
+          >
+            Все стили
+          </button>
+          {STYLE_ORDER.map((s) => {
+            const active = styleFilter === s;
+            const count = styleCounts.get(s) ?? 0;
+            const styleColors: Record<StyleTag, string> = {
+              scandi: "from-amber-50 to-stone-100 text-stone-800 border-stone-300",
+              loft: "from-zinc-800 to-zinc-900 text-zinc-100 border-zinc-700",
+              classic: "from-rose-50 to-amber-50 text-amber-900 border-amber-300",
+              modern: "from-sky-50 to-slate-100 text-slate-800 border-slate-300",
+              japandi: "from-stone-50 to-stone-100 text-stone-700 border-stone-300",
+              glam: "from-fuchsia-100 to-amber-100 text-amber-800 border-amber-400",
+              midcentury: "from-orange-100 to-amber-100 text-orange-900 border-orange-400",
+            };
+            return (
+              <button
+                key={s}
+                onClick={() => setStyleFilter(s)}
+                className={`text-xs px-4 py-2 rounded-lg border font-semibold transition-all whitespace-nowrap flex items-center gap-2 ${
+                  active
+                    ? `bg-gradient-to-br ${styleColors[s]} shadow-sm scale-[1.02]`
+                    : "bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
+                }`}
+                title={`${STYLE_LABELS[s]} — ${count} позиций`}
+              >
+                <span>{STYLE_LABELS[s]}</span>
+                <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                  active ? "bg-black/10" : "bg-secondary"
+                }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Категории */}
       <div className="flex gap-2 flex-wrap mb-5 overflow-x-auto pb-1">
         {categories.map((c) => (
@@ -402,8 +495,10 @@ export default function CatalogSection() {
               item={item}
               inCart={cart.includes(item.id)}
               justAdded={added === item.id}
+              addedToPlan3D={planAdded === item.id}
               isFav={favorites.includes(item.id)}
               onAddToCart={addToCart}
+              onAddToPlan3D={addToPlan3D}
               onToggleFav={onToggleFav}
               onOpenDetails={setDetails}
               onOpenAR={(it) =>

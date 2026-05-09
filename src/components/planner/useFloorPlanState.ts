@@ -36,10 +36,31 @@ export function useFloorPlanState() {
   const [canUndo, setCanUndo] = useState(false);
 
   // Сохраняем план в localStorage при каждом изменении (с debounce)
+  // Чтобы избежать петли при внешних обновлениях (через событие) — сравниваем updatedAt
+  const lastSavedRef = useRef<number>(plan.updatedAt);
   useEffect(() => {
-    const t = setTimeout(() => saveFloorPlan(plan), 400);
+    if (plan.updatedAt === lastSavedRef.current) return;
+    const t = setTimeout(() => {
+      saveFloorPlan(plan);
+      lastSavedRef.current = plan.updatedAt;
+    }, 400);
     return () => clearTimeout(t);
   }, [plan]);
+
+  // Подхватываем внешние изменения плана (например, "В 3D" из каталога)
+  useEffect(() => {
+    const onExternal = () => {
+      const fresh = loadFloorPlan();
+      if (!fresh) return;
+      // Применяем только если updatedAt новее, чтобы не затирать локальные правки
+      if (fresh.updatedAt > plan.updatedAt) {
+        lastSavedRef.current = fresh.updatedAt;
+        setPlan(fresh);
+      }
+    };
+    window.addEventListener("roomscan:floorPlan:changed", onExternal);
+    return () => window.removeEventListener("roomscan:floorPlan:changed", onExternal);
+  }, [plan.updatedAt]);
 
   // Если выбрали мебель — переключаем инструмент в режим размещения
   useEffect(() => {

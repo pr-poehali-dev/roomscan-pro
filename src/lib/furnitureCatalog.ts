@@ -77,7 +77,21 @@ export type Category =
   | "Кухня"
   | "Ванная";
 
-export type StyleTag = "scandi" | "loft" | "classic" | "modern" | "japandi";
+export type StyleTag = "scandi" | "loft" | "classic" | "modern" | "japandi" | "glam" | "midcentury";
+
+/** Человекочитаемые названия стилей (для UI-табов) */
+export const STYLE_LABELS: Record<StyleTag, string> = {
+  scandi: "Сканди",
+  loft: "Лофт",
+  classic: "Классика",
+  modern: "Современный",
+  japandi: "Японский минимализм",
+  glam: "Гламур",
+  midcentury: "Mid-Century",
+};
+
+/** Порядок стилей в табах */
+export const STYLE_ORDER: StyleTag[] = ["scandi", "loft", "classic", "modern", "glam", "midcentury"];
 
 export const CATEGORIES: Category[] = [
   "Диваны", "Столы", "Кресла", "Шкафы", "Кровати", "ТВ-зоны",
@@ -151,13 +165,14 @@ export const FURNITURE_CATALOG: FurnitureItem[] = [
   // Диваны
   { id: 100, name: "Диван угловой Modular", brand: "Royal",   size: "320×180 см", price: "245 000 ₽", priceNum: 245000, category: "Диваны", icon: "Sofa", w: 320, d: 180, h: 88, styleTags: ["modern"] },
   { id: 101, name: "Диван Curve Blush",     brand: "Royal",   size: "240×110 см", price: "195 000 ₽", priceNum: 195000, category: "Диваны", icon: "Sofa", w: 240, d: 110, h: 78, styleTags: ["classic", "modern"] },
-  { id: 102, name: "Диван Mid-Century Tik", brand: "Vintage", size: "200×90 см",  price: "132 000 ₽", priceNum: 132000, category: "Диваны", icon: "Sofa", w: 200, d: 90,  h: 80, styleTags: ["midcentury", "classic"] },
+  { id: 102, name: "Диван Mid-Century Tik", brand: "Vintage", size: "200×90 см",  price: "132 000 ₽", priceNum: 132000, category: "Диваны", icon: "Sofa", w: 200, d: 90,  h: 80, styleTags: ["midcentury"] },
+  { id: 103, name: "Диван Glam Velvet",     brand: "Royal",   size: "230×100 см", price: "168 000 ₽", priceNum: 168000, category: "Диваны", icon: "Sofa", w: 230, d: 100, h: 85, styleTags: ["glam", "classic"] },
 
   // Кресла и пуфы
-  { id: 110, name: "Кресло Velvet Emerald", brand: "Royal",   size: "80×85 см",   price: "58 000 ₽",  priceNum: 58000,  category: "Кресла", icon: "Armchair", w: 80, d: 85, h: 95, styleTags: ["classic"] },
+  { id: 110, name: "Кресло Velvet Emerald", brand: "Royal",   size: "80×85 см",   price: "58 000 ₽",  priceNum: 58000,  category: "Кресла", icon: "Armchair", w: 80, d: 85, h: 95, styleTags: ["classic", "glam"] },
   { id: 111, name: "Chesterfield Leather",  brand: "Royal",   size: "95×95 см",   price: "124 000 ₽", priceNum: 124000, category: "Кресла", icon: "Armchair", w: 95, d: 95, h: 88, styleTags: ["classic", "loft"] },
   { id: 112, name: "Кресло Bouclé Cocoon",  brand: "Mira",    size: "90×95 см",   price: "78 000 ₽",  priceNum: 78000,  category: "Кресла", icon: "Armchair", w: 90, d: 95, h: 90, styleTags: ["modern"] },
-  { id: 113, name: "Пуф Velvet Mustard",    brand: "Royal",   size: "60×60 см",   price: "18 500 ₽",  priceNum: 18500,  category: "Кресла", icon: "Circle", w: 60, d: 60, h: 42, styleTags: ["classic"] },
+  { id: 113, name: "Пуф Velvet Mustard",    brand: "Royal",   size: "60×60 см",   price: "18 500 ₽",  priceNum: 18500,  category: "Кресла", icon: "Circle", w: 60, d: 60, h: 42, styleTags: ["glam", "midcentury"] },
 
   // Столы
   { id: 120, name: "Стол кофейный Marble",  brand: "Royal",   size: "100×60 см",  price: "24 500 ₽",  priceNum: 24500,  category: "Столы", icon: "Square", w: 100, d: 60, h: 45, styleTags: ["modern", "classic"] },
@@ -184,7 +199,7 @@ export const FURNITURE_CATALOG: FurnitureItem[] = [
   { id: 155, name: "Стеллаж Open Oak 6",     brand: "Nord",    size: "160×35 см",  price: "32 000 ₽",  priceNum: 32000,  category: "Шкафы", icon: "Archive", w: 160, d: 35, h: 180, styleTags: ["scandi", "japandi"] },
   { id: 156, name: "Полки парящие 3шт",      brand: "Nord",    size: "90×25 см",   price: "7 500 ₽",   priceNum: 7500,   category: "Шкафы", icon: "Layers", w: 90, d: 25, h: 4, styleTags: ["scandi"] },
   { id: 157, name: "Комод 6 ящиков",         brand: "Mira",    size: "140×50 см",  price: "28 800 ₽",  priceNum: 28800,  category: "Шкафы", icon: "Archive", w: 140, d: 50, h: 90, styleTags: ["modern", "scandi"] },
-  { id: 158, name: "Туалетный столик Vanity",brand: "Royal",   size: "110×45 см",  price: "42 000 ₽",  priceNum: 42000,  category: "Шкафы", icon: "Square", w: 110, d: 45, h: 80, styleTags: ["classic"] },
+  { id: 158, name: "Туалетный столик Vanity",brand: "Royal",   size: "110×45 см",  price: "42 000 ₽",  priceNum: 42000,  category: "Шкафы", icon: "Square", w: 110, d: 45, h: 80, styleTags: ["classic", "glam"] },
 
   // ТВ-зоны
   { id: 160, name: "ТВ-тумба Modern",        brand: "Space",   size: "180×45 см",  price: "28 500 ₽",  priceNum: 28500,  category: "ТВ-зоны", icon: "Tv", w: 180, d: 45, h: 50, styleTags: ["modern", "loft"] },
@@ -203,11 +218,11 @@ export const FURNITURE_CATALOG: FurnitureItem[] = [
 
   // Освещение
   { id: 180, name: "Подвес Loft Cage",       brand: "Lumen",   size: "Ø 35 см",    price: "8 500 ₽",   priceNum: 8500,   category: "Освещение", icon: "Lightbulb", w: 35, d: 35, h: 45, styleTags: ["loft"] },
-  { id: 181, name: "Хрустальная люстра XL",  brand: "Royal",   size: "Ø 90 см",    price: "148 000 ₽", priceNum: 148000, category: "Освещение", icon: "Sparkles", w: 90, d: 90, h: 100, styleTags: ["classic"] },
+  { id: 181, name: "Хрустальная люстра XL",  brand: "Royal",   size: "Ø 90 см",    price: "148 000 ₽", priceNum: 148000, category: "Освещение", icon: "Sparkles", w: 90, d: 90, h: 100, styleTags: ["classic", "glam"] },
 
   // Декор
-  { id: 190, name: "Зеркало Round Gold",     brand: "Wall",    size: "Ø 80 см",    price: "16 500 ₽",  priceNum: 16500,  category: "Декор", icon: "Circle", w: 80, d: 4, h: 80, styleTags: ["modern", "classic"] },
-  { id: 191, name: "Напольное зеркало Gold", brand: "Wall",    size: "70×200 см",  price: "38 500 ₽",  priceNum: 38500,  category: "Декор", icon: "Square", w: 70, d: 5, h: 200, styleTags: ["classic"] },
+  { id: 190, name: "Зеркало Round Gold",     brand: "Wall",    size: "Ø 80 см",    price: "16 500 ₽",  priceNum: 16500,  category: "Декор", icon: "Circle", w: 80, d: 4, h: 80, styleTags: ["modern", "glam", "midcentury"] },
+  { id: 191, name: "Напольное зеркало Gold", brand: "Wall",    size: "70×200 см",  price: "38 500 ₽",  priceNum: 38500,  category: "Декор", icon: "Square", w: 70, d: 5, h: 200, styleTags: ["classic", "glam"] },
   { id: 192, name: "Триптих картин Beige",   brand: "Wall",    size: "120×60 см",  price: "14 500 ₽",  priceNum: 14500,  category: "Декор", icon: "Image", w: 120, d: 4, h: 60, styleTags: ["modern", "japandi"] },
 
   // Растения
@@ -215,7 +230,7 @@ export const FURNITURE_CATALOG: FurnitureItem[] = [
 
   // Текстиль
   { id: 210, name: "Ковёр Persian Bordo",    brand: "Soft",    size: "240×170 см", price: "62 000 ₽",  priceNum: 62000,  category: "Текстиль", icon: "Square", w: 240, d: 170, h: 1, styleTags: ["classic"] },
-  { id: 211, name: "Ковёр Shaggy White",     brand: "Soft",    size: "Ø 200 см",   price: "24 800 ₽",  priceNum: 24800,  category: "Текстиль", icon: "Circle", w: 200, d: 200, h: 4, styleTags: ["modern", "classic"] },
+  { id: 211, name: "Ковёр Shaggy White",     brand: "Soft",    size: "Ø 200 см",   price: "24 800 ₽",  priceNum: 24800,  category: "Текстиль", icon: "Circle", w: 200, d: 200, h: 4, styleTags: ["modern", "glam"] },
 
   // Ванная — расширение
   { id: 220, name: "Ванна Free-stand",       brand: "Roca",    size: "170×75 см",  price: "78 500 ₽",  priceNum: 78500,  category: "Ванная", icon: "Bath", w: 170, d: 75, h: 60, styleTags: ["modern"] },
@@ -355,6 +370,7 @@ const ENRICHMENT: Record<number, Enrichment> = {
   100: { material: "Велюр, металл", colors: ["Графит"], colorPalette: ["#3a3d40"], rating: 4.9, reviews: 78, popular: true, deliveryDays: 14, warrantyMonths: 36, inStock: true, description: "Большой L-образный модульный диван премиум-класса с шезлонгом и подъёмным механизмом." },
   101: { material: "Велюр, латунь", colors: ["Розовый blush", "Изумруд"], colorPalette: ["#fbcfe8", "#1f5d4f"], rating: 4.8, reviews: 56, isNew: true, deliveryDays: 14, warrantyMonths: 36, inStock: true, description: "Полукруглый велюровый диван в стиле ар-деко. Латунные ножки." },
   102: { material: "Тик, велюр", colors: ["Оранжевый", "Графит"], colorPalette: ["#d97706", "#3a3d40"], rating: 4.7, reviews: 43, deliveryDays: 14, warrantyMonths: 36, inStock: true, description: "Винтажный диван 60-х. Натуральный тик, ножки-шпильки." },
+  103: { material: "Велюр, латунь", colors: ["Изумруд", "Сапфир"], colorPalette: ["#10b981", "#1e3a8a"], rating: 4.8, reviews: 38, isNew: true, deliveryDays: 14, warrantyMonths: 36, inStock: true, description: "Гламурный велюровый диван с каретной стяжкой и латунными ножками." },
 
   110: { material: "Бархат, латунь", colors: ["Изумруд"], colorPalette: ["#10b981"], rating: 4.9, reviews: 68, popular: true, deliveryDays: 10, warrantyMonths: 24, inStock: true, description: "Изумрудно-зелёное велюровое кресло на латунных ножках. Стиль ар-деко." },
   111: { material: "Натуральная кожа", colors: ["Бордо", "Коричневый"], colorPalette: ["#78350f", "#7f1d1d"], rating: 4.9, reviews: 124, deliveryDays: 21, warrantyMonths: 60, inStock: true, description: "Классическое кожаное кресло Chesterfield с каретной стяжкой." },
@@ -462,6 +478,7 @@ const PREVIEW_BY_ID: Record<number, string> = {
   100: PREVIEW.sofaModular,
   101: PREVIEW.sofaCurved,
   102: PREVIEW.sofaMidcentury,
+  103: PREVIEW.sofaCurved,
   110: PREVIEW.armchairVelvet,
   111: PREVIEW.armchairLeather,
   112: PREVIEW.armchairBoucle,

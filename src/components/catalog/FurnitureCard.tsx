@@ -5,8 +5,10 @@ interface Props {
   item: FurnitureItem;
   inCart: boolean;
   justAdded: boolean;
+  addedToPlan3D?: boolean;
   isFav: boolean;
   onAddToCart: (id: number) => void;
+  onAddToPlan3D?: (id: number) => void;
   onToggleFav: (id: number) => void;
   onOpenDetails: (item: FurnitureItem) => void;
   onOpenAR: (item: FurnitureItem) => void;
@@ -16,8 +18,10 @@ export default function FurnitureCard({
   item,
   inCart,
   justAdded,
+  addedToPlan3D,
   isFav,
   onAddToCart,
+  onAddToPlan3D,
   onToggleFav,
   onOpenDetails,
   onOpenAR,
@@ -161,6 +165,21 @@ export default function FurnitureCard({
             )}
           </div>
           <div className="flex items-center gap-1.5">
+            {onAddToPlan3D && (
+              <button
+                onClick={() => onAddToPlan3D(item.id)}
+                disabled={item.inStock === false}
+                title="Добавить в 3D-планировщик"
+                className={`text-xs px-2 py-1.5 rounded-lg flex items-center gap-1 font-semibold border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                  addedToPlan3D
+                    ? "bg-emerald-500 text-white border-emerald-500 scale-95"
+                    : "border-border text-muted-foreground hover:text-emerald-600 hover:border-emerald-500/40"
+                }`}
+              >
+                <Icon name={addedToPlan3D ? "Check" : "Box"} size={12} />
+                {addedToPlan3D ? "В сцене" : "3D"}
+              </button>
+            )}
             <button
               onClick={() => onOpenAR(item)}
               title="AR-просмотр (Android Chrome)"
