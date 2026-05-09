@@ -1,8 +1,11 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, lazy, Suspense } from "react";
 import { toast } from "sonner";
 import { saveCart, getCart, type CartItemRef } from "@/lib/scanStore";
-import ARFurnitureView, { type ARFurniture } from "@/components/ar/ARFurnitureView";
-import RoomTryOn from "@/components/catalog/RoomTryOn";
+import type { ARFurniture } from "@/components/ar/ARFurnitureView";
+
+// Тяжёлые 3D-модалки грузим лениво — они тянут three.js / r3f
+const ARFurnitureView = lazy(() => import("@/components/ar/ARFurnitureView"));
+const RoomTryOn = lazy(() => import("@/components/catalog/RoomTryOn"));
 import {
   FURNITURE_CATALOG,
   CATEGORIES,
@@ -21,6 +24,7 @@ import {
   FAVORITES_EVENT,
 } from "@/lib/favoritesStore";
 import FurnitureDetailsModal from "@/components/catalog/FurnitureDetailsModal";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import CatalogHeader from "@/components/catalog/CatalogHeader";
 import CatalogFilters from "@/components/catalog/CatalogFilters";
 import CatalogTabs from "@/components/catalog/CatalogTabs";
@@ -140,6 +144,25 @@ export default function CatalogSection() {
     toggleFavorite(id);
   }, []);
 
+  const closeDetails = useCallback(() => setDetails(null), []);
+  const closeAr = useCallback(() => setArItem(null), []);
+  const closeTryOn = useCallback(() => setTryOnItem(null), []);
+  const selectRelated = useCallback((it: FurnitureItem) => setDetails(it), []);
+  const openArFromDetails = useCallback((it: FurnitureItem) => {
+    setDetails(null);
+    setArItem({
+      id: it.id,
+      name: it.name,
+      width: it.w / 100,
+      depth: it.d / 100,
+      height: it.h / 100,
+    });
+  }, []);
+  const openTryOnFromDetails = useCallback((it: FurnitureItem) => {
+    setDetails(null);
+    setTryOnItem(it);
+  }, []);
+
   /** Добавить SKU прямо в 3D-планировщик (localStorage + событие). */
   const addToPlan3D = useCallback((id: number) => {
     const item = FURNITURE_CATALOG.find((f) => f.id === id);
@@ -244,34 +267,36 @@ export default function CatalogSection() {
       />
 
       {/* Модалки */}
-      {arItem && <ARFurnitureView item={arItem} onClose={() => setArItem(null)} />}
-      {tryOnItem && <RoomTryOn item={tryOnItem} onClose={() => setTryOnItem(null)} />}
+      {arItem && (
+        <ErrorBoundary>
+          <Suspense fallback={null}>
+            <ARFurnitureView item={arItem} onClose={closeAr} />
+          </Suspense>
+        </ErrorBoundary>
+      )}
+      {tryOnItem && (
+        <ErrorBoundary>
+          <Suspense fallback={null}>
+            <RoomTryOn item={tryOnItem} onClose={closeTryOn} />
+          </Suspense>
+        </ErrorBoundary>
+      )}
       {details && (
-        <FurnitureDetailsModal
-          item={details}
-          inCart={cart.includes(details.id)}
-          isFav={favorites.includes(details.id)}
-          cartIds={cart}
-          favIds={favorites}
-          onClose={() => setDetails(null)}
-          onAddToCart={addToCart}
-          onToggleFav={onToggleFav}
-          onSelectRelated={(it) => setDetails(it)}
-          onOpenAR={(it) => {
-            setDetails(null);
-            setArItem({
-              id: it.id,
-              name: it.name,
-              width: it.w / 100,
-              depth: it.d / 100,
-              height: it.h / 100,
-            });
-          }}
-          onTryOnRoom={(it) => {
-            setDetails(null);
-            setTryOnItem(it);
-          }}
-        />
+        <ErrorBoundary>
+          <FurnitureDetailsModal
+            item={details}
+            inCart={cart.includes(details.id)}
+            isFav={favorites.includes(details.id)}
+            cartIds={cart}
+            favIds={favorites}
+            onClose={closeDetails}
+            onAddToCart={addToCart}
+            onToggleFav={onToggleFav}
+            onSelectRelated={selectRelated}
+            onOpenAR={openArFromDetails}
+            onTryOnRoom={openTryOnFromDetails}
+          />
+        </ErrorBoundary>
       )}
     </div>
   );

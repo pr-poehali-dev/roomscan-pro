@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { getRelatedItems, type FurnitureItem } from "@/lib/furnitureCatalog";
 import DetailsHero from "./details/DetailsHero";
 import DetailsInfoBlock from "./details/DetailsInfoBlock";
@@ -50,17 +50,25 @@ export default function FurnitureDetailsModal({
   );
   const bundleDiscount = Math.round(bundlePrice * 0.07); // условно 7% за комплект
 
+  // Стабильный ref на onClose — чтобы не пересоздавать listener при каждом
+  // ререндере родителя (иначе body.overflow дёргается и экран мерцает).
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     };
     window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
+      document.body.style.overflow = prevOverflow;
     };
-  }, [onClose]);
+  }, []);
 
   return (
     <div
