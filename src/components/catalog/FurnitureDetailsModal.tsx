@@ -15,6 +15,7 @@ interface Props {
   onAddToCart: (id: number) => void;
   onToggleFav: (id: number) => void;
   onOpenAR: (item: FurnitureItem) => void;
+  onTryOnRoom?: (item: FurnitureItem) => void;
   onSelectRelated?: (item: FurnitureItem) => void;
 }
 
@@ -37,6 +38,7 @@ export default function FurnitureDetailsModal({
   onAddToCart,
   onToggleFav,
   onOpenAR,
+  onTryOnRoom,
   onSelectRelated,
 }: Props) {
   const related = useMemo(() => getRelatedItems(item, 4), [item]);
@@ -93,6 +95,7 @@ export default function FurnitureDetailsModal({
             inCart={inCart}
             onAddToCart={onAddToCart}
             onOpenAR={onOpenAR}
+            onTryOnRoom={onTryOnRoom}
           />
         </div>
       </div>

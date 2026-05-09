@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { saveCart, getCart, type CartItemRef } from "@/lib/scanStore";
 import ARFurnitureView, { type ARFurniture } from "@/components/ar/ARFurnitureView";
+import RoomTryOn from "@/components/catalog/RoomTryOn";
 import {
   FURNITURE_CATALOG,
   CATEGORIES,
@@ -67,6 +68,7 @@ export default function CatalogSection() {
   const [added, setAdded] = useState<number | null>(null);
   const [favorites, setFavorites] = useState<number[]>(() => getFavorites());
   const [arItem, setArItem] = useState<ARFurniture | null>(null);
+  const [tryOnItem, setTryOnItem] = useState<FurnitureItem | null>(null);
   const [details, setDetails] = useState<FurnitureItem | null>(null);
 
   const categories: ("Все" | Category)[] = ["Все", ...CATEGORIES];
@@ -237,11 +239,13 @@ export default function CatalogSection() {
         onToggleFav={onToggleFav}
         setDetails={setDetails}
         setArItem={setArItem}
+        onTryOnRoom={setTryOnItem}
         onResetAll={resetAll}
       />
 
       {/* Модалки */}
       {arItem && <ARFurnitureView item={arItem} onClose={() => setArItem(null)} />}
+      {tryOnItem && <RoomTryOn item={tryOnItem} onClose={() => setTryOnItem(null)} />}
       {details && (
         <FurnitureDetailsModal
           item={details}
@@ -262,6 +266,10 @@ export default function CatalogSection() {
               depth: it.d / 100,
               height: it.h / 100,
             });
+          }}
+          onTryOnRoom={(it) => {
+            setDetails(null);
+            setTryOnItem(it);
           }}
         />
       )}

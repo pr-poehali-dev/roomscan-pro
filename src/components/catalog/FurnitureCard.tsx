@@ -14,6 +14,7 @@ interface Props {
   onToggleFav: (id: number) => void;
   onOpenDetails: (item: FurnitureItem) => void;
   onOpenAR: (item: FurnitureItem) => void;
+  onTryOnRoom?: (item: FurnitureItem) => void;
 }
 
 /**
@@ -35,6 +36,7 @@ export default function FurnitureCard({
   onToggleFav,
   onOpenDetails,
   onOpenAR,
+  onTryOnRoom,
 }: Props) {
   return (
     <article
@@ -62,6 +64,7 @@ export default function FurnitureCard({
           onAddToCart={onAddToCart}
           onAddToPlan3D={onAddToPlan3D}
           onOpenAR={onOpenAR}
+          onTryOnRoom={onTryOnRoom}
         />
       </div>
     </article>

@@ -7,13 +7,14 @@ interface Props {
   inCart: boolean;
   onAddToCart: (id: number) => void;
   onOpenAR: (item: FurnitureItem) => void;
+  onTryOnRoom?: (item: FurnitureItem) => void;
 }
 
 /**
- * Нижний CTA-блок модалки: цена (со скидкой) + кнопки «Примерить в AR» / «Добавить в план».
- * Логика 1:1 перенесена из FurnitureDetailsModal.tsx без изменений.
+ * Нижний CTA-блок модалки: цена (со скидкой) + кнопки
+ * «Примерить в комнате» / «Примерить в AR» / «Добавить в план».
  */
-export default function DetailsCTA({ item, inCart, onAddToCart, onOpenAR }: Props) {
+export default function DetailsCTA({ item, inCart, onAddToCart, onOpenAR, onTryOnRoom }: Props) {
   const arSupport = useARSupport();
 
   return (
@@ -34,7 +35,17 @@ export default function DetailsCTA({ item, inCart, onAddToCart, onOpenAR }: Prop
           </p>
         )}
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
+        {onTryOnRoom && (
+          <button
+            onClick={() => onTryOnRoom(item)}
+            className="px-4 py-3 rounded-xl bg-secondary text-foreground font-bold flex items-center gap-2 hover:bg-primary/10 transition-colors"
+            title="Загрузить фото комнаты и наложить мебель"
+          >
+            <Icon name="Camera" size={16} />
+            Примерить в комнате
+          </button>
+        )}
         {arSupport === "supported" && (
           <button
             onClick={() => onOpenAR(item)}

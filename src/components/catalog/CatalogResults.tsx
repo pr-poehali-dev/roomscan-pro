@@ -20,6 +20,7 @@ interface Props {
   onToggleFav: (id: number) => void;
   setDetails: (item: FurnitureItem | null) => void;
   setArItem: (item: ARFurniture | null) => void;
+  onTryOnRoom?: (item: FurnitureItem) => void;
 
   /** Полный сброс всех фильтров (вызывается из пустого состояния) */
   onResetAll: () => void;
@@ -42,6 +43,7 @@ export default function CatalogResults({
   onToggleFav,
   setDetails,
   setArItem,
+  onTryOnRoom,
   onResetAll,
 }: Props) {
   return (
@@ -90,6 +92,7 @@ export default function CatalogResults({
                   height: it.h / 100,
                 })
               }
+              onTryOnRoom={onTryOnRoom}
             />
           ))}
         </div>

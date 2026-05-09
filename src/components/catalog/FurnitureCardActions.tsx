@@ -10,6 +10,7 @@ interface Props {
   onAddToCart: (id: number) => void;
   onAddToPlan3D?: (id: number) => void;
   onOpenAR: (item: FurnitureItem) => void;
+  onTryOnRoom?: (item: FurnitureItem) => void;
 }
 
 /**
@@ -25,6 +26,7 @@ export default function FurnitureCardActions({
   onAddToCart,
   onAddToPlan3D,
   onOpenAR,
+  onTryOnRoom,
 }: Props) {
   const arSupport = useARSupport();
 
@@ -58,6 +60,18 @@ export default function FurnitureCardActions({
           >
             <Icon name={addedToPlan3D ? "Check" : "Box"} size={12} aria-hidden="true" />
             {addedToPlan3D ? "В сцене" : "3D"}
+          </button>
+        )}
+        {onTryOnRoom && (
+          <button
+            type="button"
+            onClick={() => onTryOnRoom(item)}
+            aria-label={`Примерить «${item.name}» на фото комнаты`}
+            title="Наложить на фото комнаты — посмотреть, как впишется"
+            className="text-xs px-2 py-1.5 rounded-lg flex items-center gap-1 font-semibold border border-border text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <Icon name="Camera" size={12} aria-hidden="true" />
+            <span className="hidden sm:inline">Примерить</span>
           </button>
         )}
         {arSupport === "supported" && (
