@@ -5,6 +5,7 @@ import {
   HousePlacement,
   ModularHouseProject,
 } from "@/lib/modular-houses";
+import { exportBlueprintsPdf } from "@/lib/blueprints-pdf";
 import FloorPlanSVG from "./FloorPlanSVG";
 import HouseFacadeSVG from "./HouseFacadeSVG";
 import HouseSectionSVG from "./HouseSectionSVG";
@@ -30,7 +31,9 @@ const VIEWS: { id: View; label: string; icon: string; ru: string }[] = [
  */
 export default function BlueprintsGallery({ project, layout, variantName }: Props) {
   const [view, setView] = useState<View>("plan");
+  const [isExporting, setIsExporting] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const hiddenRef = useRef<HTMLDivElement>(null);
 
   const variants = project.variants ?? [
     { id: "A", name: "Базовая", description: "", layout: project.layout },
@@ -44,7 +47,6 @@ export default function BlueprintsGallery({ project, layout, variantName }: Prop
     }
     try {
       const clone = svg.cloneNode(true) as SVGSVGElement;
-      // Гарантируем xmlns для отдельного файла
       clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
       const serialized = new XMLSerializer().serializeToString(clone);
       const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
@@ -65,23 +67,42 @@ export default function BlueprintsGallery({ project, layout, variantName }: Prop
     }
   }
 
-  function downloadAll() {
-    // Скачиваем все 4 вида одним архивом не получится без zip-либы — просто все по очереди
-    toast.info("Готовлю комплект чертежей", {
-      description: "Файлы будут скачаны по одному",
-    });
-    const svgs = containerRef.current?.parentElement?.querySelectorAll("[data-blueprint-export] svg");
-    if (!svgs || svgs.length === 0) {
-      // Fallback — сохраняем только текущий
-      downloadCurrent();
-      return;
+  async function downloadPdfSet() {
+    if (!hiddenRef.current) return;
+    setIsExporting(true);
+    toast.info("Готовлю PDF-комплект…", { description: "Это займёт пару секунд" });
+    try {
+      const wraps = hiddenRef.current.querySelectorAll<HTMLDivElement>("[data-bp-wrap]");
+      const svgs: { title: string; el: SVGSVGElement }[] = [];
+      wraps.forEach((w) => {
+        const svg = w.querySelector("svg");
+        if (svg) {
+          svgs.push({
+            title: w.getAttribute("data-bp-title") || "Drawing",
+            el: svg as SVGSVGElement,
+          });
+        }
+      });
+      if (svgs.length === 0) {
+        toast.error("Не удалось найти чертежи");
+        setIsExporting(false);
+        return;
+      }
+      await exportBlueprintsPdf({ project, layout, variantName, svgs });
+      toast.success("PDF готов", { description: "Файл скачан в браузер" });
+    } catch (e) {
+      toast.error("Не удалось собрать PDF", {
+        description: e instanceof Error ? e.message : "Попробуйте ещё раз",
+      });
+    } finally {
+      setIsExporting(false);
     }
   }
 
   const currentLabel = VIEWS.find((v) => v.id === view)?.ru ?? "Чертёж";
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 relative">
       {/* Переключатель видов */}
       <div className="flex flex-wrap gap-1.5 p-1.5 bg-secondary/40 rounded-lg">
         {VIEWS.map((v) => (
@@ -101,11 +122,20 @@ export default function BlueprintsGallery({ project, layout, variantName }: Prop
         <div className="flex-1" />
         <button
           onClick={downloadCurrent}
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-md bg-card border border-border text-foreground hover:border-primary/40 hover:text-primary transition-colors"
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-md bg-card border border-border text-foreground hover:border-primary/40 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           title="Скачать текущий чертёж в формате SVG"
         >
           <Icon name="Download" size={12} />
           SVG
+        </button>
+        <button
+          onClick={downloadPdfSet}
+          disabled={isExporting}
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-md bg-foreground text-background hover:bg-foreground/85 transition-colors disabled:opacity-50 disabled:cursor-wait focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          title="Скачать комплект всех чертежей в одном PDF"
+        >
+          <Icon name={isExporting ? "Loader" : "FileDown"} size={12} className={isExporting ? "animate-spin" : ""} />
+          PDF комплект
         </button>
       </div>
 
@@ -177,6 +207,56 @@ export default function BlueprintsGallery({ project, layout, variantName }: Prop
           <Legend color="#d6c5a8" label="Терраса" dashed />
           <Legend color="#86b4d3" label="Окна" />
           <Legend color="#fbe7a7" label="Утеплитель" />
+        </div>
+      </div>
+
+      {/* Скрытый контейнер для PDF-сборки: все 4 вида одновременно */}
+      <div
+        ref={hiddenRef}
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: "-99999px",
+          top: 0,
+          width: 1200,
+          pointerEvents: "none",
+        }}
+      >
+        <div data-bp-wrap data-bp-title="PLAN — FLOOR LAYOUT" style={{ width: 1200 }}>
+          <FloorPlanSVG
+            layout={layout}
+            title={`План этажа · вариант ${variantName ?? "A"}`}
+            size={1100}
+          />
+        </div>
+        <div data-bp-wrap data-bp-title="ELEVATION — FRONT" style={{ width: 1200 }}>
+          <HouseFacadeSVG
+            project={project}
+            layout={layout}
+            side="front"
+            size={1100}
+            title="Фасад главный"
+            svgId="bp-front"
+          />
+        </div>
+        <div data-bp-wrap data-bp-title="ELEVATION — SIDE" style={{ width: 1200 }}>
+          <HouseFacadeSVG
+            project={project}
+            layout={layout}
+            side="side"
+            size={1100}
+            title="Фасад боковой"
+            svgId="bp-side"
+          />
+        </div>
+        <div data-bp-wrap data-bp-title="SECTION 1—1" style={{ width: 1200 }}>
+          <HouseSectionSVG
+            project={project}
+            layout={layout}
+            size={1100}
+            title="Продольный разрез 1—1"
+            svgId="bp-section"
+          />
         </div>
       </div>
 

@@ -40,24 +40,22 @@ export default function HousesSidebar({
 }: Props) {
   return (
     <aside className="space-y-3 lg:sticky lg:top-4 self-start">
-      <div className="bg-gradient-to-br from-primary/15 to-primary/5 border-2 border-primary/40 rounded-xl p-5">
-        <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-          Стоимость под ключ
-        </p>
-        <p className="text-3xl font-black text-primary font-mono mt-1">
+      <div className="bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/40 rounded-2xl p-5">
+        <p className="t-meta">Стоимость под ключ</p>
+        <p className="text-3xl font-black text-primary t-num mt-1.5 leading-none">
           {formatRub(spec.grandTotal)}
         </p>
-        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
+        <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
           <Icon name="Ruler" size={11} />
           {spec.totalArea > 0 && (
-            <>≈ {formatRub(Math.round(spec.grandTotal / spec.totalArea))} / м²</>
+            <span className="t-num">≈ {formatRub(Math.round(spec.grandTotal / spec.totalArea))} / м²</span>
           )}
         </p>
-        <div className="grid grid-cols-2 gap-2 mt-3">
+        <div className="grid grid-cols-2 gap-2 mt-4">
           <button
             onClick={onSave}
             disabled={saving || spec.totalArea === 0}
-            className="bg-secondary text-foreground hover:bg-secondary/80 font-bold py-2 rounded-lg flex items-center justify-center gap-1.5 text-xs disabled:opacity-50"
+            className="bg-card border border-border hover:border-foreground/30 text-foreground font-bold py-2 rounded-lg flex items-center justify-center gap-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             {saving ? (
               <Icon name="Loader2" size={12} className="animate-spin" />
@@ -69,23 +67,23 @@ export default function HousesSidebar({
           <button
             onClick={onPdf}
             disabled={spec.totalArea === 0}
-            className="bg-secondary text-foreground hover:bg-secondary/80 font-bold py-2 rounded-lg flex items-center justify-center gap-1.5 text-xs disabled:opacity-50"
+            className="bg-card border border-border hover:border-foreground/30 text-foreground font-bold py-2 rounded-lg flex items-center justify-center gap-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <Icon name="FileDown" size={12} />
-            PDF
+            PDF проекта
           </button>
         </div>
         <button
           onClick={onOpenQuote}
           disabled={spec.totalArea === 0}
-          className="w-full mt-2 bg-primary text-primary-foreground hover:opacity-90 font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+          className="w-full mt-2 bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           <Icon name="Phone" size={14} />
           Заказать дом
         </button>
       </div>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="card-base overflow-hidden">
         <div className="px-4 py-2.5 border-b border-border bg-secondary/40 flex items-center gap-2">
           <Icon name="Receipt" size={14} className="text-primary" />
           <p className="text-xs font-bold uppercase tracking-wider">Структура сметы</p>
@@ -112,7 +110,7 @@ export default function HousesSidebar({
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="card-base overflow-hidden">
         <div className="px-4 py-2.5 border-b border-border bg-secondary/40 flex items-center gap-2">
           <Icon name="Boxes" size={14} className="text-primary" />
           <p className="text-xs font-bold uppercase tracking-wider">Спецификация модулей</p>

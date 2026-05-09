@@ -53,30 +53,26 @@ export default function HousesCatalogGrid({
 
   return (
     <div className="mb-5">
-      <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mr-1">
-          Тип:
-        </span>
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <span className="t-meta mr-1">Тип:</span>
         {FILTERS.map((f) => {
           const count =
             f === "all"
               ? HOUSE_PROJECTS.length
               : HOUSE_PROJECTS.filter((p) => p.construction === f).length;
+          const active = filter === f;
           return (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all ${
-                filter === f
-                  ? "bg-primary text-primary-foreground shadow"
-                  : "bg-secondary text-foreground hover:bg-secondary/80"
-              }`}
+              className={`chip ${active ? "chip-active" : "chip-idle"}`}
+              aria-pressed={active}
             >
               <Icon name={FILTER_ICONS[f]} size={12} />
               {FILTER_LABELS[f]}
               <span
-                className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full ${
-                  filter === f ? "bg-white/20" : "bg-background"
+                className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full t-num ${
+                  active ? "bg-background/20 text-background" : "bg-background text-muted-foreground"
                 }`}
               >
                 {count}
@@ -86,7 +82,7 @@ export default function HousesCatalogGrid({
         })}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredProjects.map(({ p, i }) => (
           <button
             key={p.id}
@@ -95,10 +91,11 @@ export default function HousesCatalogGrid({
               setSelectedModuleIndex(null);
               setLoadedId(null);
             }}
-            className={`group text-left rounded-xl border-2 overflow-hidden transition-all ${
+            aria-pressed={i === projectIdx}
+            className={`group text-left card-base overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
               i === projectIdx
-                ? "border-primary shadow-lg shadow-primary/20"
-                : "border-border bg-card hover:border-muted-foreground"
+                ? "card-active shadow-lg shadow-primary/15"
+                : "card-hover"
             }`}
           >
             <div className="relative aspect-[4/3] bg-secondary overflow-hidden">
@@ -134,15 +131,15 @@ export default function HousesCatalogGrid({
               )}
             </div>
 
-            <div className="p-3">
-              <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1">
-                {p.area} м² · {p.bedrooms || 0} спален · {p.daysToBuild} дней
+            <div className="p-4">
+              <p className="t-meta mb-1.5">
+                <span className="t-num">{p.area}</span> м² · <span className="t-num">{p.bedrooms || 0}</span> спален · <span className="t-num">{p.daysToBuild}</span> дней
               </p>
-              <p className="text-sm font-bold mb-0.5">{p.name}</p>
-              <p className="text-[11px] text-muted-foreground line-clamp-2 mb-2">
+              <p className="h-card mb-1">{p.name}</p>
+              <p className="text-xs text-muted-foreground line-clamp-2 mb-3 leading-relaxed">
                 {p.tagline}
               </p>
-              <p className="text-sm font-bold text-primary font-mono">
+              <p className="text-sm font-bold text-primary t-num">
                 от {formatRub(p.basePrice)}
               </p>
             </div>
