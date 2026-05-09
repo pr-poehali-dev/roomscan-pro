@@ -3,12 +3,14 @@ import ModularHouseScene from "@/components/3d/ModularHouseScene";
 import {
   BlockModule,
   HousePlacement,
+  HouseSpec,
   MODULE_TYPE_LABELS,
   ModularHouseProject,
   getModule,
 } from "@/lib/modular-houses";
 import { formatRub } from "@/lib/engineering";
 import LayoutVariantPicker from "./LayoutVariantPicker";
+import HouseProjectTabs from "./HouseProjectTabs";
 
 type Mode = "catalog" | "constructor";
 
@@ -17,7 +19,7 @@ interface Props {
   loadedId: number | null;
   activeProject: ModularHouseProject;
   project: ModularHouseProject;
-  spec: { totalArea: number };
+  spec: HouseSpec;
   activeLayout: HousePlacement[];
   customLayout: HousePlacement[];
   selectedModuleIndex: number | null;
@@ -130,15 +132,14 @@ export default function HousesScenePanel({
       )}
 
       {mode === "catalog" && (
-        <div className="bg-card border border-border rounded-xl p-4">
-          <p className="text-sm text-foreground leading-relaxed mb-3">{project.description}</p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-            <Stat icon="Maximize2" label="Площадь" value={`${project.area} м²`} />
-            <Stat icon="BedDouble" label="Спален" value={String(project.bedrooms)} />
-            <Stat icon="Hammer" label="Сборка" value={`${project.daysToBuild} дн`} />
-            <Stat icon="Users" label="Для кого" value={project.forWhom} />
-          </div>
-        </div>
+        <HouseProjectTabs
+          project={project}
+          layout={activeLayout}
+          spec={spec}
+          variantName={
+            project.variants?.find((v) => v.id === variantId)?.name ?? variantId
+          }
+        />
       )}
 
       {mode === "constructor" && customLayout.length > 0 && (
@@ -191,18 +192,6 @@ export default function HousesScenePanel({
 }
 
 /* ───────── Локальные хелперы ───────── */
-
-function Stat({ icon, label, value }: { icon: string; label: string; value: string }) {
-  return (
-    <div className="bg-secondary/40 rounded-lg p-2">
-      <div className="flex items-center gap-1 mb-0.5">
-        <Icon name={icon} size={11} className="text-primary" />
-        <p className="text-[9px] uppercase font-mono text-muted-foreground">{label}</p>
-      </div>
-      <p className="text-xs font-bold truncate">{value}</p>
-    </div>
-  );
-}
 
 function SelectedModuleCard({ module: m, onClose }: { module: BlockModule; onClose: () => void }) {
   return (

@@ -11,6 +11,7 @@ import {
   MODULE_TYPE_LABELS,
   getModule,
 } from "./modular-houses";
+import { getHouseFullSpec } from "./house-specs";
 
 const FONT_PRIMARY = "helvetica";
 const COLOR_PRIMARY = "#1ea54a";
@@ -296,6 +297,194 @@ export function exportHousePdf(opts: {
       y += 4;
     }
   }
+
+  /* ───────── Страница 2: технические характеристики ───────── */
+  const full = getHouseFullSpec(opts.project);
+  doc.addPage();
+  y = 15;
+
+  doc.setFont(FONT_PRIMARY, "bold");
+  doc.setFontSize(16);
+  doc.setTextColor(COLOR_TEXT);
+  doc.text("Technical Specifications", 15, y);
+  y += 8;
+
+  doc.setFont(FONT_PRIMARY, "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(COLOR_MUTED);
+  doc.text(transliterate(opts.project.name), 15, y);
+  y += 8;
+
+  const sections: { title: string; rows: [string, string][] }[] = [
+    {
+      title: "Foundation",
+      rows: [
+        ["Type", transliterate(full.foundation.type)],
+        ["Description", transliterate(full.foundation.description).slice(0, 90)],
+      ],
+    },
+    {
+      title: "Walls",
+      rows: [
+        ["Construction", transliterate(full.walls.construction).slice(0, 80)],
+        ["Thickness", `${full.walls.thickness} mm`],
+        ["Insulation", transliterate(full.walls.insulation).slice(0, 80)],
+        ["Exterior", transliterate(full.walls.exterior)],
+        ["Interior", transliterate(full.walls.interior)],
+        ["Sound proofing", transliterate(full.walls.soundProofing)],
+      ],
+    },
+    {
+      title: "Roof",
+      rows: [
+        ["Type", transliterate(full.roof.type)],
+        ["Material", transliterate(full.roof.material)],
+        ["Pitch", `${full.roof.pitch}°`],
+        ["Insulation", transliterate(full.roof.insulation)],
+      ],
+    },
+    {
+      title: "Windows",
+      rows: [
+        ["Profile", transliterate(full.windows.profile)],
+        ["Glazing", transliterate(full.windows.glazing).slice(0, 80)],
+        ["Count", `${full.windows.count} pcs`],
+        ["Glazing area", `${full.windows.area} sq.m`],
+      ],
+    },
+    {
+      title: "Utilities",
+      rows: [
+        ["Heating", transliterate(full.utilities.heating).slice(0, 80)],
+        ["Electricity", transliterate(full.utilities.electricity).slice(0, 80)],
+        ["Plumbing", transliterate(full.utilities.plumbing).slice(0, 80)],
+        ["Ventilation", transliterate(full.utilities.ventilation).slice(0, 80)],
+        ["Energy class", full.utilities.energyClass],
+      ],
+    },
+    {
+      title: "Other",
+      rows: [
+        ["Floors", String(full.floors)],
+        ["Ceiling height", `${full.ceilingHeight} m`],
+        ["Bathrooms", String(full.bathrooms)],
+        ["Bedrooms", String(opts.project.bedrooms)],
+        ["Construction time", `${opts.project.daysToBuild} days`],
+      ],
+    },
+    {
+      title: "Warranty",
+      rows: [
+        ["Structure", `${full.warranty.structure} years`],
+        ["Engineering", `${full.warranty.engineering} years`],
+        ["Finishing", `${full.warranty.finishing} years`],
+      ],
+    },
+  ];
+
+  for (const section of sections) {
+    if (y > 265) {
+      doc.addPage();
+      y = 15;
+    }
+    doc.setFont(FONT_PRIMARY, "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(COLOR_PRIMARY);
+    doc.text(section.title.toUpperCase(), 15, y);
+    y += 5;
+    doc.setDrawColor("#dddddd");
+    doc.setLineWidth(0.2);
+    doc.line(15, y, pageW - 15, y);
+    y += 4;
+
+    doc.setFont(FONT_PRIMARY, "normal");
+    doc.setFontSize(8);
+    for (const [label, value] of section.rows) {
+      if (y > 280) {
+        doc.addPage();
+        y = 15;
+      }
+      doc.setTextColor(COLOR_MUTED);
+      doc.text(label, 18, y);
+      doc.setTextColor(COLOR_TEXT);
+      doc.text(value, 65, y);
+      y += 4.5;
+    }
+    y += 3;
+  }
+
+  /* ───────── Страница 3: что входит / не входит ───────── */
+  doc.addPage();
+  y = 15;
+
+  doc.setFont(FONT_PRIMARY, "bold");
+  doc.setFontSize(16);
+  doc.setTextColor(COLOR_TEXT);
+  doc.text("Package Contents", 15, y);
+  y += 10;
+
+  doc.setFont(FONT_PRIMARY, "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(COLOR_PRIMARY);
+  doc.text("INCLUDED IN PRICE", 15, y);
+  y += 5;
+  doc.setDrawColor(COLOR_PRIMARY);
+  doc.setLineWidth(0.4);
+  doc.line(15, y, pageW - 15, y);
+  y += 5;
+
+  doc.setFont(FONT_PRIMARY, "normal");
+  doc.setFontSize(9);
+  for (const item of full.included) {
+    if (y > 275) {
+      doc.addPage();
+      y = 15;
+    }
+    doc.setTextColor(COLOR_PRIMARY);
+    doc.text("+", 15, y);
+    doc.setTextColor(COLOR_TEXT);
+    doc.text(transliterate(item).slice(0, 95), 22, y);
+    y += 5;
+  }
+
+  y += 6;
+  if (y > 240) {
+    doc.addPage();
+    y = 15;
+  }
+  doc.setFont(FONT_PRIMARY, "bold");
+  doc.setFontSize(11);
+  doc.setTextColor("#c0392b");
+  doc.text("NOT INCLUDED", 15, y);
+  y += 5;
+  doc.setDrawColor("#c0392b");
+  doc.setLineWidth(0.4);
+  doc.line(15, y, pageW - 15, y);
+  y += 5;
+
+  doc.setFont(FONT_PRIMARY, "normal");
+  doc.setFontSize(9);
+  for (const item of full.excluded) {
+    if (y > 275) {
+      doc.addPage();
+      y = 15;
+    }
+    doc.setTextColor("#c0392b");
+    doc.text("-", 15, y);
+    doc.setTextColor(COLOR_TEXT);
+    doc.text(transliterate(item).slice(0, 95), 22, y);
+    y += 5;
+  }
+
+  // Подвал
+  doc.setFont(FONT_PRIMARY, "italic");
+  doc.setFontSize(7);
+  doc.setTextColor(COLOR_MUTED);
+  doc.text(
+    "Specification valid 14 days. Final price after site survey. Prices for 2025-2026, region: Moscow up to 200 km.",
+    15,
+    287,
+  );
 
   doc.save(`house-${opts.project.id}-${Date.now()}.pdf`);
 }
