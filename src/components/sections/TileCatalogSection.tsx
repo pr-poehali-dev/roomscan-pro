@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Icon from "@/components/ui/icon";
 import {
   TILE_LIBRARY,
@@ -11,9 +11,10 @@ import {
   type TileStyle,
   type TileSurface,
 } from "@/lib/tile-library";
-import TileCard from "@/components/tiles/TileCard";
 import TileFilters from "@/components/tiles/TileFilters";
 import TileDetailsModal from "@/components/tiles/TileDetailsModal";
+import VirtualTileGrid from "@/components/tiles/VirtualTileGrid";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const FAV_KEY = "roomscan:tile-favorites";
 
@@ -66,11 +67,14 @@ export default function TileCatalogSection() {
     saveFavorites(favorites);
   }, [favorites]);
 
-  const toggleFav = (id: string) => {
+  const toggleFav = useCallback((id: string) => {
     setFavorites((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
-  };
+  }, []);
+
+  const openDetails = useCallback((tile: TileItem) => setDetails(tile), []);
+  const closeDetails = useCallback(() => setDetails(null), []);
 
   const filtered = useMemo(() => {
     let list: TileItem[] = TILE_LIBRARY;
@@ -129,9 +133,10 @@ export default function TileCatalogSection() {
           Каталог плитки и напольных покрытий
         </h1>
         <p className="t-lead max-w-3xl">
-          {stats.total} реальных моделей: керамогранит, мрамор, имитация дерева, бетон,
-          марокканская плитка, terrazzo, herringbone, brick. Расчёт стоимости с запасом 10%
-          на подрезку и связка с планировщиком — выберите отделку прямо для своей комнаты.
+          {stats.total} реальных моделей от ведущих брендов (Italon, Atlas Concorde, Marazzi,
+          Estima, Equipe, Cersanit, Porcelanosa и др.): керамогранит, мрамор, имитация дерева,
+          бетон, terrazzo, шестигранники, zellige, слэбы 120×240. Расчёт стоимости с запасом
+          10% и связка с планировщиком — выберите отделку прямо для своей комнаты.
         </p>
       </div>
 
@@ -239,17 +244,12 @@ export default function TileCatalogSection() {
 
           {/* Сетка карточек */}
           {filtered.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
-              {filtered.map((tile) => (
-                <TileCard
-                  key={tile.id}
-                  tile={tile}
-                  isFav={favorites.includes(tile.id)}
-                  onOpen={setDetails}
-                  onToggleFav={toggleFav}
-                />
-              ))}
-            </div>
+            <VirtualTileGrid
+              items={filtered}
+              favorites={favorites}
+              onOpen={openDetails}
+              onToggleFav={toggleFav}
+            />
           ) : (
             <div className="card-base border-2 border-dashed p-12 text-center">
               <Icon name="SearchX" size={32} className="text-muted-foreground mx-auto mb-2" />
@@ -270,12 +270,14 @@ export default function TileCatalogSection() {
 
       {/* Модалка деталей */}
       {details && (
-        <TileDetailsModal
-          tile={details}
-          isFav={favorites.includes(details.id)}
-          onClose={() => setDetails(null)}
-          onToggleFav={toggleFav}
-        />
+        <ErrorBoundary>
+          <TileDetailsModal
+            tile={details}
+            isFav={favorites.includes(details.id)}
+            onClose={closeDetails}
+            onToggleFav={toggleFav}
+          />
+        </ErrorBoundary>
       )}
     </div>
   );
