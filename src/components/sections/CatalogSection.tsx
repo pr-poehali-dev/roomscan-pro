@@ -283,21 +283,19 @@ export default function CatalogSection() {
         </ErrorBoundary>
       )}
       {details && (
-        <ErrorBoundary inline onReset={closeDetails}>
-          <FurnitureDetailsModal
-            item={details}
-            inCart={cart.includes(details.id)}
-            isFav={favorites.includes(details.id)}
-            cartIds={cart}
-            favIds={favorites}
-            onClose={closeDetails}
-            onAddToCart={addToCart}
-            onToggleFav={onToggleFav}
-            onSelectRelated={selectRelated}
-            onOpenAR={openArFromDetails}
-            onTryOnRoom={openTryOnFromDetails}
-          />
-        </ErrorBoundary>
+        <FurnitureDetailsModal
+          item={details}
+          inCart={cart.includes(details.id)}
+          isFav={favorites.includes(details.id)}
+          cartIds={cart}
+          favIds={favorites}
+          onClose={closeDetails}
+          onAddToCart={addToCart}
+          onToggleFav={onToggleFav}
+          onSelectRelated={selectRelated}
+          onOpenAR={openArFromDetails}
+          onTryOnRoom={openTryOnFromDetails}
+        />
       )}
     </div>
   );

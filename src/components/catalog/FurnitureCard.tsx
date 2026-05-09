@@ -1,3 +1,4 @@
+import type { MouseEvent, KeyboardEvent } from "react";
 import type { FurnitureItem } from "@/lib/furnitureCatalog";
 import FurnitureCardPreview from "./FurnitureCardPreview";
 import FurnitureCardInfo from "./FurnitureCardInfo";
@@ -18,12 +19,11 @@ interface Props {
 }
 
 /**
- * Карточка товара в каталоге. Композиция трёх child-компонентов:
- *  - FurnitureCardPreview — изображение/иконка + бейджи + избранное + stock
- *  - FurnitureCardInfo    — бренд, рейтинг, имя, размер, цвета
- *  - FurnitureCardActions — цена + кнопки 3D / AR / В план
+ * Карточка товара в каталоге.
  *
- * Логика и поведение 1:1 совпадают с прежней монолитной версией.
+ * Вся карточка кликабельна — клик в любое место (кроме интерактивных кнопок)
+ * открывает модалку деталей. Это гарантирует, что пользователь не упустит
+ * возможность открыть деталку из-за неудачного попадания.
  */
 export default function FurnitureCard({
   item,
@@ -38,10 +38,31 @@ export default function FurnitureCard({
   onOpenAR,
   onTryOnRoom,
 }: Props) {
+  // Клик по карточке открывает модалку, кроме случаев когда клик прошёл
+  // по дочерней кнопке/ссылке (избранное, корзина, AR и т.п.).
+  const handleCardClick = (e: MouseEvent<HTMLElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.closest("button, a, input, [data-no-open]")) return;
+    onOpenDetails(item);
+  };
+
+  const handleCardKey = (e: KeyboardEvent<HTMLElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      const target = e.target as HTMLElement;
+      if (target.closest("button, a, input")) return;
+      e.preventDefault();
+      onOpenDetails(item);
+    }
+  };
+
   return (
     <article
-      aria-label={`${item.name}, ${item.brand}, ${item.price}`}
-      className={`bg-card border rounded-2xl overflow-hidden transition-all group flex flex-col ${
+      role="button"
+      tabIndex={0}
+      aria-label={`Открыть карточку «${item.name}», ${item.brand}, ${item.price}`}
+      onClick={handleCardClick}
+      onKeyDown={handleCardKey}
+      className={`bg-card border rounded-2xl overflow-hidden transition-all group flex flex-col cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
         inCart
           ? "border-primary/50 shadow-lg shadow-primary/10"
           : "border-border hover:border-primary/50 hover:shadow-lg hover:-translate-y-0.5"

@@ -44,9 +44,15 @@ export default function TileCard({ tile, isFav, onOpen, onToggleFav }: Props) {
     <article
       role="button"
       tabIndex={0}
-      onClick={() => onOpen(tile)}
+      onClick={(e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest("button, a, input")) return;
+        onOpen(tile);
+      }}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
+          const target = e.target as HTMLElement;
+          if (target.closest("button, a, input")) return;
           e.preventDefault();
           onOpen(tile);
         }
