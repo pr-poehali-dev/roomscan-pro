@@ -69,8 +69,9 @@ export default function Scene3D({
           alpha: false,
           preserveDrawingBuffer: true,
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: isOutdoor ? 1.0 : 1.05,
+          toneMappingExposure: isOutdoor ? 1.15 : 1.05,
           outputColorSpace: THREE.SRGBColorSpace,
+          powerPreference: "high-performance",
         }}
       >
         <CanvasReporter onReady={onCanvasReady} />
@@ -101,27 +102,27 @@ export default function Scene3D({
         {/* Освещение */}
         {isOutdoor ? (
           <>
-            <SoftShadows size={28} samples={12} focus={0.9} />
-            <ambientLight intensity={0.42} color="#cfdfff" />
-            <hemisphereLight args={["#cfe5ff", "#7d9263", 0.55]} />
+            <SoftShadows size={32} samples={14} focus={0.92} />
+            <ambientLight intensity={0.5} color="#dce8ff" />
+            <hemisphereLight args={["#cfe5ff", "#86a76d", 0.65]} />
             {/* Солнце */}
             <directionalLight
               position={[14, 18, 9]}
-              intensity={2.4}
+              intensity={2.6}
               color="#fff5e0"
               castShadow
-              shadow-mapSize-width={2048}
-              shadow-mapSize-height={2048}
-              shadow-camera-far={60}
-              shadow-camera-left={-25}
-              shadow-camera-right={25}
-              shadow-camera-top={25}
-              shadow-camera-bottom={-25}
-              shadow-bias={-0.0005}
-              shadow-normalBias={0.04}
+              shadow-mapSize-width={4096}
+              shadow-mapSize-height={4096}
+              shadow-camera-far={80}
+              shadow-camera-left={-30}
+              shadow-camera-right={30}
+              shadow-camera-top={30}
+              shadow-camera-bottom={-30}
+              shadow-bias={-0.0004}
+              shadow-normalBias={0.035}
             />
             {/* Заполняющий свет */}
-            <directionalLight position={[-10, 8, -6]} intensity={0.45} color="#a4c8ff" />
+            <directionalLight position={[-10, 8, -6]} intensity={0.55} color="#b8d2ff" />
           </>
         ) : (
           <>

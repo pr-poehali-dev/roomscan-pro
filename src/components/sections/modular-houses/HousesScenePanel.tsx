@@ -8,6 +8,7 @@ import {
   getModule,
 } from "@/lib/modular-houses";
 import { formatRub } from "@/lib/engineering";
+import LayoutVariantPicker from "./LayoutVariantPicker";
 
 type Mode = "catalog" | "constructor";
 
@@ -25,6 +26,8 @@ interface Props {
   onCanvasReady: (c: HTMLCanvasElement) => void;
   setPicker: (v: boolean) => void;
   removeModule: (idx: number) => void;
+  variantId: string;
+  onSelectVariant: (id: string) => void;
 }
 
 /**
@@ -47,6 +50,8 @@ export default function HousesScenePanel({
   onCanvasReady,
   setPicker,
   removeModule,
+  variantId,
+  onSelectVariant,
 }: Props) {
   return (
     <div className="lg:col-span-2 space-y-4">
@@ -72,6 +77,17 @@ export default function HousesScenePanel({
           </button>
         )}
       </div>
+
+      {mode === "catalog" && project.variants && project.variants.length > 1 && (
+        <LayoutVariantPicker
+          variants={project.variants}
+          selectedId={variantId}
+          onSelect={(id) => {
+            onSelectVariant(id);
+            setSelectedModuleIndex(null);
+          }}
+        />
+      )}
 
       {mode === "constructor" && customLayout.length > 0 && (
         <div className="bg-primary/10 border border-primary/30 rounded-lg px-3 py-2 text-xs flex items-center gap-2">

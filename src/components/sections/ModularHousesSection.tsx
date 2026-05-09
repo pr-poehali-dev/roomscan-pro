@@ -43,6 +43,8 @@ export default function ModularHousesSection() {
   const [mode, setMode] = useState<Mode>("catalog");
   const [projectIdx, setProjectIdx] = useState(0);
   const [selectedModuleIndex, setSelectedModuleIndex] = useState<number | null>(null);
+  /** ID выбранного варианта планировки (A / B / C). Меняется при смене проекта. */
+  const [variantId, setVariantId] = useState<string>("A");
 
   const [customLayout, setCustomLayout] = useState<HousePlacement[]>([]);
   const [picker, setPicker] = useState(false);
@@ -62,19 +64,30 @@ export default function ModularHousesSection() {
 
   const project = HOUSE_PROJECTS[projectIdx];
 
+  /** Текущий выбранный вариант планировки (или базовый layout, если вариантов нет) */
+  const currentVariant = useMemo(() => {
+    if (!project.variants || project.variants.length === 0) return null;
+    return project.variants.find((v) => v.id === variantId) ?? project.variants[0];
+  }, [project, variantId]);
+
+  /** layout для каталога с учётом выбранного варианта */
+  const catalogLayout: HousePlacement[] = currentVariant
+    ? currentVariant.layout
+    : project.layout;
+
   const activeLayout: HousePlacement[] =
-    mode === "catalog" ? project.layout : customLayout;
+    mode === "catalog" ? catalogLayout : customLayout;
   const activeProject: ModularHouseProject =
     mode === "catalog"
-      ? project
+      ? { ...project, layout: catalogLayout }
       : { ...project, id: "custom", name: "Свой проект", layout: customLayout };
 
   const spec = useMemo(
     () =>
       mode === "catalog"
-        ? calcHouseSpec(project)
+        ? calcHouseSpec({ ...project, layout: catalogLayout })
         : calcCustomSpec(customLayout),
-    [mode, project, customLayout],
+    [mode, project, catalogLayout, customLayout],
   );
 
   const addModule = (m: BlockModule) => {
@@ -94,7 +107,15 @@ export default function ModularHousesSection() {
 
   const startConstructor = () => {
     setMode("constructor");
-    setCustomLayout(project.layout);
+    setCustomLayout(catalogLayout);
+    setSelectedModuleIndex(null);
+    setLoadedId(null);
+  };
+
+  /** Сменить проект каталога — сбросить вариант на A */
+  const handleSelectProject = (i: number) => {
+    setProjectIdx(i);
+    setVariantId("A");
     setSelectedModuleIndex(null);
     setLoadedId(null);
   };
@@ -123,7 +144,7 @@ export default function ModularHousesSection() {
     setSaving(true);
     try {
       const finalTitle = title.trim() || defaultTitle;
-      const layout = mode === "catalog" ? project.layout : customLayout;
+      const layout = mode === "catalog" ? catalogLayout : customLayout;
       const payload = {
         title: finalTitle,
         base_project_id: mode === "catalog" ? project.id : "custom",
@@ -209,7 +230,7 @@ export default function ModularHousesSection() {
       {mode === "catalog" && (
         <HousesCatalogGrid
           projectIdx={projectIdx}
-          setProjectIdx={setProjectIdx}
+          setProjectIdx={handleSelectProject}
           setSelectedModuleIndex={setSelectedModuleIndex}
           setLoadedId={setLoadedId}
         />
@@ -230,6 +251,8 @@ export default function ModularHousesSection() {
           onCanvasReady={(c) => { canvasRef.current = c; }}
           setPicker={setPicker}
           removeModule={removeModule}
+          variantId={variantId}
+          onSelectVariant={setVariantId}
         />
 
         <HousesSidebar
