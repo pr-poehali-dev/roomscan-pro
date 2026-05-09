@@ -1,5 +1,6 @@
 import Icon from "@/components/ui/icon";
 import type { FurnitureItem } from "@/lib/furnitureCatalog";
+import { useARSupport } from "@/hooks/use-ar-support";
 
 interface Props {
   item: FurnitureItem;
@@ -25,6 +26,8 @@ export default function FurnitureCardActions({
   onAddToPlan3D,
   onOpenAR,
 }: Props) {
+  const arSupport = useARSupport();
+
   return (
     <div className="mt-auto flex items-center justify-between gap-2 pt-2">
       <div className="flex flex-col">
@@ -57,16 +60,18 @@ export default function FurnitureCardActions({
             {addedToPlan3D ? "В сцене" : "3D"}
           </button>
         )}
-        <button
-          type="button"
-          onClick={() => onOpenAR(item)}
-          aria-label={`Посмотреть «${item.name}» в дополненной реальности`}
-          title="AR-просмотр (Android Chrome)"
-          className="text-xs px-2 py-1.5 rounded-lg flex items-center gap-1 font-semibold border border-border text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          <Icon name="View" size={12} aria-hidden="true" />
-          AR
-        </button>
+        {arSupport === "supported" && (
+          <button
+            type="button"
+            onClick={() => onOpenAR(item)}
+            aria-label={`Посмотреть «${item.name}» в дополненной реальности`}
+            title="AR-просмотр (Android Chrome)"
+            className="text-xs px-2 py-1.5 rounded-lg flex items-center gap-1 font-semibold border border-border text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <Icon name="View" size={12} aria-hidden="true" />
+            AR
+          </button>
+        )}
         <button
           type="button"
           onClick={() => onAddToCart(item.id)}
