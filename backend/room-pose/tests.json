@@ -1,0 +1,45 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "GET not allowed",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 405,
+      "expectedBody": {"error": "method_not_allowed"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST without body returns 400",
+      "method": "POST",
+      "path": "/",
+      "body": "",
+      "expectedStatus": 400,
+      "expectedBody": {"error": "image_required"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST without image returns 400",
+      "method": "POST",
+      "path": "/",
+      "body": {"hint_w_cm": 450},
+      "expectedStatus": 400,
+      "expectedBody": {"error": "image_required"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST with image returns full pose layout",
+      "method": "POST",
+      "path": "/",
+      "body": {"image_url": "https://cdn.poehali.dev/files/sample-room.jpg", "hint_w_cm": 450, "hint_d_cm": 380},
+      "expectedStatus": 200,
+      "expectedBody": {"room": {"shape": "rect"}, "room_type": "living"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
