@@ -1,12 +1,13 @@
-import { useState, useCallback, useEffect, useMemo, lazy, Suspense } from "react";
+import { useState, useCallback, useEffect, useMemo, Suspense } from "react";
 import { toast } from "sonner";
 import Icon from "@/components/ui/icon";
 import { saveCart, getCart, type CartItemRef } from "@/lib/scanStore";
 import type { ARFurniture } from "@/components/ar/ARFurnitureView";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
 // Тяжёлые 3D-модалки грузим лениво — они тянут three.js / r3f
-const ARFurnitureView = lazy(() => import("@/components/ar/ARFurnitureView"));
-const RoomTryOn = lazy(() => import("@/components/catalog/RoomTryOn"));
+const ARFurnitureView = lazyWithRetry(() => import("@/components/ar/ARFurnitureView"));
+const RoomTryOn = lazyWithRetry(() => import("@/components/catalog/RoomTryOn"));
 import {
   FURNITURE_CATALOG,
   CATEGORIES,

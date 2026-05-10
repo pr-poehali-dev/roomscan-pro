@@ -1,11 +1,13 @@
-import { Suspense, lazy } from "react";
+import { Suspense } from "react";
 import Icon from "@/components/ui/icon";
 import PartnersMarquee from "./PartnersMarquee";
 import ContinueWorkBlock from "@/components/home/ContinueWorkBlock";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
 // Тяжёлая Three.js-демка ленится: уменьшает размер первого бандла,
 // показываем placeholder того же размера до подгрузки сцены.
-const HeroDemo3D = lazy(() => import("./HeroDemo3D"));
+// lazyWithRetry — устойчивость к устаревшим чанкам после деплоя.
+const HeroDemo3D = lazyWithRetry(() => import("./HeroDemo3D"));
 
 function HeroDemo3DSkeleton() {
   return (

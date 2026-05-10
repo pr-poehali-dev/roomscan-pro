@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Icon from "@/components/ui/icon";
 import PlanCanvas from "./PlanCanvas";
 import PlannerToolbar from "./PlannerToolbar";
@@ -8,9 +8,10 @@ import FloorPlanHeader from "./FloorPlanHeader";
 import { FloorPlanStats, Hints } from "./FloorPlanStats";
 import CatalogLinkBanner from "./CatalogLinkBanner";
 import { useFloorPlanState } from "./useFloorPlanState";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
 // Three.js — тяжёлая зависимость, грузим лениво только при включении 3D
-const PlanScene3D = lazy(() => import("./PlanScene3D"));
+const PlanScene3D = lazyWithRetry(() => import("./PlanScene3D"));
 
 /**
  * Полный профессиональный редактор плана этажа.

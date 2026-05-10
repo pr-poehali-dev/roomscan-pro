@@ -1,31 +1,32 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Icon from "@/components/ui/icon";
 import { AUTH_URL, User, getToken, clearToken, apiFetch } from "@/lib/api";
 import AuthScreen from "@/components/AuthScreen";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 // Главная и Проекты — eager (нужны сразу при входе)
 import HomeSection from "@/components/sections/HomeSection";
 import { ProjectsSection, ProfileSection } from "@/components/sections/UserSections";
-// Все остальные секции — lazy, чтобы первичный бандл был лёгким
-const ScanSection = lazy(() => import("@/components/scan/ScanSection"));
-const PlannerSection = lazy(() => import("@/components/sections/PlannerSection"));
-const CatalogSection = lazy(() => import("@/components/sections/CatalogSection"));
-const TileCatalogSection = lazy(() => import("@/components/sections/TileCatalogSection"));
-const CalcSection = lazy(() => import("@/components/sections/CalcSection"));
-const ExportSection = lazy(() =>
+// Все остальные секции — lazy с авто-ретраем (устойчивость к устаревшим чанкам после деплоя)
+const ScanSection = lazyWithRetry(() => import("@/components/scan/ScanSection"));
+const PlannerSection = lazyWithRetry(() => import("@/components/sections/PlannerSection"));
+const CatalogSection = lazyWithRetry(() => import("@/components/sections/CatalogSection"));
+const TileCatalogSection = lazyWithRetry(() => import("@/components/sections/TileCatalogSection"));
+const CalcSection = lazyWithRetry(() => import("@/components/sections/CalcSection"));
+const ExportSection = lazyWithRetry(() =>
   import("@/components/sections/ExportHelpSection").then((m) => ({ default: m.ExportSection })),
 );
-const HelpSection = lazy(() =>
+const HelpSection = lazyWithRetry(() =>
   import("@/components/sections/ExportHelpSection").then((m) => ({ default: m.HelpSection })),
 );
-const UseCasesSection = lazy(() => import("@/components/sections/UseCasesSection"));
-const StylesSection = lazy(() => import("@/components/sections/StylesSection"));
-const StagingSection = lazy(() => import("@/components/sections/StagingSection"));
-const OpeningsSection = lazy(() => import("@/components/sections/OpeningsSection"));
-const PartnersSection = lazy(() => import("@/components/sections/PartnersSection"));
-const PricingSection = lazy(() => import("@/components/sections/PricingSection"));
-const EngineeringSection = lazy(() => import("@/components/sections/EngineeringSection"));
-const ModularHousesSection = lazy(() => import("@/components/sections/ModularHousesSection"));
-const AdminOffice = lazy(() => import("@/components/admin/AdminOffice"));
+const UseCasesSection = lazyWithRetry(() => import("@/components/sections/UseCasesSection"));
+const StylesSection = lazyWithRetry(() => import("@/components/sections/StylesSection"));
+const StagingSection = lazyWithRetry(() => import("@/components/sections/StagingSection"));
+const OpeningsSection = lazyWithRetry(() => import("@/components/sections/OpeningsSection"));
+const PartnersSection = lazyWithRetry(() => import("@/components/sections/PartnersSection"));
+const PricingSection = lazyWithRetry(() => import("@/components/sections/PricingSection"));
+const EngineeringSection = lazyWithRetry(() => import("@/components/sections/EngineeringSection"));
+const ModularHousesSection = lazyWithRetry(() => import("@/components/sections/ModularHousesSection"));
+const AdminOffice = lazyWithRetry(() => import("@/components/admin/AdminOffice"));
 import ScenarioRunner from "@/components/ScenarioRunner";
 import AIManager from "@/components/AIManager";
 import SectionSEO from "@/components/SectionSEO";
