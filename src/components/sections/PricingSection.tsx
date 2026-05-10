@@ -9,6 +9,8 @@ import {
 } from "@/lib/pricing";
 import { notify } from "@/lib/notify";
 import PaymentDialog from "@/components/pricing/PaymentDialog";
+import AuthGateModal from "@/components/auth/AuthGateModal";
+import { getToken } from "@/lib/api";
 
 /**
  * Раздел «Тарифы». 4 плана: Free / PRO / STUDIO / BUSINESS.
@@ -18,6 +20,10 @@ import PaymentDialog from "@/components/pricing/PaymentDialog";
 export default function PricingSection() {
   const [yearly, setYearly] = useState(false);
   const [payingPlan, setPayingPlan] = useState<Plan | null>(null);
+  /** Тариф, для которого требуется сначала зарегистрироваться/войти */
+  const [authForPlan, setAuthForPlan] = useState<Plan | null>(null);
+
+  const isAuthed = () => Boolean(getToken());
 
   const handleSelect = (p: Plan) => {
     if (p.id === "free") {
@@ -28,7 +34,11 @@ export default function PricingSection() {
       notify.success("Заявка отправлена", "Мы свяжемся с вами в течение рабочего дня");
       return;
     }
-    // PRO / STUDIO — открываем диалог оплаты ЮKassa
+    // PRO / STUDIO — оплата требует аккаунт
+    if (!isAuthed()) {
+      setAuthForPlan(p);
+      return;
+    }
     setPayingPlan(p);
   };
 
@@ -225,6 +235,20 @@ export default function PricingSection() {
           Оплата зачисляется в адрес ООО «МАТ-Лабс» · ИНН 6312223437 · ОГРН 126630004288
         </div>
       </div>
+
+      {/* Модалка регистрации/входа — появляется только когда выбран платный тариф и нет аккаунта */}
+      <AuthGateModal
+        open={Boolean(authForPlan)}
+        initialMode="register"
+        title={authForPlan ? `Тариф ${authForPlan.name} — нужен аккаунт` : "Войдите, чтобы продолжить"}
+        subtitle="Аккаунт нужен только для оформления подписки и сохранения проектов в облаке. Все остальные функции работают без регистрации."
+        onClose={() => setAuthForPlan(null)}
+        onSuccess={() => {
+          const p = authForPlan;
+          setAuthForPlan(null);
+          if (p) setPayingPlan(p);
+        }}
+      />
 
       {/* Модалка оплаты ЮKassa */}
       {payingPlan && (
