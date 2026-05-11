@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -7,78 +7,17 @@ import { Badge } from "@/components/ui/badge";
 import { notify } from "@/lib/notify";
 import { convertToGLB, type ConvertProgress } from "@/lib/modelConverter";
 import { saveUserModel, listUserModels, removeUserModel, type UserModel } from "@/lib/userModelsStore";
-import ModelViewer from "@/components/3d/ModelViewer";
 import { apiFetch, getToken, USER_MODELS_URL } from "@/lib/api";
-
-type ConvertStatus = "idle" | "loading" | "converting" | "exporting" | "usdz" | "done" | "error";
-
-interface ConvertResult {
-  blob: Blob;
-  url: string;
-  sizeIn: number;
-  sizeOut: number;
-  sourceName: string;
-  sourceExt: string;
-  triangles?: number;
-  usdzBlob: Blob | null;
-  usdzUrl: string | null;
-  usdzSize: number;
-}
-
-const SUPPORTED_FORMATS = [
-  { ext: "fbx", color: "bg-blue-500/10 text-blue-600 border-blue-500/30" },
-  { ext: "obj", color: "bg-green-500/10 text-green-600 border-green-500/30" },
-  { ext: "dae", color: "bg-purple-500/10 text-purple-600 border-purple-500/30" },
-  { ext: "stl", color: "bg-orange-500/10 text-orange-600 border-orange-500/30" },
-  { ext: "ply", color: "bg-pink-500/10 text-pink-600 border-pink-500/30" },
-  { ext: "3ds", color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30" },
-  { ext: "gltf", color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" },
-  { ext: "glb", color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" },
-];
-
-const SOURCES = [
-  {
-    name: "3ddd.ru",
-    desc: "Миллион 3D-моделей: мебель, свет, декор. Формат 3ds Max + экспорт FBX/OBJ.",
-    url: "https://3ddd.ru/",
-    icon: "Database",
-    free: "частично",
-  },
-  {
-    name: "Sketchfab",
-    desc: "Бесплатные и платные модели в GLB/GLTF — конвертация не нужна.",
-    url: "https://sketchfab.com/",
-    icon: "Box",
-    free: "много",
-  },
-  {
-    name: "Free3D",
-    desc: "Бесплатные FBX/OBJ-модели мебели и декора.",
-    url: "https://free3d.com/",
-    icon: "Gift",
-    free: "много",
-  },
-  {
-    name: "Polycam",
-    desc: "Готовые 3D-сканы реальных объектов в формате GLB.",
-    url: "https://poly.cam/",
-    icon: "ScanLine",
-    free: "много",
-  },
-  {
-    name: "Poly Haven",
-    desc: "CC0 модели и HDRI для архвиза. Полностью бесплатные.",
-    url: "https://polyhaven.com/",
-    icon: "Mountain",
-    free: "всё",
-  },
-];
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} Б`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
-  return `${(bytes / 1024 / 1024).toFixed(2)} МБ`;
-}
+import {
+  SUPPORTED_FORMATS,
+  formatBytes,
+  type ConvertStatus,
+  type ConvertResult,
+} from "./converter/types";
+import ConvertDropzone from "./converter/ConvertDropzone";
+import ConvertResultCard from "./converter/ConvertResultCard";
+import ConverterLibraryTab from "./converter/ConverterLibraryTab";
+import ConverterSourcesTab from "./converter/ConverterSourcesTab";
 
 export default function ConverterSection() {
   const [status, setStatus] = useState<ConvertStatus>("idle");
@@ -88,7 +27,6 @@ export default function ConverterSection() {
   const [drag, setDrag] = useState(false);
   const [models, setModels] = useState<UserModel[]>(() => listUserModels());
   const [savingToCloud, setSavingToCloud] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     return () => {
@@ -314,70 +252,15 @@ export default function ConverterSection() {
 
         <TabsContent value="convert" className="space-y-5 mt-5">
           <Card className="p-6">
-            <div
-              onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
-              onDragLeave={() => setDrag(false)}
+            <ConvertDropzone
+              status={status}
+              progress={progress}
+              drag={drag}
+              isWorking={isWorking}
+              setDrag={setDrag}
               onDrop={onDrop}
-              onClick={() => !isWorking && inputRef.current?.click()}
-              className={`relative border-2 border-dashed rounded-xl p-10 text-center transition-all cursor-pointer ${
-                drag
-                  ? "border-primary bg-primary/5"
-                  : isWorking
-                  ? "border-border bg-secondary/30 cursor-wait"
-                  : "border-border hover:border-primary hover:bg-primary/[0.02]"
-              }`}
-            >
-              <input
-                ref={inputRef}
-                type="file"
-                accept=".fbx,.obj,.dae,.stl,.ply,.3ds,.gltf,.glb,.max"
-                onChange={onSelect}
-                className="hidden"
-                disabled={isWorking}
-              />
-
-              {isWorking ? (
-                <div className="space-y-4">
-                  <Icon name="Loader2" size={48} className="mx-auto text-primary animate-spin" />
-                  <div>
-                    <p className="font-semibold text-foreground">
-                      {status === "loading" && "Загружаем файл…"}
-                      {status === "converting" && "Конвертируем геометрию…"}
-                      {status === "exporting" && "Упаковываем в GLB…"}
-                      {status === "usdz" && "Делаем USDZ для iOS AR…"}
-                    </p>
-                    <p className="text-xs text-muted-foreground font-mono mt-1">{progress.percent}%</p>
-                  </div>
-                  <div className="max-w-md mx-auto h-1.5 bg-secondary rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary transition-all duration-300"
-                      style={{ width: `${progress.percent}%` }}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="w-16 h-16 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center">
-                    <Icon name="UploadCloud" size={32} className="text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-foreground text-lg">Перетащите 3D-файл сюда</p>
-                    <p className="text-sm text-muted-foreground mt-1">или нажмите, чтобы выбрать</p>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 justify-center pt-2">
-                    {SUPPORTED_FORMATS.map((f) => (
-                      <span
-                        key={f.ext}
-                        className={`text-xs font-mono px-2 py-0.5 rounded border ${f.color}`}
-                      >
-                        .{f.ext}
-                      </span>
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground pt-1">До 200 МБ • Конвертация в браузере • Файл не уходит на сервер</p>
-                </div>
-              )}
-            </div>
+              onSelect={onSelect}
+            />
           </Card>
 
           {status === "error" && error && (
@@ -396,82 +279,16 @@ export default function ConverterSection() {
           )}
 
           {status === "done" && result && (
-            <Card className="p-5 border-primary/30">
-              <div className="flex items-start justify-between gap-3 mb-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Icon name="CheckCircle2" size={18} className="text-primary" />
-                    <p className="font-bold text-foreground">Готово</p>
-                  </div>
-                  <p className="text-xs text-muted-foreground font-mono break-all">{result.sourceName}</p>
-                </div>
-                <div className="flex gap-1.5 flex-wrap justify-end">
-                  <Badge variant="outline" className="font-mono">.{result.sourceExt} → .glb</Badge>
-                  {result.usdzBlob && (
-                    <Badge className="font-mono bg-primary/10 text-primary border-primary/30 hover:bg-primary/20">
-                      + .usdz (iOS AR)
-                    </Badge>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                <Stat label="Было" value={formatBytes(result.sizeIn)} />
-                <Stat label="GLB" value={formatBytes(result.sizeOut)} />
-                <Stat
-                  label={result.usdzBlob ? "USDZ" : "Сжатие"}
-                  value={result.usdzBlob ? formatBytes(result.usdzSize) : `${Math.round((1 - result.sizeOut / result.sizeIn) * 100)}%`}
-                />
-                {result.triangles !== undefined && (
-                  <Stat label="Полигонов" value={result.triangles.toLocaleString("ru-RU")} />
-                )}
-              </div>
-
-              <div className="bg-secondary/50 rounded-lg overflow-hidden border border-border mb-4 aspect-video">
-                <ModelViewer
-                  src={result.url}
-                  iosSrc={result.usdzUrl || undefined}
-                  alt={result.sourceName}
-                />
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Button onClick={downloadGLB}>
-                  <Icon name="Download" size={14} className="mr-1.5" />
-                  Скачать GLB
-                </Button>
-                {result.usdzBlob && result.usdzUrl && (
-                  <Button variant="outline" onClick={downloadUSDZ}>
-                    <Icon name="Smartphone" size={14} className="mr-1.5" />
-                    Скачать USDZ (iOS AR)
-                  </Button>
-                )}
-                <Button variant="secondary" onClick={saveLocal}>
-                  <Icon name="Save" size={14} className="mr-1.5" />
-                  В мою библиотеку
-                </Button>
-                {hasToken && (
-                  <Button variant="secondary" onClick={saveCloud} disabled={savingToCloud}>
-                    <Icon name={savingToCloud ? "Loader2" : "CloudUpload"} size={14} className={`mr-1.5 ${savingToCloud ? "animate-spin" : ""}`} />
-                    {savingToCloud ? "Загружаем…" : "В облако"}
-                  </Button>
-                )}
-                <Button variant="ghost" onClick={() => { setStatus("idle"); setResult(null); }}>
-                  <Icon name="RotateCcw" size={14} className="mr-1.5" />
-                  Сконвертировать ещё
-                </Button>
-              </div>
-
-              {result.usdzBlob && (
-                <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-lg text-xs text-muted-foreground flex items-start gap-2">
-                  <Icon name="Sparkles" size={14} className="text-primary shrink-0 mt-0.5" />
-                  <p>
-                    Готовый USDZ-вариант подключён к превью. На iPhone в Safari нажмите кнопку AR в правом верхнем углу превью —
-                    модель появится в комнате через Quick Look. На Android запустится Scene Viewer с GLB.
-                  </p>
-                </div>
-              )}
-            </Card>
+            <ConvertResultCard
+              result={result}
+              hasToken={hasToken}
+              savingToCloud={savingToCloud}
+              downloadGLB={downloadGLB}
+              downloadUSDZ={downloadUSDZ}
+              saveLocal={saveLocal}
+              saveCloud={saveCloud}
+              onReset={() => { setStatus("idle"); setResult(null); }}
+            />
           )}
 
           <Card className="p-5 bg-secondary/40 border-border/60">
@@ -491,130 +308,13 @@ export default function ConverterSection() {
         </TabsContent>
 
         <TabsContent value="library" className="mt-5">
-          {models.length === 0 ? (
-            <Card className="p-10 text-center">
-              <Icon name="Library" size={40} className="mx-auto text-muted-foreground mb-3" />
-              <p className="font-semibold text-foreground">В библиотеке пока пусто</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Сконвертируйте модель и нажмите «В мою библиотеку», чтобы она появилась здесь.
-              </p>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {models.map((m) => (
-                <Card key={m.id} className="overflow-hidden">
-                  <div className="aspect-video bg-secondary/50 border-b border-border">
-                    <ModelViewer src={m.dataUrl} iosSrc={m.usdzDataUrl} alt={m.name} />
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="font-semibold text-foreground truncate flex-1">{m.name}</p>
-                      {m.usdzDataUrl && (
-                        <Badge className="bg-primary/10 text-primary border-primary/30 text-[10px] px-1.5 py-0 shrink-0">
-                          iOS AR
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                      .{m.sourceExt} → .glb · {formatBytes(m.sizeOut)}
-                      {m.triangles !== undefined && ` · ${m.triangles.toLocaleString("ru-RU")} полигонов`}
-                    </p>
-                    <div className="flex gap-2 mt-3">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => {
-                          const a = document.createElement("a");
-                          a.href = m.dataUrl;
-                          a.download = `${m.name}.glb`;
-                          a.click();
-                        }}
-                      >
-                        <Icon name="Download" size={12} className="mr-1" />
-                        GLB
-                      </Button>
-                      {m.usdzDataUrl && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            const a = document.createElement("a");
-                            a.href = m.usdzDataUrl!;
-                            a.download = `${m.name}.usdz`;
-                            a.click();
-                          }}
-                        >
-                          <Icon name="Smartphone" size={12} className="mr-1" />
-                          USDZ
-                        </Button>
-                      )}
-                      <Button size="sm" variant="ghost" onClick={() => removeLocal(m.id)}>
-                        <Icon name="Trash2" size={12} />
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
+          <ConverterLibraryTab models={models} removeLocal={removeLocal} />
         </TabsContent>
 
         <TabsContent value="sources" className="mt-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {SOURCES.map((s) => (
-              <a
-                key={s.name}
-                href={s.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block group"
-              >
-                <Card className="p-5 h-full hover:border-primary transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-                      <Icon name={s.icon} size={20} className="text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="font-bold text-foreground group-hover:text-primary transition-colors">
-                          {s.name}
-                        </p>
-                        <Icon name="ExternalLink" size={12} className="text-muted-foreground opacity-50" />
-                      </div>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
-                      <Badge variant="secondary" className="mt-2 text-xs">Бесплатно: {s.free}</Badge>
-                    </div>
-                  </div>
-                </Card>
-              </a>
-            ))}
-          </div>
-
-          <Card className="p-5 mt-4 bg-secondary/40">
-            <div className="flex items-start gap-3">
-              <Icon name="Lightbulb" size={18} className="text-yellow-500 shrink-0 mt-0.5" />
-              <div className="text-sm">
-                <p className="font-semibold text-foreground mb-1">Совет</p>
-                <p className="text-muted-foreground leading-relaxed">
-                  Если бренд (например, <a href="https://www.likelodka.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Like Lodka</a>,
-                  {" "}<a href="https://sarosco.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Sarosco</a>
-                  {" "}или <a href="https://svetholl.ru/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Svetholl</a>) не выкладывает 3D-модели
-                  публично — напишите им в почту менеджеру: для архитекторов и дизайнеров большинство производителей даёт модели в FBX по запросу.
-                </p>
-              </div>
-            </div>
-          </Card>
+          <ConverterSourcesTab />
         </TabsContent>
       </Tabs>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-secondary/50 rounded-lg px-3 py-2 border border-border/50">
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</p>
-      <p className="text-sm font-mono font-bold text-foreground mt-0.5">{value}</p>
     </div>
   );
 }
