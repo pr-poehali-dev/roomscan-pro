@@ -76,6 +76,13 @@ const FEATURES = [
     badge: null,
   },
   {
+    id: "converter",
+    icon: "FileBox",
+    title: "Конвертер 3D-моделей",
+    desc: "FBX, OBJ, 3DS, DAE с 3ddd.ru и Sketchfab → GLB для веба и AR прямо в браузере",
+    badge: "NEW",
+  },
+  {
     id: "export",
     icon: "Share2",
     title: "Экспорт в 6 форматах",

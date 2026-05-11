@@ -2,6 +2,7 @@ export const AUTH_URL = "https://functions.poehali.dev/6ba50afb-d26a-4f86-ac87-c
 export const PROJECTS_URL = "https://functions.poehali.dev/648d87c2-171e-4729-b3e2-2cafa6015a40";
 export const SCAN_URL = "https://functions.poehali.dev/aa224ee6-cbee-45f1-bcf6-92dbb5ecd974";
 export const PARTNERS_URL = "https://functions.poehali.dev/cd6a5b38-88ee-4b01-95e9-6d8fe96f7fd6";
+export const USER_MODELS_URL = "https://functions.poehali.dev/b96dea1b-e2d5-4f8f-86ae-4c44b5545960";
 
 export interface User { id: number; name: string; email: string; role: string; }
 export interface Project { id: number; name: string; rooms: number; area: string; status: string; updated: string; }

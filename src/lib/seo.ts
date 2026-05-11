@@ -14,6 +14,7 @@ export type SectionId =
   | "calc"
   | "openings"
   | "staging"
+  | "converter"
   | "export"
   | "partners"
   | "admin"
@@ -148,6 +149,17 @@ export const SECTIONS_SEO: Record<SectionId, SectionSEOData> = {
       "хоумстейджинг онлайн, предпродажная подготовка квартиры, как продать квартиру дороже, чек-лист подготовки к продаже, риелтор",
     h1: "Хоумстейджинг — предпродажная подготовка",
   },
+  converter: {
+    id: "converter",
+    label: "Конвертер 3D",
+    icon: "FileBox",
+    title: "Конвертер 3D-моделей FBX, OBJ, 3DS в GLB онлайн — RoomScan AI",
+    description:
+      "Конвертируйте 3D-модели мебели и декора с 3ddd.ru, Sketchfab, Free3D из FBX, OBJ, DAE, STL, PLY, 3DS в формат GLB для веба и AR. Работает прямо в браузере, файл не уходит на сервер.",
+    keywords:
+      "конвертер 3d моделей онлайн, fbx в glb, obj в glb, 3ds в glb, 3ddd конвертер, glb онлайн, конвертер мебели для веба",
+    h1: "Конвертер 3D-моделей в GLB",
+  },
   export: {
     id: "export",
     label: "Экспорт",
@@ -214,6 +226,7 @@ export const PUBLIC_SECTIONS: SectionId[] = [
   "calc",
   "openings",
   "staging",
+  "converter",
   "export",
   "partners",
   "help",
