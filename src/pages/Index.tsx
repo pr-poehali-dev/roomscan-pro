@@ -28,6 +28,7 @@ const EngineeringSection = lazyWithRetry(() => import("@/components/sections/Eng
 const ModularHousesSection = lazyWithRetry(() => import("@/components/sections/ModularHousesSection"));
 const ConverterSection = lazyWithRetry(() => import("@/components/sections/ConverterSection"));
 const BrandsSection = lazyWithRetry(() => import("@/components/sections/BrandsSection"));
+const LearnSection = lazyWithRetry(() => import("@/components/sections/LearnSection"));
 const AdminOffice = lazyWithRetry(() => import("@/components/admin/AdminOffice"));
 import ScenarioRunner from "@/components/ScenarioRunner";
 import AIManager from "@/components/AIManager";
@@ -73,6 +74,7 @@ type Section =
   | "modular-houses"
   | "converter"
   | "brands"
+  | "learn"
   | "export"
   | "pricing"
   | "partners"
@@ -82,6 +84,7 @@ type Section =
 
 const navItemsAll: { id: Section; label: string; icon: string; hideInGuest?: boolean }[] = [
   { id: "home", label: "Главная", icon: "Home" },
+  { id: "learn", label: "Обучение", icon: "GraduationCap" },
   { id: "scan", label: "Сканирование", icon: "ScanLine" },
   { id: "usecases", label: "Сценарии", icon: "Target" },
   { id: "projects", label: "Мои проекты", icon: "FolderOpen" },
@@ -119,7 +122,7 @@ function getInitialSection(): Section {
   const valid: Section[] = [
     "home", "scan", "usecases", "projects", "planner", "catalog", "tiles",
     "styles", "calc", "openings", "staging", "engineering", "modular-houses",
-    "converter", "brands", "export", "pricing", "partners", "admin", "profile", "help",
+    "converter", "brands", "learn", "export", "pricing", "partners", "admin", "profile", "help",
   ];
   return valid.includes(hash) ? hash : "home";
 }
@@ -252,6 +255,7 @@ export default function Index() {
       case "modular-houses": return <ModularHousesSection />;
       case "converter": return <ConverterSection />;
       case "brands": return <BrandsSection />;
+      case "learn": return <LearnSection onNavigate={(s) => setActive(s as Section)} />;
       case "export": return <ExportSection />;
       case "pricing": return <PricingSection />;
       case "partners": return <PartnersSection />;

@@ -27,6 +27,13 @@ interface Props {
 
 const FEATURES = [
   {
+    id: "learn",
+    icon: "GraduationCap",
+    title: "Учебный модуль",
+    desc: "5 интерактивных курсов с бейджами: для новичков, риелторов, дизайнеров. Освойте сервис за 30 минут",
+    badge: "СТАРТ ЗДЕСЬ",
+  },
+  {
     id: "scan",
     icon: "ScanLine",
     title: "3D-сканирование",

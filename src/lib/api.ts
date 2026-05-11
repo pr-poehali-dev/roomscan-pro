@@ -4,6 +4,7 @@ export const SCAN_URL = "https://functions.poehali.dev/aa224ee6-cbee-45f1-bcf6-9
 export const PARTNERS_URL = "https://functions.poehali.dev/cd6a5b38-88ee-4b01-95e9-6d8fe96f7fd6";
 export const USER_MODELS_URL = "https://functions.poehali.dev/b96dea1b-e2d5-4f8f-86ae-4c44b5545960";
 export const BRAND_REQUESTS_URL = "https://functions.poehali.dev/1f2a67f4-8edc-4752-9b23-ccfe6a6145fc";
+export const LEARNING_PROGRESS_URL = "https://functions.poehali.dev/93e64ef3-149a-4bf1-89b8-bdb1edefe129";
 
 export interface User { id: number; name: string; email: string; role: string; }
 export interface Project { id: number; name: string; rooms: number; area: string; status: string; updated: string; }

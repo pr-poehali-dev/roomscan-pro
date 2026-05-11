@@ -16,6 +16,7 @@ export type SectionId =
   | "staging"
   | "converter"
   | "brands"
+  | "learn"
   | "export"
   | "partners"
   | "admin"
@@ -172,6 +173,17 @@ export const SECTIONS_SEO: Record<SectionId, SectionSEOData> = {
       "российские бренды мебели, ar мебель ios, ar квартира android, like lodka, sarosco, svetholl, каталог производителей мебели россии, дизайнерская мебель москва",
     h1: "Каталог российских брендов",
   },
+  learn: {
+    id: "learn",
+    label: "Обучение",
+    icon: "GraduationCap",
+    title: "RoomScan Academy — учебный модуль с курсами и бейджами",
+    description:
+      "Бесплатные интерактивные курсы по сервису RoomScan AI: для новичков, риелторов, дизайнеров. 5 курсов, 11 уроков, бейджи за прохождение. Освойте сервис за 30 минут.",
+    keywords:
+      "обучение roomscan ai, курсы по дизайну интерьера онлайн, как пользоваться сервисом сканирования, учебный модуль, видеоуроки 3d сканирование, бесплатное обучение",
+    h1: "Учебный модуль RoomScan Academy",
+  },
   export: {
     id: "export",
     label: "Экспорт",
@@ -240,6 +252,7 @@ export const PUBLIC_SECTIONS: SectionId[] = [
   "staging",
   "converter",
   "brands",
+  "learn",
   "export",
   "partners",
   "help",
