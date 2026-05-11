@@ -15,6 +15,7 @@ export type SectionId =
   | "openings"
   | "staging"
   | "converter"
+  | "brands"
   | "export"
   | "partners"
   | "admin"
@@ -153,12 +154,23 @@ export const SECTIONS_SEO: Record<SectionId, SectionSEOData> = {
     id: "converter",
     label: "Конвертер 3D",
     icon: "FileBox",
-    title: "Конвертер 3D-моделей FBX, OBJ, 3DS в GLB онлайн — RoomScan AI",
+    title: "Конвертер 3D-моделей FBX, OBJ, 3DS в GLB и USDZ онлайн — RoomScan AI",
     description:
-      "Конвертируйте 3D-модели мебели и декора с 3ddd.ru, Sketchfab, Free3D из FBX, OBJ, DAE, STL, PLY, 3DS в формат GLB для веба и AR. Работает прямо в браузере, файл не уходит на сервер.",
+      "Конвертируйте 3D-модели мебели и декора с 3ddd.ru, Sketchfab, Free3D из FBX, OBJ, DAE, STL, PLY, 3DS в форматы GLB (Android AR) и USDZ (iOS AR Quick Look). Работает прямо в браузере.",
     keywords:
-      "конвертер 3d моделей онлайн, fbx в glb, obj в glb, 3ds в glb, 3ddd конвертер, glb онлайн, конвертер мебели для веба",
-    h1: "Конвертер 3D-моделей в GLB",
+      "конвертер 3d моделей онлайн, fbx в glb, obj в glb, 3ds в glb, glb в usdz, ios ar quick look, 3ddd конвертер, конвертер мебели для веба",
+    h1: "Конвертер 3D-моделей в GLB + USDZ",
+  },
+  brands: {
+    id: "brands",
+    label: "Российские бренды",
+    icon: "Store",
+    title: "Каталог российских брендов мебели и света с AR-моделями — RoomScan AI",
+    description:
+      "Открытый каталог производителей мебели, света и декора из России. AR-примерка 3D-моделей в вашей комнате на iPhone и Android. Бренды размещают каталоги бесплатно.",
+    keywords:
+      "российские бренды мебели, ar мебель ios, ar квартира android, like lodka, sarosco, svetholl, каталог производителей мебели россии, дизайнерская мебель москва",
+    h1: "Каталог российских брендов",
   },
   export: {
     id: "export",
@@ -227,6 +239,7 @@ export const PUBLIC_SECTIONS: SectionId[] = [
   "openings",
   "staging",
   "converter",
+  "brands",
   "export",
   "partners",
   "help",

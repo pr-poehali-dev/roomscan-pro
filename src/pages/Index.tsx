@@ -27,6 +27,7 @@ const PricingSection = lazyWithRetry(() => import("@/components/sections/Pricing
 const EngineeringSection = lazyWithRetry(() => import("@/components/sections/EngineeringSection"));
 const ModularHousesSection = lazyWithRetry(() => import("@/components/sections/ModularHousesSection"));
 const ConverterSection = lazyWithRetry(() => import("@/components/sections/ConverterSection"));
+const BrandsSection = lazyWithRetry(() => import("@/components/sections/BrandsSection"));
 const AdminOffice = lazyWithRetry(() => import("@/components/admin/AdminOffice"));
 import ScenarioRunner from "@/components/ScenarioRunner";
 import AIManager from "@/components/AIManager";
@@ -71,6 +72,7 @@ type Section =
   | "engineering"
   | "modular-houses"
   | "converter"
+  | "brands"
   | "export"
   | "pricing"
   | "partners"
@@ -93,6 +95,7 @@ const navItemsAll: { id: Section; label: string; icon: string; hideInGuest?: boo
   { id: "engineering", label: "Инженерные узлы", icon: "Settings2" },
   { id: "modular-houses", label: "Модульные дома", icon: "Boxes" },
   { id: "converter", label: "Конвертер 3D", icon: "FileBox" },
+  { id: "brands", label: "Российские бренды", icon: "Store" },
   { id: "export", label: "Экспорт", icon: "Share2" },
   { id: "pricing", label: "Тарифы", icon: "Wallet" },
   { id: "partners", label: "Партнёрам", icon: "Handshake" },
@@ -116,7 +119,7 @@ function getInitialSection(): Section {
   const valid: Section[] = [
     "home", "scan", "usecases", "projects", "planner", "catalog", "tiles",
     "styles", "calc", "openings", "staging", "engineering", "modular-houses",
-    "converter", "export", "pricing", "partners", "admin", "profile", "help",
+    "converter", "brands", "export", "pricing", "partners", "admin", "profile", "help",
   ];
   return valid.includes(hash) ? hash : "home";
 }
@@ -248,6 +251,7 @@ export default function Index() {
       case "engineering": return <EngineeringSection />;
       case "modular-houses": return <ModularHousesSection />;
       case "converter": return <ConverterSection />;
+      case "brands": return <BrandsSection />;
       case "export": return <ExportSection />;
       case "pricing": return <PricingSection />;
       case "partners": return <PartnersSection />;

@@ -10,7 +10,7 @@ import { saveUserModel, listUserModels, removeUserModel, type UserModel } from "
 import ModelViewer from "@/components/3d/ModelViewer";
 import { apiFetch, getToken, USER_MODELS_URL } from "@/lib/api";
 
-type ConvertStatus = "idle" | "loading" | "converting" | "exporting" | "done" | "error";
+type ConvertStatus = "idle" | "loading" | "converting" | "exporting" | "usdz" | "done" | "error";
 
 interface ConvertResult {
   blob: Blob;
@@ -20,6 +20,9 @@ interface ConvertResult {
   sourceName: string;
   sourceExt: string;
   triangles?: number;
+  usdzBlob: Blob | null;
+  usdzUrl: string | null;
+  usdzSize: number;
 }
 
 const SUPPORTED_FORMATS = [
@@ -90,6 +93,7 @@ export default function ConverterSection() {
   useEffect(() => {
     return () => {
       if (result?.url) URL.revokeObjectURL(result.url);
+      if (result?.usdzUrl) URL.revokeObjectURL(result.usdzUrl);
     };
   }, [result]);
 
@@ -121,14 +125,16 @@ export default function ConverterSection() {
 
     setStatus("loading");
     try {
-      const { blob, triangles } = await convertToGLB(file, ext, (p) => {
+      const { blob, triangles, usdzBlob } = await convertToGLB(file, ext, (p) => {
         setProgress(p);
         if (p.stage === "loading") setStatus("loading");
         else if (p.stage === "exporting") setStatus("exporting");
+        else if (p.stage === "usdz") setStatus("usdz");
         else setStatus("converting");
       });
 
       const url = URL.createObjectURL(blob);
+      const usdzUrl = usdzBlob ? URL.createObjectURL(usdzBlob) : null;
       setResult({
         blob,
         url,
@@ -137,9 +143,17 @@ export default function ConverterSection() {
         sourceName: file.name,
         sourceExt: ext,
         triangles,
+        usdzBlob,
+        usdzUrl,
+        usdzSize: usdzBlob?.size || 0,
       });
       setStatus("done");
-      notify.success("Готово", `Файл сконвертирован в GLB (${formatBytes(blob.size)})`);
+      notify.success(
+        "Готово",
+        usdzBlob
+          ? `Сконвертировано в GLB (${formatBytes(blob.size)}) + USDZ для iOS (${formatBytes(usdzBlob.size)})`
+          : `Файл сконвертирован в GLB (${formatBytes(blob.size)})`,
+      );
     } catch (err) {
       console.error("Convert error:", err);
       const message = err instanceof Error ? err.message : "Не удалось сконвертировать файл. Проверьте, что он корректный.";
@@ -172,23 +186,43 @@ export default function ConverterSection() {
     document.body.removeChild(a);
   };
 
-  const saveLocal = () => {
+  const downloadUSDZ = () => {
+    if (!result?.usdzUrl) return;
+    const a = document.createElement("a");
+    a.href = result.usdzUrl;
+    const base = result.sourceName.replace(/\.[^.]+$/, "");
+    a.download = `${base}.usdz`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const blobToDataURL = (blob: Blob): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.onerror = () => reject(new Error("Не удалось прочитать файл"));
+      r.readAsDataURL(blob);
+    });
+
+  const saveLocal = async () => {
     if (!result) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      const base = result.sourceName.replace(/\.[^.]+$/, "");
-      const model = saveUserModel({
-        name: base,
-        sourceExt: result.sourceExt,
-        sizeOut: result.sizeOut,
-        dataUrl,
-        triangles: result.triangles,
-      });
-      setModels(listUserModels());
-      notify.success("Сохранено в библиотеку", `«${model.name}» добавлен в локальную коллекцию`);
-    };
-    reader.readAsDataURL(result.blob);
+    const dataUrl = await blobToDataURL(result.blob);
+    const usdzDataUrl = result.usdzBlob ? await blobToDataURL(result.usdzBlob) : undefined;
+    const base = result.sourceName.replace(/\.[^.]+$/, "");
+    const model = saveUserModel({
+      name: base,
+      sourceExt: result.sourceExt,
+      sizeOut: result.sizeOut,
+      dataUrl,
+      usdzDataUrl,
+      triangles: result.triangles,
+    });
+    setModels(listUserModels());
+    notify.success(
+      "Сохранено в библиотеку",
+      usdzDataUrl ? `«${model.name}» — GLB + USDZ для iOS AR` : `«${model.name}» добавлен в локальную коллекцию`,
+    );
   };
 
   const removeLocal = (id: string) => {
@@ -206,16 +240,20 @@ export default function ConverterSection() {
     }
     setSavingToCloud(true);
     try {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const dataUrl = reader.result as string;
-          const idx = dataUrl.indexOf(",");
-          resolve(idx >= 0 ? dataUrl.slice(idx + 1) : dataUrl);
-        };
-        reader.onerror = () => reject(new Error("Не удалось прочитать файл"));
-        reader.readAsDataURL(result.blob);
-      });
+      const blobToBase64 = (blob: Blob): Promise<string> =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = reader.result as string;
+            const idx = dataUrl.indexOf(",");
+            resolve(idx >= 0 ? dataUrl.slice(idx + 1) : dataUrl);
+          };
+          reader.onerror = () => reject(new Error("Не удалось прочитать файл"));
+          reader.readAsDataURL(blob);
+        });
+
+      const glbBase64 = await blobToBase64(result.blob);
+      const usdzBase64 = result.usdzBlob ? await blobToBase64(result.usdzBlob) : null;
 
       const name = result.sourceName.replace(/\.[^.]+$/, "");
       const { status: code, data } = await apiFetch(USER_MODELS_URL, {
@@ -224,7 +262,8 @@ export default function ConverterSection() {
           name,
           sourceExt: result.sourceExt,
           triangles: result.triangles,
-          glbBase64: base64,
+          glbBase64,
+          usdzBase64,
         }),
       });
 
@@ -241,7 +280,7 @@ export default function ConverterSection() {
     }
   };
 
-  const isWorking = status === "loading" || status === "converting" || status === "exporting";
+  const isWorking = status === "loading" || status === "converting" || status === "exporting" || status === "usdz";
   const hasToken = !!getToken();
 
   return (
@@ -305,6 +344,7 @@ export default function ConverterSection() {
                       {status === "loading" && "Загружаем файл…"}
                       {status === "converting" && "Конвертируем геометрию…"}
                       {status === "exporting" && "Упаковываем в GLB…"}
+                      {status === "usdz" && "Делаем USDZ для iOS AR…"}
                     </p>
                     <p className="text-xs text-muted-foreground font-mono mt-1">{progress.percent}%</p>
                   </div>
@@ -365,15 +405,22 @@ export default function ConverterSection() {
                   </div>
                   <p className="text-xs text-muted-foreground font-mono break-all">{result.sourceName}</p>
                 </div>
-                <Badge variant="outline" className="font-mono">.{result.sourceExt} → .glb</Badge>
+                <div className="flex gap-1.5 flex-wrap justify-end">
+                  <Badge variant="outline" className="font-mono">.{result.sourceExt} → .glb</Badge>
+                  {result.usdzBlob && (
+                    <Badge className="font-mono bg-primary/10 text-primary border-primary/30 hover:bg-primary/20">
+                      + .usdz (iOS AR)
+                    </Badge>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 <Stat label="Было" value={formatBytes(result.sizeIn)} />
-                <Stat label="Стало" value={formatBytes(result.sizeOut)} />
+                <Stat label="GLB" value={formatBytes(result.sizeOut)} />
                 <Stat
-                  label="Сжатие"
-                  value={`${Math.round((1 - result.sizeOut / result.sizeIn) * 100)}%`}
+                  label={result.usdzBlob ? "USDZ" : "Сжатие"}
+                  value={result.usdzBlob ? formatBytes(result.usdzSize) : `${Math.round((1 - result.sizeOut / result.sizeIn) * 100)}%`}
                 />
                 {result.triangles !== undefined && (
                   <Stat label="Полигонов" value={result.triangles.toLocaleString("ru-RU")} />
@@ -381,7 +428,11 @@ export default function ConverterSection() {
               </div>
 
               <div className="bg-secondary/50 rounded-lg overflow-hidden border border-border mb-4 aspect-video">
-                <ModelViewer src={result.url} alt={result.sourceName} />
+                <ModelViewer
+                  src={result.url}
+                  iosSrc={result.usdzUrl || undefined}
+                  alt={result.sourceName}
+                />
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -389,6 +440,12 @@ export default function ConverterSection() {
                   <Icon name="Download" size={14} className="mr-1.5" />
                   Скачать GLB
                 </Button>
+                {result.usdzBlob && result.usdzUrl && (
+                  <Button variant="outline" onClick={downloadUSDZ}>
+                    <Icon name="Smartphone" size={14} className="mr-1.5" />
+                    Скачать USDZ (iOS AR)
+                  </Button>
+                )}
                 <Button variant="secondary" onClick={saveLocal}>
                   <Icon name="Save" size={14} className="mr-1.5" />
                   В мою библиотеку
@@ -404,6 +461,16 @@ export default function ConverterSection() {
                   Сконвертировать ещё
                 </Button>
               </div>
+
+              {result.usdzBlob && (
+                <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-lg text-xs text-muted-foreground flex items-start gap-2">
+                  <Icon name="Sparkles" size={14} className="text-primary shrink-0 mt-0.5" />
+                  <p>
+                    Готовый USDZ-вариант подключён к превью. На iPhone в Safari нажмите кнопку AR в правом верхнем углу превью —
+                    модель появится в комнате через Quick Look. На Android запустится Scene Viewer с GLB.
+                  </p>
+                </div>
+              )}
             </Card>
           )}
 
@@ -437,10 +504,17 @@ export default function ConverterSection() {
               {models.map((m) => (
                 <Card key={m.id} className="overflow-hidden">
                   <div className="aspect-video bg-secondary/50 border-b border-border">
-                    <ModelViewer src={m.dataUrl} alt={m.name} />
+                    <ModelViewer src={m.dataUrl} iosSrc={m.usdzDataUrl} alt={m.name} />
                   </div>
                   <div className="p-4">
-                    <p className="font-semibold text-foreground truncate">{m.name}</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-semibold text-foreground truncate flex-1">{m.name}</p>
+                      {m.usdzDataUrl && (
+                        <Badge className="bg-primary/10 text-primary border-primary/30 text-[10px] px-1.5 py-0 shrink-0">
+                          iOS AR
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground font-mono mt-0.5">
                       .{m.sourceExt} → .glb · {formatBytes(m.sizeOut)}
                       {m.triangles !== undefined && ` · ${m.triangles.toLocaleString("ru-RU")} полигонов`}
@@ -457,8 +531,23 @@ export default function ConverterSection() {
                         }}
                       >
                         <Icon name="Download" size={12} className="mr-1" />
-                        Скачать
+                        GLB
                       </Button>
+                      {m.usdzDataUrl && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const a = document.createElement("a");
+                            a.href = m.usdzDataUrl!;
+                            a.download = `${m.name}.usdz`;
+                            a.click();
+                          }}
+                        >
+                          <Icon name="Smartphone" size={12} className="mr-1" />
+                          USDZ
+                        </Button>
+                      )}
                       <Button size="sm" variant="ghost" onClick={() => removeLocal(m.id)}>
                         <Icon name="Trash2" size={12} />
                       </Button>

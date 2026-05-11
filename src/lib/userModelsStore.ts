@@ -13,6 +13,8 @@ export interface UserModel {
   sourceExt: string;
   sizeOut: number;
   dataUrl: string;
+  /** USDZ-вариант (data:URL) для iOS AR Quick Look. */
+  usdzDataUrl?: string;
   triangles?: number;
   createdAt: number;
 }

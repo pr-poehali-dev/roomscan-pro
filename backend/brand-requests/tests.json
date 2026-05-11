@@ -1,0 +1,46 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "POST creates brand request",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "brandName": "Test Brand",
+        "contactName": "Иван",
+        "contactEmail": "test@example.com",
+        "category": "furniture",
+        "modelsCount": 10,
+        "message": "Хотим разместить каталог"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {"ok": true},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST without brand name returns 400",
+      "method": "POST",
+      "path": "/",
+      "body": {"contactEmail": "test@example.com"},
+      "expectedStatus": 400
+    },
+    {
+      "name": "POST without contact returns 400",
+      "method": "POST",
+      "path": "/",
+      "body": {"brandName": "Test"},
+      "expectedStatus": 400
+    },
+    {
+      "name": "GET without token returns 401",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 401
+    }
+  ]
+}

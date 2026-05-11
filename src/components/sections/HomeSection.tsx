@@ -79,7 +79,14 @@ const FEATURES = [
     id: "converter",
     icon: "FileBox",
     title: "Конвертер 3D-моделей",
-    desc: "FBX, OBJ, 3DS, DAE с 3ddd.ru и Sketchfab → GLB для веба и AR прямо в браузере",
+    desc: "FBX, OBJ, 3DS, DAE с 3ddd.ru и Sketchfab → GLB + USDZ для веба и AR на iOS/Android",
+    badge: "NEW",
+  },
+  {
+    id: "brands",
+    icon: "Store",
+    title: "Российские бренды",
+    desc: "Like Lodka, Sarosco, Svetholl и другие — AR-примерка мебели и света в комнате",
     badge: "NEW",
   },
   {

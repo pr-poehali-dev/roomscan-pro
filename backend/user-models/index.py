@@ -1,7 +1,7 @@
 """
-Пользовательская библиотека 3D-моделей (GLB).
+Пользовательская библиотека 3D-моделей (GLB + USDZ для iOS AR Quick Look).
 GET / — список моделей пользователя.
-POST / — загрузить новую модель (multipart-style: name, source_ext, glb_base64, triangles, size_bytes).
+POST / — загрузить новую модель: name, sourceExt, triangles, glbBase64, usdzBase64 (optional).
 PUT /{id} — переименовать модель.
 """
 import json
@@ -19,7 +19,7 @@ CORS_HEADERS = {
     "Access-Control-Allow-Headers": "Content-Type, X-Auth-Token",
 }
 
-MAX_SIZE = 50 * 1024 * 1024  # 50 МБ на модель
+MAX_SIZE = 50 * 1024 * 1024  # 50 МБ на каждый файл
 
 
 def resp(status: int, data):
@@ -61,20 +61,15 @@ def get_s3():
     )
 
 
-def upload_glb(user_id: int, glb_bytes: bytes) -> str:
+def upload_bytes(user_id: int, body: bytes, ext: str, content_type: str) -> str:
     s3 = get_s3()
-    key = f"user-models/{user_id}/{uuid.uuid4().hex}.glb"
-    s3.put_object(
-        Bucket="files",
-        Key=key,
-        Body=glb_bytes,
-        ContentType="model/gltf-binary",
-    )
+    key = f"user-models/{user_id}/{uuid.uuid4().hex}.{ext}"
+    s3.put_object(Bucket="files", Key=key, Body=body, ContentType=content_type)
     return f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/bucket/{key}"
 
 
 def handler(event: dict, context) -> dict:
-    """Управление пользовательской библиотекой 3D-моделей. CRUD через S3 + БД."""
+    """Управление пользовательской библиотекой 3D-моделей. GLB + USDZ для iOS AR. CRUD через S3 + БД."""
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": CORS_HEADERS, "body": ""}
 
@@ -98,7 +93,7 @@ def handler(event: dict, context) -> dict:
 
     if method == "GET":
         cur.execute(
-            f"SELECT id, name, source_ext, size_bytes, triangles, glb_url, thumbnail_url, "
+            f"SELECT id, name, source_ext, size_bytes, triangles, glb_url, usdz_url, thumbnail_url, "
             f"TO_CHAR(created_at, 'DD Mon YYYY HH24:MI') as created "
             f"FROM {SCHEMA}.user_models WHERE user_id = %s "
             f"ORDER BY created_at DESC LIMIT 200",
@@ -113,8 +108,9 @@ def handler(event: dict, context) -> dict:
                 "sizeBytes": r[3],
                 "triangles": r[4],
                 "glbUrl": r[5],
-                "thumbnailUrl": r[6],
-                "created": r[7],
+                "usdzUrl": r[6],
+                "thumbnailUrl": r[7],
+                "created": r[8],
             }
             for r in rows
         ]
@@ -128,6 +124,7 @@ def handler(event: dict, context) -> dict:
         source_ext = (body.get("sourceExt") or "glb").strip().lower()[:16]
         triangles = body.get("triangles")
         glb_base64 = body.get("glbBase64") or ""
+        usdz_base64 = body.get("usdzBase64") or ""
 
         if not glb_base64:
             cur.close()
@@ -139,25 +136,37 @@ def handler(event: dict, context) -> dict:
         except Exception:
             cur.close()
             conn.close()
-            return resp(400, {"error": "Неверный base64"})
+            return resp(400, {"error": "Неверный base64 для GLB"})
 
         if len(glb_bytes) > MAX_SIZE:
             cur.close()
             conn.close()
-            return resp(413, {"error": f"Файл слишком большой (>{MAX_SIZE // 1024 // 1024} МБ)"})
+            return resp(413, {"error": f"GLB слишком большой (>{MAX_SIZE // 1024 // 1024} МБ)"})
+
+        usdz_bytes = None
+        if usdz_base64:
+            try:
+                usdz_bytes = base64.b64decode(usdz_base64)
+                if len(usdz_bytes) > MAX_SIZE:
+                    usdz_bytes = None  # тихо отключаем, не блокируем загрузку
+            except Exception:
+                usdz_bytes = None
 
         try:
-            glb_url = upload_glb(user_id, glb_bytes)
+            glb_url = upload_bytes(user_id, glb_bytes, "glb", "model/gltf-binary")
+            usdz_url = None
+            if usdz_bytes:
+                usdz_url = upload_bytes(user_id, usdz_bytes, "usdz", "model/vnd.usdz+zip")
         except Exception as e:
             cur.close()
             conn.close()
             return resp(500, {"error": f"Не удалось загрузить в S3: {e}"})
 
         cur.execute(
-            f"INSERT INTO {SCHEMA}.user_models (user_id, name, source_ext, size_bytes, triangles, glb_url) "
-            f"VALUES (%s, %s, %s, %s, %s, %s) RETURNING id, "
+            f"INSERT INTO {SCHEMA}.user_models (user_id, name, source_ext, size_bytes, triangles, glb_url, usdz_url) "
+            f"VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id, "
             f"TO_CHAR(created_at, 'DD Mon YYYY HH24:MI')",
-            (user_id, name, source_ext, len(glb_bytes), triangles, glb_url),
+            (user_id, name, source_ext, len(glb_bytes), triangles, glb_url, usdz_url),
         )
         row = cur.fetchone()
         conn.commit()
@@ -173,6 +182,7 @@ def handler(event: dict, context) -> dict:
                     "sizeBytes": len(glb_bytes),
                     "triangles": triangles,
                     "glbUrl": glb_url,
+                    "usdzUrl": usdz_url,
                     "created": row[1],
                 }
             },

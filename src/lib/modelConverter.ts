@@ -1,6 +1,8 @@
 /**
- * Конвертация 3D-моделей в формат GLB прямо в браузере.
- * Используются загрузчики из three.js + GLTFExporter.
+ * Конвертация 3D-моделей в форматы GLB и USDZ прямо в браузере.
+ * - GLB — стандарт для веба и Android Scene Viewer.
+ * - USDZ — формат Apple AR Quick Look для iOS Safari.
+ * Используются загрузчики из three.js + GLTFExporter / USDZExporter.
  * Поддержка: FBX, OBJ, DAE (Collada), STL, PLY, 3DS, glTF, GLB.
  */
 import * as THREE from "three";
@@ -12,8 +14,9 @@ import { PLYLoader } from "three/examples/jsm/loaders/PLYLoader.js";
 import { TDSLoader } from "three/examples/jsm/loaders/TDSLoader.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
+import { USDZExporter } from "three/examples/jsm/exporters/USDZExporter.js";
 
-export type ConvertStage = "idle" | "loading" | "converting" | "exporting" | "done";
+export type ConvertStage = "idle" | "loading" | "converting" | "exporting" | "usdz" | "done";
 
 export interface ConvertProgress {
   stage: ConvertStage;
@@ -23,6 +26,8 @@ export interface ConvertProgress {
 export interface ConvertResult {
   blob: Blob;
   triangles: number;
+  /** USDZ-вариант той же модели (для iOS AR Quick Look). Может быть null, если экспорт не удался. */
+  usdzBlob: Blob | null;
 }
 
 type OnProgress = (p: ConvertProgress) => void;
@@ -84,8 +89,7 @@ async function loadModel(file: File, ext: string, onProgress: OnProgress): Promi
       const buf = await readAsArrayBuffer(file);
       onProgress({ stage: "converting", percent: 40 });
       const loader = new FBXLoader();
-      const obj = loader.parse(buf, "");
-      return obj;
+      return loader.parse(buf, "");
     }
     case "obj": {
       const text = await readAsText(file);
@@ -139,7 +143,54 @@ async function loadModel(file: File, ext: string, onProgress: OnProgress): Promi
   }
 }
 
-/** Главная функция: file → GLB Blob. */
+/**
+ * USDZExporter требует MeshStandardMaterial / MeshPhysicalMaterial.
+ * Некоторые лоадеры дают MeshBasicMaterial / MeshLambertMaterial — конвертируем.
+ */
+function ensureUSDZCompatible(object: THREE.Object3D): THREE.Object3D {
+  object.traverse((child) => {
+    const mesh = child as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    const fixed = materials.map((m) => {
+      if (!m) return new THREE.MeshStandardMaterial({ color: 0xcccccc });
+      if (m instanceof THREE.MeshStandardMaterial || m instanceof THREE.MeshPhysicalMaterial) {
+        return m;
+      }
+      // Конвертация в Standard
+      const std = new THREE.MeshStandardMaterial({
+        color: (m as THREE.MeshBasicMaterial).color || new THREE.Color(0xcccccc),
+        map: (m as THREE.MeshBasicMaterial).map || null,
+        transparent: m.transparent,
+        opacity: m.opacity,
+        side: m.side,
+        roughness: 0.8,
+        metalness: 0.1,
+      });
+      std.name = m.name;
+      return std;
+    });
+    mesh.material = Array.isArray(mesh.material) ? fixed : fixed[0];
+  });
+  return object;
+}
+
+/** Экспорт сцены в USDZ. Возвращает null, если экспорт упал — не блокируем основной флоу. */
+async function exportUSDZ(object: THREE.Object3D): Promise<Blob | null> {
+  try {
+    const clone = object.clone(true);
+    ensureUSDZCompatible(clone);
+    const exporter = new USDZExporter();
+    const result = await exporter.parse(clone);
+    const arr = result as unknown as Uint8Array;
+    return new Blob([arr], { type: "model/vnd.usdz+zip" });
+  } catch (err) {
+    console.warn("USDZ export failed:", err);
+    return null;
+  }
+}
+
+/** Главная функция: file → GLB Blob + USDZ Blob. */
 export async function convertToGLB(
   file: File,
   ext: string,
@@ -147,51 +198,47 @@ export async function convertToGLB(
 ): Promise<ConvertResult> {
   const object = await loadModel(file, ext, onProgress);
 
-  onProgress({ stage: "converting", percent: 70 });
+  onProgress({ stage: "converting", percent: 60 });
 
-  // Центрируем и приводим к разумному масштабу, чтобы модель не оказывалась за камерой.
+  // Центрируем и приводим к разумному масштабу
   const box = new THREE.Box3().setFromObject(object);
   const size = new THREE.Vector3();
   box.getSize(size);
   const maxDim = Math.max(size.x, size.y, size.z);
-  if (maxDim > 0) {
+  if (maxDim > 100) {
     // если модель в "сантиметрах" (FBX из 3ds Max часто) — сожмём в метры
-    if (maxDim > 100) {
-      const scale = 1 / 100;
-      object.scale.setScalar(scale);
-      object.updateMatrixWorld(true);
-    }
+    object.scale.setScalar(1 / 100);
+    object.updateMatrixWorld(true);
   }
 
   const triangles = countTriangles(object);
 
-  onProgress({ stage: "exporting", percent: 85 });
+  onProgress({ stage: "exporting", percent: 75 });
 
+  // GLB
   const exporter = new GLTFExporter();
-  const arrayBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+  const glbBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
     exporter.parse(
       object,
       (result) => {
-        if (result instanceof ArrayBuffer) {
-          resolve(result);
-        } else {
-          // JSON-режим (gltf) — упакуем в строку и потом в blob, но для glb нужен binary
-          reject(new Error("GLTFExporter вернул JSON вместо GLB"));
-        }
+        if (result instanceof ArrayBuffer) resolve(result);
+        else reject(new Error("GLTFExporter вернул JSON вместо GLB"));
       },
       (err) => reject(err instanceof Error ? err : new Error(String(err))),
-      {
-        binary: true,
-        embedImages: true,
-        maxTextureSize: 2048,
-      },
+      { binary: true, embedImages: true, maxTextureSize: 2048 },
     );
   });
+
+  onProgress({ stage: "usdz", percent: 90 });
+
+  // USDZ (опционально, не блокируем результат)
+  const usdzBlob = await exportUSDZ(object);
 
   onProgress({ stage: "done", percent: 100 });
 
   return {
-    blob: new Blob([arrayBuffer], { type: "model/gltf-binary" }),
+    blob: new Blob([glbBuffer], { type: "model/gltf-binary" }),
     triangles,
+    usdzBlob,
   };
 }
