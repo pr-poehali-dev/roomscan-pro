@@ -2,6 +2,8 @@ import { Suspense } from "react";
 import Icon from "@/components/ui/icon";
 import PartnersMarquee from "./PartnersMarquee";
 import ContinueWorkBlock from "@/components/home/ContinueWorkBlock";
+import ProjectProgressBlock from "@/components/home/ProjectProgressBlock";
+import ProjectBasketBlock from "@/components/home/ProjectBasketBlock";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
 // Тяжёлая Three.js-демка ленится: уменьшает размер первого бандла,
@@ -238,6 +240,12 @@ export default function HomeSection({ onNavigate, userName }: Props) {
 
       {/* ПРОДОЛЖИТЬ РАБОТУ — показывается если есть сохранённые проекты */}
       <ContinueWorkBlock onNavigate={onNavigate} />
+
+      {/* ПРОГРЕСС ПРОЕКТА — чеклист шагов воронки */}
+      <ProjectProgressBlock onNavigate={onNavigate} />
+
+      {/* КОРЗИНА ПРОЕКТА — все выбранные позиции из всех каталогов */}
+      <ProjectBasketBlock onNavigate={onNavigate} />
 
       {/* ВОЗМОЖНОСТИ */}
       <section className="px-6 lg:px-12 max-w-6xl mx-auto w-full">

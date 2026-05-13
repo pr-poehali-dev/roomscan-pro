@@ -10,6 +10,7 @@ const ScanSection = lazyWithRetry(() => import("@/components/scan/ScanSection"))
 const PlannerSection = lazyWithRetry(() => import("@/components/sections/PlannerSection"));
 const CatalogSection = lazyWithRetry(() => import("@/components/sections/CatalogSection"));
 const TileCatalogSection = lazyWithRetry(() => import("@/components/sections/TileCatalogSection"));
+const WallsSection = lazyWithRetry(() => import("@/components/sections/WallsSection"));
 const CalcSection = lazyWithRetry(() => import("@/components/sections/CalcSection"));
 const ExportSection = lazyWithRetry(() =>
   import("@/components/sections/ExportHelpSection").then((m) => ({ default: m.ExportSection })),
@@ -50,6 +51,7 @@ export default function SectionRouter({ active, user, setActive, logout }: Props
     case "planner": return <PlannerSection onNavigate={(s) => setActive(s as Section)} />;
     case "catalog": return <CatalogSection />;
     case "tiles": return <TileCatalogSection />;
+    case "walls": return <WallsSection onNavigate={(s) => setActive(s as Section)} />;
     case "styles": return <StylesSection />;
     case "calc": return <CalcSection />;
     case "openings": return <OpeningsSection />;

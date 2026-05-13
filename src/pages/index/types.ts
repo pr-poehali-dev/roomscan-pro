@@ -12,6 +12,7 @@ export type Section =
   | "planner"
   | "catalog"
   | "tiles"
+  | "walls"
   | "styles"
   | "calc"
   | "openings"
@@ -44,6 +45,7 @@ export const navItemsAll: NavItem[] = [
   { id: "planner", label: "Планировщик", icon: "LayoutGrid" },
   { id: "catalog", label: "Каталог мебели", icon: "Sofa" },
   { id: "tiles", label: "Каталог плитки", icon: "Grid2x2" },
+  { id: "walls", label: "Стены", icon: "Wallpaper" },
   { id: "styles", label: "AI-стили", icon: "Wand2" },
   { id: "calc", label: "Смета ремонта", icon: "Calculator" },
   { id: "openings", label: "Окна и двери", icon: "DoorOpen" },
@@ -75,7 +77,7 @@ export function getInitialSection(): Section {
   if (typeof window === "undefined") return "home";
   const hash = window.location.hash.replace("#", "") as Section;
   const valid: Section[] = [
-    "home", "scan", "usecases", "projects", "planner", "catalog", "tiles",
+    "home", "scan", "usecases", "projects", "planner", "catalog", "tiles", "walls",
     "styles", "calc", "openings", "staging", "engineering", "modular-houses",
     "converter", "brands", "learn", "export", "pricing", "partners", "admin", "profile", "help",
   ];

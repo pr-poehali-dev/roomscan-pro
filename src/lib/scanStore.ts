@@ -33,8 +33,22 @@ export interface CartItemRef {
   category: string;
 }
 
+/** Универсальная позиция «Корзины проекта»: мебель, покрытия, услуги. */
+export interface ProjectItem {
+  id: string;             // уникальный ключ в корзине
+  source: "furniture" | "tiles" | "walls" | "openings" | "other";
+  title: string;
+  subtitle?: string;      // бренд / коллекция / категория
+  icon?: string;          // lucide-name или emoji
+  unit: "шт" | "м²" | "рулон" | "м" | "комплект";
+  qty: number;
+  pricePerUnit: number;   // ₽
+  addedAt: number;
+}
+
 const KEY = "roomscan:lastScan";
 const CART_KEY = "roomscan:cart";
+const PROJECT_KEY = "roomscan:project";
 
 export function saveLastScan(data: Omit<LastScan, "savedAt">) {
   try {
@@ -93,4 +107,81 @@ export function clearCart() {
   } catch {
     /* ignore */
   }
+}
+
+// ─── Project basket (универсальная корзина проекта) ──────────────────────────
+
+export function getProjectItems(): ProjectItem[] {
+  try {
+    const raw = localStorage.getItem(PROJECT_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as ProjectItem[];
+  } catch {
+    return [];
+  }
+}
+
+export function saveProjectItems(items: ProjectItem[]) {
+  try {
+    localStorage.setItem(PROJECT_KEY, JSON.stringify(items));
+    window.dispatchEvent(new Event("roomscan:project:changed"));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function addProjectItem(item: ProjectItem) {
+  const items = getProjectItems();
+  // если такой id уже есть — увеличиваем qty
+  const idx = items.findIndex((i) => i.id === item.id);
+  if (idx >= 0) {
+    items[idx] = { ...items[idx], qty: items[idx].qty + item.qty };
+  } else {
+    items.push(item);
+  }
+  saveProjectItems(items);
+}
+
+export function removeProjectItem(id: string) {
+  saveProjectItems(getProjectItems().filter((i) => i.id !== id));
+}
+
+export function clearProjectItems() {
+  try {
+    localStorage.removeItem(PROJECT_KEY);
+    window.dispatchEvent(new Event("roomscan:project:changed"));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function projectTotal(): number {
+  return getProjectItems().reduce((s, i) => s + i.qty * i.pricePerUnit, 0);
+}
+
+// ─── Геометрия комнаты из последнего скана ───────────────────────────────────
+
+/**
+ * Возвращает периметр (м), площадь стен (м²) и площадь стен за вычетом
+ * стандартных проёмов (м²) на основании последнего скана.
+ * Если скана нет — возвращает null.
+ */
+export function getWallsGeometry(): {
+  perimeter: number;
+  wallsArea: number;
+  wallsAreaNet: number;
+} | null {
+  const scan = getLastScan();
+  if (!scan) return null;
+  const perimeter = 2 * (scan.width + scan.length);
+  const wallsArea = perimeter * scan.height;
+  // вычитаем стандартные проёмы: дверь 2.0м×0.9м = 1.8м², окно 1.5м×1.4м = 2.1м²
+  const doorsArea = (scan.doors ?? 0) * 1.8;
+  const windowsArea = (scan.windows ?? 0) * 2.1;
+  const wallsAreaNet = Math.max(0, wallsArea - doorsArea - windowsArea);
+  return {
+    perimeter: Math.round(perimeter * 10) / 10,
+    wallsArea: Math.round(wallsArea * 10) / 10,
+    wallsAreaNet: Math.round(wallsAreaNet * 10) / 10,
+  };
 }
