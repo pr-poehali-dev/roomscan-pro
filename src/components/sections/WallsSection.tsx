@@ -68,12 +68,16 @@ export default function WallsSection({ onNavigate }: Props) {
       if (filters.category !== "all" && it.category !== filters.category) return false;
       if (filters.styles.length && !filters.styles.some((s) => it.styles.includes(s))) return false;
       if (filters.rooms.length && !filters.rooms.some((r) => it.rooms.includes(r))) return false;
+      if (filters.textures.length && !filters.textures.some((t) => it.textures.includes(t))) return false;
+      if (filters.colors.length && !filters.colors.includes(it.colorFamily)) return false;
       if (filters.onlyMoisture && !it.moistureResistant) return false;
       if (filters.onlyPaintable && !it.paintable) return false;
       if (filters.onlyEco && !it.eco) return false;
+      if (filters.onlyAcoustic && !it.acoustic) return false;
+      if (filters.onlyPremium && !it.premium) return false;
       if (filters.onlyFav && !favs.includes(it.id)) return false;
       if (q) {
-        const hay = `${it.title} ${it.brand} ${it.collection ?? ""} ${(it.tags ?? []).join(" ")}`.toLowerCase();
+        const hay = `${it.title} ${it.brand} ${it.collection ?? ""} ${it.colorName ?? ""} ${(it.tags ?? []).join(" ")}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;

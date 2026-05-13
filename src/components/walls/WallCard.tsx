@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Icon from "@/components/ui/icon";
 import type { WallItem } from "./wallsData";
-import { WALL_CATEGORIES } from "./wallsData";
+import { WALL_CATEGORIES, WALL_TEXTURES } from "./wallsData";
+import { textureBackground } from "./texturePattern";
 
 interface Props {
   item: WallItem;
@@ -27,13 +28,24 @@ export default function WallCard({ item, wallsAreaNet, isFav, isApplied, onToggl
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-all hover:-translate-y-0.5 group flex flex-col">
       <div
-        className="relative h-32 w-full"
+        className="relative h-36 w-full"
         style={{ backgroundColor: item.color }}
       >
-        <div className="absolute inset-0 opacity-30 mix-blend-overlay bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.6),transparent_50%),radial-gradient(circle_at_70%_80%,rgba(0,0,0,0.3),transparent_50%)]" />
-        <div className="absolute top-2 left-2 flex gap-1.5">
+        {/* Имитация фактуры поверх цвета */}
+        <div
+          className="absolute inset-0"
+          style={{ backgroundImage: textureBackground(item.textures, item.color) }}
+        />
+        {/* Бейджи: ХИТ / премиум / категория */}
+        <div className="absolute top-2 left-2 flex gap-1.5 flex-wrap max-w-[75%]">
           {item.hit && (
             <Badge className="bg-primary text-primary-foreground border-0 shadow-sm">ХИТ</Badge>
+          )}
+          {item.premium && (
+            <Badge className="bg-amber-500/95 text-white border-0 shadow-sm">
+              <Icon name="Crown" size={11} className="mr-1" />
+              Премиум
+            </Badge>
           )}
           {cat && (
             <Badge variant="secondary" className="shadow-sm">
@@ -53,6 +65,18 @@ export default function WallCard({ item, wallsAreaNet, isFav, isApplied, onToggl
             className={isFav ? "fill-destructive text-destructive" : "text-muted-foreground"}
           />
         </button>
+        {/* Название тона */}
+        {item.colorName && (
+          <div className="absolute bottom-2 left-2 right-2 flex items-center gap-2">
+            <div
+              className="w-4 h-4 rounded-full border border-white/60 shadow-sm shrink-0"
+              style={{ backgroundColor: item.color }}
+            />
+            <span className="text-[11px] font-medium text-white drop-shadow-md truncate">
+              {item.colorName}
+            </span>
+          </div>
+        )}
       </div>
 
       <CardContent className="p-4 flex flex-col gap-3 flex-1">
@@ -63,6 +87,21 @@ export default function WallCard({ item, wallsAreaNet, isFav, isApplied, onToggl
           <p className="font-bold text-foreground leading-tight">{item.title}</p>
         </div>
 
+        {/* Фактуры (до 3 шт) */}
+        <div className="flex flex-wrap gap-1">
+          {item.textures.slice(0, 3).map((t) => {
+            const meta = WALL_TEXTURES.find((x) => x.id === t);
+            if (!meta) return null;
+            return (
+              <Badge key={t} variant="secondary" className="text-[10px] py-0 font-medium">
+                <Icon name={meta.icon} size={10} className="mr-1" />
+                {meta.label}
+              </Badge>
+            );
+          })}
+        </div>
+
+        {/* Свойства */}
         <div className="flex flex-wrap gap-1">
           {item.moistureResistant && (
             <Badge variant="outline" className="text-[10px] py-0">влагостойкая</Badge>
@@ -72,6 +111,12 @@ export default function WallCard({ item, wallsAreaNet, isFav, isApplied, onToggl
           )}
           {item.eco && (
             <Badge variant="outline" className="text-[10px] py-0">эко</Badge>
+          )}
+          {item.acoustic && (
+            <Badge variant="outline" className="text-[10px] py-0">
+              <Icon name="Volume2" size={9} className="mr-1" />
+              акустика
+            </Badge>
           )}
         </div>
 
