@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import type { FloorPlan } from "@/lib/floorPlan";
-import type { FloorStyle, WallStyle } from "./scene3d/textures";
+import type { FloorStyle, WallStyle, CoatingTexture } from "./scene3d/textures";
 import { computePlanCenter, rebuildRoom } from "./scene3d/geometryBuilders";
 import Scene3DControls from "./scene3d/Scene3DControls";
 import {
@@ -21,6 +21,41 @@ import {
   defaultCamState,
   type CamState,
 } from "./scene3d/cameraControls";
+
+/** Мини-превью фактуры для плашки покрытия. */
+function coatingPreviewBg(color: string, texture?: string): string {
+  const h = color.replace("#", "");
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  const d = `rgba(${Math.round(r * 0.7)},${Math.round(g * 0.7)},${Math.round(b * 0.7)},0.9)`;
+  switch (texture) {
+    case "brick":
+      return `linear-gradient(${d} 2px, transparent 2px) 0 0 / 12px 6px, linear-gradient(90deg, ${d} 1px, transparent 1px) 0 0 / 12px 6px`;
+    case "wood":
+      return `repeating-linear-gradient(90deg, transparent 0 3px, ${d} 3px 4px)`;
+    case "stripe":
+      return `repeating-linear-gradient(90deg, transparent 0 4px, ${d} 4px 5px)`;
+    case "marble":
+    case "venetian":
+      return `radial-gradient(circle at 30% 30%, rgba(255,255,255,0.5) 0 4px, transparent 12px), radial-gradient(circle at 70% 80%, ${d} 0 2px, transparent 10px)`;
+    case "metallic":
+    case "glossy":
+      return `linear-gradient(135deg, rgba(255,255,255,0.6), transparent 50%)`;
+    case "velvet":
+    case "silk":
+      return `linear-gradient(180deg, rgba(255,255,255,0.25), transparent 60%, rgba(0,0,0,0.25))`;
+    case "concrete":
+    case "rough":
+      return `radial-gradient(circle at 25% 35%, rgba(0,0,0,0.18) 0 2px, transparent 4px), radial-gradient(circle at 70% 70%, rgba(0,0,0,0.18) 0 2px, transparent 4px)`;
+    case "cork":
+      return `radial-gradient(circle at 30% 40%, ${d} 0 1px, transparent 2px), radial-gradient(circle at 70% 65%, ${d} 0 1px, transparent 2px)`;
+    case "geometric":
+      return `linear-gradient(60deg, transparent 47%, ${d} 48% 52%, transparent 53%), linear-gradient(-60deg, transparent 47%, ${d} 48% 52%, transparent 53%)`;
+    default:
+      return `radial-gradient(circle at 30% 20%, rgba(255,255,255,0.35), transparent 60%)`;
+  }
+}
 
 /**
  * Полноценный 3D-просмотр плана в Three.js.
@@ -113,7 +148,11 @@ export default function PlanScene3D({ plan, wallHeight = 270 }: Props) {
     scene.add(room);
 
     /* ─── Построение помещения ─── */
-    rebuildRoom(room, plan, wallHeight, wallStyle, floorStyle, coating?.color);
+    rebuildRoom(
+      room, plan, wallHeight, wallStyle, floorStyle,
+      coating?.color,
+      coating?.texture as CoatingTexture | undefined,
+    );
 
     // Центрируем камеру по плану
     const center = computePlanCenter(plan);
@@ -174,9 +213,13 @@ export default function PlanScene3D({ plan, wallHeight = 270 }: Props) {
     // Пересоздать
     const room = new THREE.Group();
     room.userData.isRoom = true;
-    rebuildRoom(room, plan, wallHeight, wallStyle, floorStyle, coating?.color);
+    rebuildRoom(
+      room, plan, wallHeight, wallStyle, floorStyle,
+      coating?.color,
+      coating?.texture as CoatingTexture | undefined,
+    );
     scene.add(room);
-  }, [plan, wallHeight, wallStyle, floorStyle, coating?.color]);
+  }, [plan, wallHeight, wallStyle, floorStyle, coating?.color, coating?.texture]);
 
   useEffect(() => {
     const r = rendererRef.current;
@@ -204,14 +247,20 @@ export default function PlanScene3D({ plan, wallHeight = 270 }: Props) {
       />
 
       {coating && (
-        <div className="absolute top-3 right-3 max-w-[260px] flex items-center gap-2 bg-background/95 backdrop-blur-sm border rounded-lg p-2 shadow-lg">
+        <div className="absolute top-3 right-3 max-w-[280px] flex items-center gap-2 bg-background/95 backdrop-blur-sm border rounded-lg p-2 shadow-lg">
           <div
-            className="w-9 h-9 rounded-md border shrink-0"
+            className="w-10 h-10 rounded-md border shrink-0 overflow-hidden relative"
             style={{ backgroundColor: coating.color }}
-          />
+            aria-label="Превью покрытия"
+          >
+            <div
+              className="absolute inset-0"
+              style={{ backgroundImage: coatingPreviewBg(coating.color, coating.texture) }}
+            />
+          </div>
           <div className="min-w-0 flex-1">
             <div className="text-[10px] uppercase tracking-widest font-mono text-primary">
-              На стенах
+              На стенах{coating.texture ? ` · ${coating.texture}` : ""}
             </div>
             <div className="text-xs font-bold text-foreground truncate">{coating.title}</div>
             <div className="text-[11px] text-muted-foreground truncate">{coating.brand}</div>

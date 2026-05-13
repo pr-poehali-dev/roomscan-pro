@@ -192,12 +192,21 @@ export function getWallsGeometry(): {
  * Покрытие, применённое к стенам в 3D-планировщике.
  * id — ссылка на WallItem из каталога. color — hex для рендера.
  */
+/** Полный набор фактур, которые умеет рендерить Планировщик. */
+export type CoatingTextureKind =
+  | "smooth" | "matte" | "satin" | "glossy"
+  | "embossed" | "3d" | "rough" | "graphite"
+  | "fabric" | "linen" | "silk" | "velvet" | "leather"
+  | "wood" | "stone" | "brick" | "marble" | "concrete"
+  | "venetian" | "metallic" | "cork"
+  | "geometric" | "stripe" | "floral" | "damask";
+
 export interface ActiveWallCoating {
   id: string;
   title: string;
   brand: string;
   color: string;           // "#RRGGBB"
-  texture?: "smooth" | "embossed" | "wood" | "stone" | "concrete" | "fabric";
+  texture?: CoatingTextureKind;
 }
 
 const WALL_COATING_KEY = "roomscan:wallCoating";

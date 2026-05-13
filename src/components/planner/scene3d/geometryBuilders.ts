@@ -7,8 +7,10 @@ import {
   makeWallMaps,
   makeFloorTexture,
   makeWallTexture,
+  coatingPbr,
   type FloorStyle,
   type WallStyle,
+  type CoatingTexture,
 } from "./textures";
 import { buildRealisticFurniture } from "./realisticFurniture";
 
@@ -213,6 +215,7 @@ export function rebuildRoom(
   wallStyle: WallStyle,
   floorStyle: FloorStyle,
   wallColorOverride?: string,
+  wallCoatingTexture?: CoatingTexture,
 ) {
   // Очистка старой геометрии
   while (room.children.length) {
@@ -266,17 +269,18 @@ export function rebuildRoom(
   ceiling.position.set((minX + maxX) / 2 * CM, wallHeight * CM, (minY + maxY) / 2 * CM);
   room.add(ceiling);
 
-  // Стены с проёмами — PBR. Если задано покрытие из каталога — используем его цвет.
-  const wallMaps = makeWallMaps(wallStyle, wallColorOverride);
+  // Стены с проёмами — PBR. Если задано покрытие из каталога — используем его цвет и фактуру.
+  const wallMaps = makeWallMaps(wallStyle, wallColorOverride, wallCoatingTexture);
+  const pbr = coatingPbr(wallCoatingTexture);
   const wallMat = new THREE.MeshStandardMaterial({
     map: wallMaps.map,
     normalMap: wallMaps.normalMap,
-    normalScale: new THREE.Vector2(0.4, 0.4),
+    normalScale: new THREE.Vector2(pbr.normalScale, pbr.normalScale),
     roughnessMap: wallMaps.roughnessMap,
-    roughness: 0.9,
-    metalness: 0.0,
+    roughness: pbr.roughness,
+    metalness: pbr.metalness,
     side: THREE.DoubleSide,
-    envMapIntensity: 0.4,
+    envMapIntensity: pbr.envMapIntensity,
   });
 
   // Плинтус — тёмный декоративный элемент по периметру комнаты

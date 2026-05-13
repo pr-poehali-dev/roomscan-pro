@@ -13,6 +13,57 @@ export const CM = 0.01; // 1 см = 0.01 м
 export type WallStyle = "white" | "concrete" | "warm";
 export type FloorStyle = "parquet" | "tile" | "concrete";
 
+/**
+ * Фактуры покрытий стен — соответствуют WallTexture из каталога /walls/.
+ * Каждая фактура имеет свой генератор паттерна, normal-карты и PBR-параметров.
+ */
+export type CoatingTexture =
+  | "smooth" | "matte" | "satin" | "glossy"
+  | "embossed" | "3d" | "rough" | "graphite"
+  | "fabric" | "linen" | "silk" | "velvet" | "leather"
+  | "wood" | "stone" | "brick" | "marble" | "concrete"
+  | "venetian" | "metallic" | "cork"
+  | "geometric" | "stripe" | "floral" | "damask";
+
+/** PBR-параметры под конкретную фактуру. */
+export interface CoatingPbr {
+  roughness: number;
+  metalness: number;
+  envMapIntensity: number;
+  normalScale: number;
+  repeat: [number, number];
+}
+
+export function coatingPbr(tex?: CoatingTexture): CoatingPbr {
+  switch (tex) {
+    case "glossy":   return { roughness: 0.15, metalness: 0.05, envMapIntensity: 1.2, normalScale: 0.2, repeat: [2, 1] };
+    case "metallic": return { roughness: 0.25, metalness: 0.85, envMapIntensity: 1.4, normalScale: 0.4, repeat: [2, 1] };
+    case "silk":     return { roughness: 0.35, metalness: 0.05, envMapIntensity: 0.9, normalScale: 0.3, repeat: [2, 1] };
+    case "satin":    return { roughness: 0.45, metalness: 0.0,  envMapIntensity: 0.7, normalScale: 0.3, repeat: [2, 1] };
+    case "velvet":   return { roughness: 0.95, metalness: 0.0,  envMapIntensity: 0.3, normalScale: 0.6, repeat: [2, 1] };
+    case "marble":   return { roughness: 0.25, metalness: 0.05, envMapIntensity: 1.0, normalScale: 0.3, repeat: [1.5, 1] };
+    case "venetian": return { roughness: 0.3,  metalness: 0.05, envMapIntensity: 1.0, normalScale: 0.4, repeat: [1.5, 1] };
+    case "wood":     return { roughness: 0.65, metalness: 0.0,  envMapIntensity: 0.5, normalScale: 0.6, repeat: [3, 1.5] };
+    case "brick":    return { roughness: 0.85, metalness: 0.0,  envMapIntensity: 0.3, normalScale: 1.0, repeat: [2.5, 1.5] };
+    case "stone":    return { roughness: 0.92, metalness: 0.0,  envMapIntensity: 0.3, normalScale: 1.1, repeat: [2, 1.2] };
+    case "concrete": return { roughness: 0.9,  metalness: 0.05, envMapIntensity: 0.4, normalScale: 0.6, repeat: [2, 1] };
+    case "cork":     return { roughness: 0.85, metalness: 0.0,  envMapIntensity: 0.4, normalScale: 0.5, repeat: [3, 1.5] };
+    case "fabric":
+    case "linen":    return { roughness: 0.92, metalness: 0.0,  envMapIntensity: 0.3, normalScale: 0.4, repeat: [4, 2] };
+    case "leather":  return { roughness: 0.55, metalness: 0.05, envMapIntensity: 0.6, normalScale: 0.5, repeat: [2.5, 1.5] };
+    case "3d":
+    case "embossed": return { roughness: 0.7,  metalness: 0.0,  envMapIntensity: 0.6, normalScale: 1.2, repeat: [2, 1] };
+    case "damask":
+    case "floral":   return { roughness: 0.6,  metalness: 0.05, envMapIntensity: 0.7, normalScale: 0.5, repeat: [2, 1] };
+    case "stripe":   return { roughness: 0.5,  metalness: 0.0,  envMapIntensity: 0.7, normalScale: 0.3, repeat: [2, 1] };
+    case "geometric":return { roughness: 0.6,  metalness: 0.05, envMapIntensity: 0.7, normalScale: 0.4, repeat: [2.5, 1.2] };
+    case "graphite": return { roughness: 0.7,  metalness: 0.1,  envMapIntensity: 0.6, normalScale: 0.4, repeat: [2, 1] };
+    case "rough":    return { roughness: 0.95, metalness: 0.0,  envMapIntensity: 0.3, normalScale: 1.0, repeat: [2, 1] };
+    case "matte":    return { roughness: 0.9,  metalness: 0.0,  envMapIntensity: 0.4, normalScale: 0.3, repeat: [2, 1] };
+    default:         return { roughness: 0.9,  metalness: 0.0,  envMapIntensity: 0.4, normalScale: 0.4, repeat: [2, 1] };
+  }
+}
+
 export const WALL_COLORS: Record<WallStyle, number> = {
   white: 0xf5f5f4,
   concrete: 0xa8a29e,
@@ -294,7 +345,32 @@ interface WallMaps {
   roughnessMap: THREE.Texture;
 }
 
-export function makeWallMaps(style: WallStyle, overrideColor?: string): WallMaps {
+/** Утилиты для рисования паттернов фактур */
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const h = hex.replace("#", "");
+  return {
+    r: parseInt(h.substring(0, 2), 16),
+    g: parseInt(h.substring(2, 4), 16),
+    b: parseInt(h.substring(4, 6), 16),
+  };
+}
+function shade(hex: string, factor: number): string {
+  const { r, g, b } = hexToRgb(hex);
+  const k = factor < 0 ? 1 + factor : 1 - factor;
+  if (factor < 0) {
+    const nr = Math.round(r + (255 - r) * -factor);
+    const ng = Math.round(g + (255 - g) * -factor);
+    const nb = Math.round(b + (255 - b) * -factor);
+    return `rgb(${nr},${ng},${nb})`;
+  }
+  return `rgb(${Math.round(r * k)},${Math.round(g * k)},${Math.round(b * k)})`;
+}
+
+export function makeWallMaps(
+  style: WallStyle,
+  overrideColor?: string,
+  coatingTexture?: CoatingTexture,
+): WallMaps {
   const size = 512;
   const color = document.createElement("canvas");
   color.width = color.height = size;
@@ -308,75 +384,528 @@ export function makeWallMaps(style: WallStyle, overrideColor?: string): WallMaps
   rough.width = rough.height = size;
   const rctx = rough.getContext("2d")!;
 
-  // Если задан overrideColor (hex из каталога покрытий) — используем его.
-  // Иначе — палитра по стилю.
+  // База: цвет из каталога или из стиля
   const baseHex = overrideColor
     ? overrideColor
     : `#${WALL_COLORS[style].toString(16).padStart(6, "0")}`;
   cctx.fillStyle = baseHex;
   cctx.fillRect(0, 0, size, size);
 
-  if (style === "concrete") {
-    // Бетон: тёмные пятна + микротекстура
-    cctx.globalAlpha = 0.6;
-    cctx.drawImage(makeNoiseCanvas(size, 0.4), 0, 0);
-    cctx.globalAlpha = 1;
-    for (let i = 0; i < 40; i++) {
-      const x = Math.random() * size;
-      const y = Math.random() * size;
-      const r = Math.random() * 30 + 5;
-      const g = cctx.createRadialGradient(x, y, 0, x, y, r);
-      g.addColorStop(0, `rgba(50,50,50,${Math.random() * 0.25})`);
-      g.addColorStop(1, "rgba(50,50,50,0)");
+  hctx.fillStyle = "#888";
+  hctx.fillRect(0, 0, size, size);
+  rctx.fillStyle = "rgb(220,220,220)";
+  rctx.fillRect(0, 0, size, size);
+
+  const dark  = shade(baseHex, 0.25);
+  const dark2 = shade(baseHex, 0.45);
+  const light = shade(baseHex, -0.2);
+
+  const tex = coatingTexture ?? (style === "concrete" ? "concrete" : style === "warm" ? "venetian" : "matte");
+
+  switch (tex) {
+    /* ─── КИРПИЧ ─── */
+    case "brick": {
+      const rows = 8, cols = 4;
+      const bw = size / cols, bh = size / rows;
+      const mortar = 4;
+      cctx.fillStyle = "#3a2a22";
+      cctx.fillRect(0, 0, size, size);
+      for (let r = 0; r < rows; r++) {
+        const offset = r % 2 === 0 ? 0 : bw / 2;
+        for (let c = -1; c <= cols; c++) {
+          const x = c * bw + offset + mortar / 2;
+          const y = r * bh + mortar / 2;
+          const w = bw - mortar;
+          const h = bh - mortar;
+          const tint = 0.85 + Math.random() * 0.3;
+          cctx.fillStyle = shade(baseHex, (tint - 1) * 0.5);
+          cctx.fillRect(x, y, w, h);
+          // зерно кирпича
+          cctx.globalAlpha = 0.3;
+          cctx.drawImage(makeNoiseCanvas(32, 0.5), x, y, w, h);
+          cctx.globalAlpha = 1;
+          // ребро / тень
+          cctx.strokeStyle = "rgba(0,0,0,0.25)";
+          cctx.lineWidth = 1;
+          cctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+        }
+      }
+      // height: швы тёмные (углубления), кирпич — светлый
+      hctx.fillStyle = "#000";
+      hctx.fillRect(0, 0, size, size);
+      for (let r = 0; r < rows; r++) {
+        const offset = r % 2 === 0 ? 0 : bw / 2;
+        for (let c = -1; c <= cols; c++) {
+          const x = c * bw + offset + mortar / 2;
+          const y = r * bh + mortar / 2;
+          hctx.fillStyle = "#e0e0e0";
+          hctx.fillRect(x, y, bw - mortar, bh - mortar);
+        }
+      }
+      break;
+    }
+
+    /* ─── ДЕРЕВО ─── */
+    case "wood": {
+      // продольные доски
+      const planks = 5;
+      const pw = size / planks;
+      for (let i = 0; i < planks; i++) {
+        const tint = 0.92 + Math.random() * 0.16;
+        cctx.fillStyle = shade(baseHex, (tint - 1) * 0.4);
+        cctx.fillRect(i * pw, 0, pw, size);
+        // волокна
+        for (let j = 0; j < 40; j++) {
+          cctx.globalAlpha = Math.random() * 0.25;
+          cctx.fillStyle = dark;
+          const y = Math.random() * size;
+          cctx.fillRect(i * pw, y, pw, Math.random() * 2 + 0.5);
+        }
+        cctx.globalAlpha = 1;
+        // сучки
+        if (Math.random() < 0.4) {
+          const cx = i * pw + pw / 2;
+          const cy = Math.random() * size;
+          const r = 4 + Math.random() * 6;
+          const g = cctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+          g.addColorStop(0, dark2);
+          g.addColorStop(1, "rgba(0,0,0,0)");
+          cctx.fillStyle = g;
+          cctx.beginPath(); cctx.arc(cx, cy, r, 0, Math.PI * 2); cctx.fill();
+        }
+        // тёмная фуга
+        cctx.fillStyle = "rgba(0,0,0,0.5)";
+        cctx.fillRect(i * pw, 0, 1.5, size);
+      }
+      // height
+      hctx.fillStyle = "#888";
+      hctx.fillRect(0, 0, size, size);
+      hctx.globalAlpha = 0.3;
+      hctx.drawImage(makeNoiseCanvas(size, 0.4), 0, 0);
+      hctx.globalAlpha = 1;
+      for (let i = 0; i < planks; i++) {
+        hctx.fillStyle = "#000";
+        hctx.fillRect(i * pw, 0, 2, size);
+      }
+      break;
+    }
+
+    /* ─── МРАМОР ─── */
+    case "marble": {
+      // мягкие пятна и прожилки
+      for (let i = 0; i < 12; i++) {
+        const x = Math.random() * size, y = Math.random() * size;
+        const r = 80 + Math.random() * 120;
+        const g = cctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, `rgba(255,255,255,${0.15 + Math.random() * 0.2})`);
+        g.addColorStop(1, "rgba(255,255,255,0)");
+        cctx.fillStyle = g;
+        cctx.beginPath(); cctx.arc(x, y, r, 0, Math.PI * 2); cctx.fill();
+      }
+      // прожилки
+      for (let v = 0; v < 6; v++) {
+        cctx.beginPath();
+        cctx.moveTo(Math.random() * size, Math.random() * size);
+        for (let s = 0; s < 8; s++) {
+          cctx.lineTo(Math.random() * size, Math.random() * size);
+        }
+        cctx.strokeStyle = `rgba(40,40,40,${0.12 + Math.random() * 0.15})`;
+        cctx.lineWidth = 0.5 + Math.random() * 1.5;
+        cctx.stroke();
+      }
+      hctx.fillStyle = "#777";
+      hctx.fillRect(0, 0, size, size);
+      hctx.globalAlpha = 0.15;
+      hctx.drawImage(makeNoiseCanvas(size, 0.3), 0, 0);
+      hctx.globalAlpha = 1;
+      // глянец
+      rctx.fillStyle = "rgb(60,60,60)";
+      rctx.fillRect(0, 0, size, size);
+      break;
+    }
+
+    /* ─── БАРХАТ ─── */
+    case "velvet": {
+      // мягкий ворс — направленные градиенты
+      const g = cctx.createLinearGradient(0, 0, 0, size);
+      g.addColorStop(0, shade(baseHex, -0.15));
+      g.addColorStop(0.5, baseHex);
+      g.addColorStop(1, shade(baseHex, 0.3));
       cctx.fillStyle = g;
-      cctx.beginPath(); cctx.arc(x, y, r, 0, Math.PI * 2); cctx.fill();
+      cctx.fillRect(0, 0, size, size);
+      // ворсинки
+      cctx.globalAlpha = 0.12;
+      for (let i = 0; i < 2000; i++) {
+        cctx.fillStyle = i % 2 === 0 ? "#fff" : "#000";
+        cctx.fillRect(Math.random() * size, Math.random() * size, 1, 1 + Math.random() * 2);
+      }
+      cctx.globalAlpha = 1;
+      hctx.fillStyle = "#888";
+      hctx.fillRect(0, 0, size, size);
+      hctx.globalAlpha = 0.35;
+      hctx.drawImage(makeNoiseCanvas(size, 0.5), 0, 0);
+      hctx.globalAlpha = 1;
+      rctx.fillStyle = "rgb(245,245,245)"; // очень матовый
+      rctx.fillRect(0, 0, size, size);
+      break;
     }
-    hctx.fillStyle = "#888";
-    hctx.fillRect(0, 0, size, size);
-    hctx.globalAlpha = 0.5;
-    hctx.drawImage(makeNoiseCanvas(size, 0.6), 0, 0);
-    hctx.globalAlpha = 1;
-    rctx.fillStyle = "rgb(220,220,220)";
-    rctx.fillRect(0, 0, size, size);
-  } else if (style === "warm") {
-    // Декоративная штукатурка
-    cctx.globalAlpha = 0.25;
-    cctx.drawImage(makeNoiseCanvas(size, 0.3), 0, 0);
-    cctx.globalAlpha = 1;
-    for (let i = 0; i < 600; i++) {
-      cctx.fillStyle = `rgba(120,80,40,${Math.random() * 0.08})`;
-      cctx.fillRect(Math.random() * size, Math.random() * size, Math.random() * 4 + 1, Math.random() * 4 + 1);
+
+    /* ─── ШЁЛК / САТИН ─── */
+    case "silk":
+    case "satin": {
+      // мерцающие диагональные полосы
+      const g = cctx.createLinearGradient(0, 0, size, size);
+      g.addColorStop(0, shade(baseHex, -0.2));
+      g.addColorStop(0.4, baseHex);
+      g.addColorStop(0.6, shade(baseHex, -0.15));
+      g.addColorStop(1, baseHex);
+      cctx.fillStyle = g;
+      cctx.fillRect(0, 0, size, size);
+      // мелкие нити
+      for (let i = 0; i < size; i += 2) {
+        cctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.08})`;
+        cctx.fillRect(0, i, size, 1);
+      }
+      hctx.fillStyle = "#888";
+      hctx.fillRect(0, 0, size, size);
+      rctx.fillStyle = tex === "silk" ? "rgb(80,80,80)" : "rgb(120,120,120)";
+      rctx.fillRect(0, 0, size, size);
+      break;
     }
-    hctx.fillStyle = "#888";
-    hctx.fillRect(0, 0, size, size);
-    hctx.globalAlpha = 0.6;
-    hctx.drawImage(makeNoiseCanvas(size, 0.5), 0, 0);
-    hctx.globalAlpha = 1;
-    rctx.fillStyle = "rgb(210,210,210)";
-    rctx.fillRect(0, 0, size, size);
-  } else {
-    // white: матовая краска с лёгкой шероховатостью
-    cctx.globalAlpha = 0.08;
-    cctx.drawImage(makeNoiseCanvas(size, 0.2), 0, 0);
-    cctx.globalAlpha = 1;
-    hctx.fillStyle = "#888";
-    hctx.fillRect(0, 0, size, size);
-    hctx.globalAlpha = 0.15;
-    hctx.drawImage(makeNoiseCanvas(size, 0.3), 0, 0);
-    hctx.globalAlpha = 1;
-    rctx.fillStyle = "rgb(230,230,230)";
-    rctx.fillRect(0, 0, size, size);
+
+    /* ─── ЛЁН / ТКАНЬ ─── */
+    case "linen":
+    case "fabric": {
+      // тканевое переплетение
+      const step = 4;
+      for (let y = 0; y < size; y += step) {
+        for (let x = 0; x < size; x += step) {
+          cctx.fillStyle = (x / step + y / step) % 2 === 0
+            ? shade(baseHex, -0.05)
+            : shade(baseHex, 0.08);
+          cctx.fillRect(x, y, step, step);
+        }
+      }
+      cctx.globalAlpha = 0.15;
+      cctx.drawImage(makeNoiseCanvas(size, 0.4), 0, 0);
+      cctx.globalAlpha = 1;
+      // height — переплетение
+      for (let y = 0; y < size; y += step) {
+        for (let x = 0; x < size; x += step) {
+          hctx.fillStyle = (x / step + y / step) % 2 === 0 ? "#bbb" : "#666";
+          hctx.fillRect(x, y, step, step);
+        }
+      }
+      rctx.fillStyle = "rgb(235,235,235)";
+      rctx.fillRect(0, 0, size, size);
+      break;
+    }
+
+    /* ─── БЕТОН / МИКРОЦЕМЕНТ ─── */
+    case "concrete": {
+      cctx.globalAlpha = 0.55;
+      cctx.drawImage(makeNoiseCanvas(size, 0.4), 0, 0);
+      cctx.globalAlpha = 1;
+      for (let i = 0; i < 50; i++) {
+        const x = Math.random() * size, y = Math.random() * size;
+        const r = Math.random() * 35 + 5;
+        const g = cctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, `rgba(0,0,0,${Math.random() * 0.25})`);
+        g.addColorStop(1, "rgba(0,0,0,0)");
+        cctx.fillStyle = g;
+        cctx.beginPath(); cctx.arc(x, y, r, 0, Math.PI * 2); cctx.fill();
+      }
+      // трещинки
+      for (let i = 0; i < 3; i++) {
+        cctx.beginPath();
+        cctx.moveTo(Math.random() * size, Math.random() * size);
+        for (let s = 0; s < 5; s++) {
+          cctx.lineTo(Math.random() * size, Math.random() * size);
+        }
+        cctx.strokeStyle = "rgba(0,0,0,0.1)";
+        cctx.lineWidth = 0.5;
+        cctx.stroke();
+      }
+      hctx.globalAlpha = 0.5;
+      hctx.drawImage(makeNoiseCanvas(size, 0.6), 0, 0);
+      hctx.globalAlpha = 1;
+      break;
+    }
+
+    /* ─── ВЕНЕЦИАНКА ─── */
+    case "venetian": {
+      // мраморные мазки
+      cctx.globalAlpha = 0.25;
+      cctx.drawImage(makeNoiseCanvas(size, 0.3), 0, 0);
+      cctx.globalAlpha = 1;
+      for (let i = 0; i < 25; i++) {
+        const x = Math.random() * size, y = Math.random() * size;
+        const r = 40 + Math.random() * 80;
+        const g = cctx.createRadialGradient(x, y, 0, x, y, r);
+        const isLight = Math.random() < 0.5;
+        g.addColorStop(0, isLight ? `rgba(255,255,255,0.22)` : `rgba(0,0,0,0.15)`);
+        g.addColorStop(1, "rgba(0,0,0,0)");
+        cctx.fillStyle = g;
+        cctx.beginPath(); cctx.arc(x, y, r, 0, Math.PI * 2); cctx.fill();
+      }
+      // глянцевые блики
+      const grad = cctx.createLinearGradient(0, 0, size, size);
+      grad.addColorStop(0, "rgba(255,255,255,0.18)");
+      grad.addColorStop(0.5, "rgba(255,255,255,0)");
+      grad.addColorStop(1, "rgba(0,0,0,0.1)");
+      cctx.fillStyle = grad;
+      cctx.fillRect(0, 0, size, size);
+      hctx.globalAlpha = 0.35;
+      hctx.drawImage(makeNoiseCanvas(size, 0.4), 0, 0);
+      hctx.globalAlpha = 1;
+      rctx.fillStyle = "rgb(90,90,90)";
+      rctx.fillRect(0, 0, size, size);
+      break;
+    }
+
+    /* ─── 3D / EMBOSSED ─── */
+    case "3d":
+    case "embossed": {
+      // волны (для 3D) или мягкое тиснение
+      const wave = tex === "3d" ? 60 : 20;
+      for (let y = 0; y < size; y++) {
+        const off = Math.sin((y / size) * Math.PI * 6) * wave;
+        for (let x = 0; x < size; x += 2) {
+          const v = Math.sin(((x + off) / size) * Math.PI * 8) * 0.5 + 0.5;
+          cctx.fillStyle = `rgba(${255 * v},${255 * v},${255 * v},0.18)`;
+          cctx.fillRect(x, y, 2, 1);
+          hctx.fillStyle = `rgb(${Math.round(v * 255)},${Math.round(v * 255)},${Math.round(v * 255)})`;
+          hctx.fillRect(x, y, 2, 1);
+        }
+      }
+      break;
+    }
+
+    /* ─── ПРОБКА ─── */
+    case "cork": {
+      // зернистость
+      for (let i = 0; i < 1500; i++) {
+        const x = Math.random() * size, y = Math.random() * size;
+        const r = 2 + Math.random() * 5;
+        cctx.fillStyle = `rgba(${Math.random() < 0.5 ? 0 : 60}, ${30 + Math.random() * 30}, 0, ${Math.random() * 0.25})`;
+        cctx.beginPath(); cctx.arc(x, y, r, 0, Math.PI * 2); cctx.fill();
+      }
+      hctx.fillStyle = "#777";
+      hctx.fillRect(0, 0, size, size);
+      hctx.globalAlpha = 0.5;
+      hctx.drawImage(makeNoiseCanvas(size, 0.5), 0, 0);
+      hctx.globalAlpha = 1;
+      break;
+    }
+
+    /* ─── КАМЕНЬ ─── */
+    case "stone": {
+      // камни неровной формы
+      for (let i = 0; i < 25; i++) {
+        const x = Math.random() * size, y = Math.random() * size;
+        const r = 30 + Math.random() * 50;
+        const g = cctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, shade(baseHex, (Math.random() - 0.5) * 0.4));
+        g.addColorStop(1, dark);
+        cctx.fillStyle = g;
+        cctx.beginPath(); cctx.arc(x, y, r, 0, Math.PI * 2); cctx.fill();
+      }
+      cctx.globalAlpha = 0.3;
+      cctx.drawImage(makeNoiseCanvas(size, 0.5), 0, 0);
+      cctx.globalAlpha = 1;
+      hctx.globalAlpha = 0.7;
+      hctx.drawImage(makeNoiseCanvas(size, 0.8), 0, 0);
+      hctx.globalAlpha = 1;
+      break;
+    }
+
+    /* ─── МЕТАЛЛ ─── */
+    case "metallic": {
+      const g = cctx.createLinearGradient(0, 0, size, size);
+      g.addColorStop(0, shade(baseHex, -0.35));
+      g.addColorStop(0.3, baseHex);
+      g.addColorStop(0.6, shade(baseHex, -0.2));
+      g.addColorStop(1, shade(baseHex, 0.2));
+      cctx.fillStyle = g;
+      cctx.fillRect(0, 0, size, size);
+      // вертикальная браширка
+      for (let x = 0; x < size; x++) {
+        cctx.fillStyle = `rgba(${Math.random() < 0.5 ? 0 : 255}, ${Math.random() < 0.5 ? 0 : 255}, ${Math.random() < 0.5 ? 0 : 255}, ${Math.random() * 0.05})`;
+        cctx.fillRect(x, 0, 1, size);
+      }
+      hctx.fillStyle = "#888";
+      hctx.fillRect(0, 0, size, size);
+      rctx.fillStyle = "rgb(70,70,70)";
+      rctx.fillRect(0, 0, size, size);
+      break;
+    }
+
+    /* ─── ПОЛОСКА ─── */
+    case "stripe": {
+      const w = 32;
+      for (let x = 0; x < size; x += w * 2) {
+        cctx.fillStyle = shade(baseHex, 0.2);
+        cctx.fillRect(x, 0, w, size);
+      }
+      // тонкие полоски-сатин
+      for (let x = 0; x < size; x += 4) {
+        cctx.fillStyle = "rgba(255,255,255,0.03)";
+        cctx.fillRect(x, 0, 1, size);
+      }
+      break;
+    }
+
+    /* ─── ГЕОМЕТРИЯ (соты) ─── */
+    case "geometric": {
+      const s = 48;
+      cctx.strokeStyle = dark;
+      cctx.lineWidth = 1.5;
+      for (let row = 0; row < size / s + 1; row++) {
+        for (let col = 0; col < size / s + 1; col++) {
+          const cx = col * s * 1.5;
+          const cy = row * s + (col % 2 ? s / 2 : 0);
+          cctx.beginPath();
+          for (let a = 0; a < 6; a++) {
+            const ang = (Math.PI / 3) * a;
+            const px = cx + Math.cos(ang) * (s / 2);
+            const py = cy + Math.sin(ang) * (s / 2);
+            if (a === 0) cctx.moveTo(px, py); else cctx.lineTo(px, py);
+          }
+          cctx.closePath();
+          cctx.stroke();
+        }
+      }
+      break;
+    }
+
+    /* ─── ДАМАСК ─── */
+    case "damask": {
+      cctx.strokeStyle = shade(baseHex, -0.25);
+      cctx.lineWidth = 2;
+      const step = 96;
+      for (let y = 0; y < size; y += step) {
+        for (let x = 0; x < size; x += step) {
+          const cx = x + step / 2;
+          const cy = y + step / 2;
+          cctx.beginPath();
+          cctx.ellipse(cx, cy, step / 3, step / 4, 0, 0, Math.PI * 2);
+          cctx.stroke();
+          cctx.beginPath();
+          cctx.ellipse(cx, cy, step / 5, step / 6, Math.PI / 2, 0, Math.PI * 2);
+          cctx.stroke();
+        }
+      }
+      break;
+    }
+
+    /* ─── ЦВЕТОЧНЫЙ ─── */
+    case "floral": {
+      for (let i = 0; i < 30; i++) {
+        const x = Math.random() * size, y = Math.random() * size;
+        const r = 8 + Math.random() * 14;
+        const petals = 5 + Math.floor(Math.random() * 3);
+        for (let p = 0; p < petals; p++) {
+          const a = (Math.PI * 2 / petals) * p;
+          cctx.beginPath();
+          cctx.ellipse(
+            x + Math.cos(a) * r * 0.7,
+            y + Math.sin(a) * r * 0.7,
+            r * 0.5, r * 0.25, a, 0, Math.PI * 2,
+          );
+          cctx.fillStyle = `rgba(${Math.random() < 0.5 ? 255 : 0}, ${Math.random() * 80 + 80}, ${Math.random() * 80 + 80}, 0.4)`;
+          cctx.fill();
+        }
+        cctx.fillStyle = "rgba(255,220,80,0.5)";
+        cctx.beginPath(); cctx.arc(x, y, r * 0.2, 0, Math.PI * 2); cctx.fill();
+      }
+      break;
+    }
+
+    /* ─── КОЖА ─── */
+    case "leather": {
+      cctx.globalAlpha = 0.3;
+      cctx.drawImage(makeNoiseCanvas(size, 0.4), 0, 0);
+      cctx.globalAlpha = 1;
+      // характерные «поры»
+      for (let i = 0; i < 800; i++) {
+        const x = Math.random() * size, y = Math.random() * size;
+        cctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.15})`;
+        cctx.beginPath(); cctx.arc(x, y, 0.5 + Math.random() * 1.5, 0, Math.PI * 2); cctx.fill();
+      }
+      hctx.fillStyle = "#888";
+      hctx.fillRect(0, 0, size, size);
+      hctx.globalAlpha = 0.6;
+      hctx.drawImage(makeNoiseCanvas(size, 0.5), 0, 0);
+      hctx.globalAlpha = 1;
+      rctx.fillStyle = "rgb(140,140,140)";
+      rctx.fillRect(0, 0, size, size);
+      break;
+    }
+
+    /* ─── GRAPHITE / ROUGH ─── */
+    case "graphite":
+    case "rough": {
+      cctx.globalAlpha = 0.35;
+      cctx.drawImage(makeNoiseCanvas(size, 0.5), 0, 0);
+      cctx.globalAlpha = 1;
+      // штриховка
+      for (let i = 0; i < 200; i++) {
+        cctx.strokeStyle = `rgba(0,0,0,${Math.random() * 0.1})`;
+        cctx.lineWidth = 0.5;
+        cctx.beginPath();
+        const x = Math.random() * size, y = Math.random() * size;
+        cctx.moveTo(x, y);
+        cctx.lineTo(x + 6 + Math.random() * 10, y + 6 + Math.random() * 10);
+        cctx.stroke();
+      }
+      hctx.globalAlpha = 0.4;
+      hctx.drawImage(makeNoiseCanvas(size, 0.4), 0, 0);
+      hctx.globalAlpha = 1;
+      break;
+    }
+
+    /* ─── ГЛЯНЦЕВАЯ ─── */
+    case "glossy": {
+      const g = cctx.createLinearGradient(0, 0, size, size);
+      g.addColorStop(0, shade(baseHex, -0.4));
+      g.addColorStop(0.5, baseHex);
+      g.addColorStop(1, shade(baseHex, 0.15));
+      cctx.fillStyle = g;
+      cctx.fillRect(0, 0, size, size);
+      rctx.fillStyle = "rgb(40,40,40)";
+      rctx.fillRect(0, 0, size, size);
+      break;
+    }
+
+    /* ─── МАТОВАЯ / ГЛАДКАЯ ─── */
+    case "smooth":
+    case "matte":
+    default: {
+      cctx.globalAlpha = 0.08;
+      cctx.drawImage(makeNoiseCanvas(size, 0.2), 0, 0);
+      cctx.globalAlpha = 1;
+      hctx.globalAlpha = 0.15;
+      hctx.drawImage(makeNoiseCanvas(size, 0.3), 0, 0);
+      hctx.globalAlpha = 1;
+      rctx.fillStyle = tex === "matte" ? "rgb(245,245,245)" : "rgb(230,230,230)";
+      rctx.fillRect(0, 0, size, size);
+      break;
+    }
   }
 
-  const normal = heightToNormal(height, 2);
+  // unused warning избегаем (light)
+  void light;
+
+  const normal = heightToNormal(height, 2.5);
 
   const map = new THREE.CanvasTexture(color);
   const normalMap = new THREE.CanvasTexture(normal);
   const roughnessMap = new THREE.CanvasTexture(rough);
 
+  const pbr = coatingPbr(coatingTexture);
   for (const t of [map, normalMap, roughnessMap]) {
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.repeat.set(2, 1);
+    t.repeat.set(pbr.repeat[0], pbr.repeat[1]);
     t.anisotropy = 4;
   }
   map.colorSpace = THREE.SRGBColorSpace;
