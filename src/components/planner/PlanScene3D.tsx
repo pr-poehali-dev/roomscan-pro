@@ -5,6 +5,11 @@ import type { FloorStyle, WallStyle } from "./scene3d/textures";
 import { computePlanCenter, rebuildRoom } from "./scene3d/geometryBuilders";
 import Scene3DControls from "./scene3d/Scene3DControls";
 import {
+  getActiveWallCoating,
+  setActiveWallCoating,
+  type ActiveWallCoating,
+} from "@/lib/scanStore";
+import {
   applyFog,
   applyIBL,
   createRenderer,
@@ -49,6 +54,13 @@ export default function PlanScene3D({ plan, wallHeight = 270 }: Props) {
   const [wallStyle, setWallStyle] = useState<WallStyle>("white");
   const [floorStyle, setFloorStyle] = useState<FloorStyle>("parquet");
   const [showShadows, setShowShadows] = useState(true);
+  const [coating, setCoating] = useState<ActiveWallCoating | null>(getActiveWallCoating());
+
+  useEffect(() => {
+    const reload = () => setCoating(getActiveWallCoating());
+    window.addEventListener("roomscan:wallCoating:changed", reload);
+    return () => window.removeEventListener("roomscan:wallCoating:changed", reload);
+  }, []);
 
   // Камера: сохраняем углы между ререндерами
   const camStateRef = useRef<CamState>(defaultCamState());
@@ -101,7 +113,7 @@ export default function PlanScene3D({ plan, wallHeight = 270 }: Props) {
     scene.add(room);
 
     /* ─── Построение помещения ─── */
-    rebuildRoom(room, plan, wallHeight, wallStyle, floorStyle);
+    rebuildRoom(room, plan, wallHeight, wallStyle, floorStyle, coating?.color);
 
     // Центрируем камеру по плану
     const center = computePlanCenter(plan);
@@ -162,9 +174,9 @@ export default function PlanScene3D({ plan, wallHeight = 270 }: Props) {
     // Пересоздать
     const room = new THREE.Group();
     room.userData.isRoom = true;
-    rebuildRoom(room, plan, wallHeight, wallStyle, floorStyle);
+    rebuildRoom(room, plan, wallHeight, wallStyle, floorStyle, coating?.color);
     scene.add(room);
-  }, [plan, wallHeight, wallStyle, floorStyle]);
+  }, [plan, wallHeight, wallStyle, floorStyle, coating?.color]);
 
   useEffect(() => {
     const r = rendererRef.current;
@@ -190,6 +202,30 @@ export default function PlanScene3D({ plan, wallHeight = 270 }: Props) {
         resetCamera={resetCamera}
         screenshot={screenshot}
       />
+
+      {coating && (
+        <div className="absolute top-3 right-3 max-w-[260px] flex items-center gap-2 bg-background/95 backdrop-blur-sm border rounded-lg p-2 shadow-lg">
+          <div
+            className="w-9 h-9 rounded-md border shrink-0"
+            style={{ backgroundColor: coating.color }}
+          />
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] uppercase tracking-widest font-mono text-primary">
+              На стенах
+            </div>
+            <div className="text-xs font-bold text-foreground truncate">{coating.title}</div>
+            <div className="text-[11px] text-muted-foreground truncate">{coating.brand}</div>
+          </div>
+          <button
+            onClick={() => setActiveWallCoating(null)}
+            className="text-muted-foreground hover:text-destructive transition-colors p-1"
+            aria-label="Снять покрытие"
+            title="Снять покрытие"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 }

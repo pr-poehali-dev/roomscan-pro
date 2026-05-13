@@ -294,7 +294,7 @@ interface WallMaps {
   roughnessMap: THREE.Texture;
 }
 
-export function makeWallMaps(style: WallStyle): WallMaps {
+export function makeWallMaps(style: WallStyle, overrideColor?: string): WallMaps {
   const size = 512;
   const color = document.createElement("canvas");
   color.width = color.height = size;
@@ -308,8 +308,11 @@ export function makeWallMaps(style: WallStyle): WallMaps {
   rough.width = rough.height = size;
   const rctx = rough.getContext("2d")!;
 
-  const base = WALL_COLORS[style];
-  const baseHex = `#${base.toString(16).padStart(6, "0")}`;
+  // Если задан overrideColor (hex из каталога покрытий) — используем его.
+  // Иначе — палитра по стилю.
+  const baseHex = overrideColor
+    ? overrideColor
+    : `#${WALL_COLORS[style].toString(16).padStart(6, "0")}`;
   cctx.fillStyle = baseHex;
   cctx.fillRect(0, 0, size, size);
 

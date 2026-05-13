@@ -185,3 +185,38 @@ export function getWallsGeometry(): {
     wallsAreaNet: Math.round(wallsAreaNet * 10) / 10,
   };
 }
+
+// ─── Активное покрытие стен для Планировщика ─────────────────────────────────
+
+/**
+ * Покрытие, применённое к стенам в 3D-планировщике.
+ * id — ссылка на WallItem из каталога. color — hex для рендера.
+ */
+export interface ActiveWallCoating {
+  id: string;
+  title: string;
+  brand: string;
+  color: string;           // "#RRGGBB"
+  texture?: "smooth" | "embossed" | "wood" | "stone" | "concrete" | "fabric";
+}
+
+const WALL_COATING_KEY = "roomscan:wallCoating";
+
+export function getActiveWallCoating(): ActiveWallCoating | null {
+  try {
+    const raw = localStorage.getItem(WALL_COATING_KEY);
+    return raw ? (JSON.parse(raw) as ActiveWallCoating) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setActiveWallCoating(c: ActiveWallCoating | null) {
+  try {
+    if (c) localStorage.setItem(WALL_COATING_KEY, JSON.stringify(c));
+    else localStorage.removeItem(WALL_COATING_KEY);
+    window.dispatchEvent(new Event("roomscan:wallCoating:changed"));
+  } catch {
+    /* ignore */
+  }
+}

@@ -212,6 +212,7 @@ export function rebuildRoom(
   wallHeight: number,
   wallStyle: WallStyle,
   floorStyle: FloorStyle,
+  wallColorOverride?: string,
 ) {
   // Очистка старой геометрии
   while (room.children.length) {
@@ -265,8 +266,8 @@ export function rebuildRoom(
   ceiling.position.set((minX + maxX) / 2 * CM, wallHeight * CM, (minY + maxY) / 2 * CM);
   room.add(ceiling);
 
-  // Стены с проёмами — PBR
-  const wallMaps = makeWallMaps(wallStyle);
+  // Стены с проёмами — PBR. Если задано покрытие из каталога — используем его цвет.
+  const wallMaps = makeWallMaps(wallStyle, wallColorOverride);
   const wallMat = new THREE.MeshStandardMaterial({
     map: wallMaps.map,
     normalMap: wallMaps.normalMap,

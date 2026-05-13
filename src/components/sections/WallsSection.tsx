@@ -10,6 +10,9 @@ import { WALL_ITEMS, type WallItem } from "@/components/walls/wallsData";
 import {
   addProjectItem,
   getWallsGeometry,
+  getActiveWallCoating,
+  setActiveWallCoating,
+  type ActiveWallCoating,
   type ProjectItem,
 } from "@/lib/scanStore";
 
@@ -35,11 +38,17 @@ export default function WallsSection({ onNavigate }: Props) {
   });
 
   const [geometry, setGeometry] = useState(getWallsGeometry());
+  const [activeCoating, setActiveCoatingState] = useState<ActiveWallCoating | null>(getActiveWallCoating());
 
   useEffect(() => {
     const reload = () => setGeometry(getWallsGeometry());
+    const reloadCoating = () => setActiveCoatingState(getActiveWallCoating());
     window.addEventListener("roomscan:lastScan:changed", reload);
-    return () => window.removeEventListener("roomscan:lastScan:changed", reload);
+    window.addEventListener("roomscan:wallCoating:changed", reloadCoating);
+    return () => {
+      window.removeEventListener("roomscan:lastScan:changed", reload);
+      window.removeEventListener("roomscan:wallCoating:changed", reloadCoating);
+    };
   }, []);
 
   useEffect(() => {
@@ -95,6 +104,30 @@ export default function WallsSection({ onNavigate }: Props) {
     });
   };
 
+  const handleApply = (item: WallItem) => {
+    // если уже применено это же — снимаем
+    if (activeCoating?.id === item.id) {
+      setActiveWallCoating(null);
+      toast("Покрытие снято со стен");
+      return;
+    }
+    const coating: ActiveWallCoating = {
+      id: item.id,
+      title: item.title,
+      brand: item.brand,
+      color: item.color,
+      texture: item.textures[0],
+    };
+    setActiveWallCoating(coating);
+    toast.success("Применено в планировщике", {
+      description: `${item.title} · откройте Планировщик в 3D-режиме`,
+      action: {
+        label: "Открыть",
+        onClick: () => onNavigate?.("planner"),
+      },
+    });
+  };
+
   const hits = WALL_ITEMS.filter((i) => i.hit).length;
   const minPrice = Math.min(...WALL_ITEMS.map((i) => i.pricePerUnit));
 
@@ -125,6 +158,42 @@ export default function WallsSection({ onNavigate }: Props) {
         geometry={geometry}
         onScan={() => onNavigate?.("scan")}
       />
+
+      {/* Активное покрытие в планировщике */}
+      {activeCoating && (
+        <Card className="border-primary/40 bg-primary/5">
+          <CardContent className="p-4 flex flex-wrap items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-md border border-border shrink-0"
+              style={{ backgroundColor: activeCoating.color }}
+              aria-label="Цвет покрытия"
+            />
+            <div className="flex-1 min-w-[200px]">
+              <p className="text-xs font-mono uppercase tracking-widest text-primary mb-0.5">
+                Применено к стенам в Планировщике
+              </p>
+              <p className="font-bold text-foreground leading-tight">{activeCoating.title}</p>
+              <p className="text-xs text-muted-foreground">{activeCoating.brand}</p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <Button size="sm" onClick={() => onNavigate?.("planner")}>
+                <Icon name="LayoutGrid" size={14} className="mr-1.5" />
+                Открыть Планировщик
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setActiveWallCoating(null);
+                  toast("Покрытие снято со стен");
+                }}
+              >
+                <Icon name="X" size={14} />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Сетка фильтры + каталог */}
       <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
@@ -163,8 +232,10 @@ export default function WallsSection({ onNavigate }: Props) {
                   item={item}
                   wallsAreaNet={geometry?.wallsAreaNet ?? null}
                   isFav={favs.includes(item.id)}
+                  isApplied={activeCoating?.id === item.id}
                   onToggleFav={toggleFav}
                   onAdd={handleAdd}
+                  onApply={handleApply}
                 />
               ))}
             </div>

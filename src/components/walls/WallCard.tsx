@@ -9,15 +9,17 @@ interface Props {
   item: WallItem;
   wallsAreaNet: number | null;   // м² стен из скана (или null)
   isFav: boolean;
+  isApplied: boolean;            // применено ли это покрытие в планировщике
   onToggleFav: (id: string) => void;
   onAdd: (item: WallItem, qty: number) => void;
+  onApply: (item: WallItem) => void;
 }
 
 /**
  * Карточка покрытия. Сама считает нужное количество единиц
  * (рулонов / банок краски / м²) из площади стен последнего скана.
  */
-export default function WallCard({ item, wallsAreaNet, isFav, onToggleFav, onAdd }: Props) {
+export default function WallCard({ item, wallsAreaNet, isFav, isApplied, onToggleFav, onAdd, onApply }: Props) {
   const cat = WALL_CATEGORIES.find((c) => c.id === item.category);
   const needQty = wallsAreaNet ? Math.ceil(wallsAreaNet / item.coveragePerUnit) : null;
   const total = needQty ? needQty * item.pricePerUnit : null;
@@ -73,7 +75,7 @@ export default function WallCard({ item, wallsAreaNet, isFav, onToggleFav, onAdd
           )}
         </div>
 
-        <div className="flex items-end justify-between gap-2 pt-2 border-t">
+        <div className="pt-2 border-t space-y-2">
           <div>
             <div className="text-xs text-muted-foreground">
               {item.pricePerUnit.toLocaleString("ru-RU")} ₽ / {item.unit}
@@ -89,14 +91,25 @@ export default function WallCard({ item, wallsAreaNet, isFav, onToggleFav, onAdd
               <div className="text-xs text-muted-foreground">отсканируйте для расчёта</div>
             )}
           </div>
-          <Button
-            size="sm"
-            onClick={() => onAdd(item, needQty ?? 1)}
-            className="shrink-0"
-          >
-            <Icon name="Plus" size={14} className="mr-1" />
-            В проект
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant={isApplied ? "default" : "outline"}
+              onClick={() => onApply(item)}
+              className="flex-1"
+            >
+              <Icon name={isApplied ? "Check" : "Paintbrush"} size={14} className="mr-1" />
+              {isApplied ? "Применено" : "Примерить"}
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => onAdd(item, needQty ?? 1)}
+              className="flex-1"
+            >
+              <Icon name="Plus" size={14} className="mr-1" />
+              В проект
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
