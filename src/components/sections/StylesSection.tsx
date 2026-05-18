@@ -3,6 +3,7 @@ import Icon from "@/components/ui/icon";
 import { getLastScan, getCart, saveCart, type CartItemRef, type LastScan } from "@/lib/scanStore";
 import { getFurnitureById } from "@/lib/furnitureCatalog";
 import AIStyleGenerator from "@/components/styles/AIStyleGenerator";
+import StyleBundleStudio from "@/components/styles/StyleBundleStudio";
 
 interface Style {
   id: string;
@@ -121,13 +122,21 @@ export default function StylesSection() {
         </p>
         <h2 className="h-section text-foreground mb-2">Стили интерьера</h2>
         <p className="t-lead max-w-2xl">
-          Загрузите фото своей комнаты — нейросеть покажет её в 8 разных стилях.
-          Или просто выберите стиль ниже, и мы подберём готовую мебель из каталога.
+          Загрузите фото своей комнаты — нейросеть покажет её в 8 разных стилях. Или соберите
+          готовый комплект из стен, пола, мебели и тёплого пола VALTEC под выбранный стиль и
+          бюджет.
         </p>
       </div>
 
       {/* AI-генератор: загрузка фото и стилизация через Replicate */}
       <AIStyleGenerator />
+
+      {/* Готовый комплект под стиль: стены + пол + мебель + тёплый пол VALTEC */}
+      <div className="border-t border-border pt-6">
+        <div className="rounded-2xl border-2 border-violet-500/30 bg-gradient-to-br from-violet-500/5 via-fuchsia-500/5 to-transparent p-5 sm:p-6">
+          <StyleBundleStudio />
+        </div>
+      </div>
 
       <div className="border-t border-border pt-6">
         <p className="t-meta text-primary mb-1.5">Альтернатива · Готовые наборы мебели</p>
