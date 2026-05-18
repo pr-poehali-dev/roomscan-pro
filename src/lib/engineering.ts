@@ -18,6 +18,9 @@ export type EquipmentCategory =
   | "controller"       // автоматика
   | "chimney"          // дымоход
   | "pipe"             // трубы / монтаж
+  | "radiator"         // радиатор отопления
+  | "floor_heating"    // тёплый пол (трубы, маты, лента)
+  | "mixing_unit"      // смесительный узел тёплого пола
   | "gas_tank"         // газгольдер (СУГ, подземный/наземный)
   | "gas_cylinder"     // баллон газовый
   | "gas_regulator"    // редуктор / РДНК
@@ -553,6 +556,255 @@ export const EQUIPMENT: EquipmentItem[] = [
     unit: "компл",
     color: "#000",
   },
+
+  /* ──────────────── VALTEC ──────────────── */
+  /* Российско-итальянский бренд инженерной сантехники.
+     Полный ассортимент для систем отопления, ВС, тёплого пола. */
+
+  // — ТРУБЫ —
+  {
+    id: "valtec-pex-al-pex-16",
+    category: "pipe",
+    name: "Труба металлопластиковая VALTEC PEX-AL-PEX 16×2",
+    brand: "VALTEC",
+    specs: "PEX-AL-PEX · DN16 · до 95 °C · 10 бар",
+    description:
+      "Универсальная металлопластиковая труба со слоем сшитого полиэтилена и алюминиевого армирования. Подходит для радиаторного отопления, тёплого пола, ХВС/ГВС. Срок службы 50 лет.",
+    size: [0.016, 0.016, 1],
+    price: 145,
+    unit: "м",
+    color: "#e6e6e9",
+    sku: "V1620.200",
+    power: 16,
+    powerUnit: "л",
+    tags: ["VALTEC", "PEX-AL-PEX", "метталопластик", "универсальная"],
+  },
+  {
+    id: "valtec-pex-evoh-16",
+    category: "floor_heating",
+    name: "Труба VALTEC PEX-EVOH 16×2 для тёплого пола",
+    brand: "VALTEC",
+    specs: "PEX-b · DN16 · кислородный барьер · бухта 200 м",
+    description:
+      "Труба из сшитого полиэтилена с антидиффузионным слоем EVOH. Специально для водяного тёплого пола. Гибкая, без коррозии, срок службы 50 лет.",
+    size: [0.016, 0.016, 1],
+    price: 89,
+    unit: "м",
+    color: "#dc2626",
+    sku: "VP1610.200",
+    power: 16,
+    powerUnit: "л",
+    tags: ["VALTEC", "PEX-EVOH", "тёплый пол", "сшитый полиэтилен"],
+  },
+  {
+    id: "valtec-ppr-25",
+    category: "pipe",
+    name: "Труба полипропиленовая VALTEC PPR PN20 DN25",
+    brand: "VALTEC",
+    specs: "PPR · PN20 · до 80 °C · ВС/ХВС",
+    description:
+      "Полипропиленовая труба для систем водоснабжения. Соединение раструбной сваркой. Не подвержена коррозии, не зарастает, тихая.",
+    size: [0.025, 0.025, 1],
+    price: 105,
+    unit: "м",
+    color: "#16a34a",
+    sku: "VTp.700.0.025",
+    power: 25,
+    powerUnit: "л",
+    tags: ["VALTEC", "PPR", "полипропилен", "водоснабжение"],
+  },
+
+  // — КОЛЛЕКТОРЫ —
+  {
+    id: "valtec-manifold-7",
+    category: "manifold",
+    name: "Коллектор VALTEC из нержавеющей стали на 7 выходов",
+    brand: "VALTEC",
+    specs: "AISI 304 · 1″ · 7 контуров · расходомеры + термоголовки",
+    description:
+      "Коллекторная группа в сборе для водяного тёплого пола: нержавеющая гребёнка с расходомерами 0-5 л/мин на подаче и термостатическими клапанами на обратке. Под актуаторы 24/230 В.",
+    size: [0.55, 0.08, 0.15],
+    price: 24500,
+    unit: "компл",
+    color: "#cbd5e1",
+    sku: "VTc.594.EMNX.0607",
+    image: "https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/files/68023442-4325-4e8c-9d38-2f509080ca78.jpg",
+    power: 7,
+    powerUnit: "л",
+    forArea: [80, 200],
+    tags: ["VALTEC", "коллектор", "нержавейка", "тёплый пол", "расходомеры"],
+  },
+  {
+    id: "valtec-manifold-cabinet",
+    category: "manifold",
+    name: "Шкаф коллекторный VALTEC встраиваемый ШРВ-3",
+    brand: "VALTEC",
+    specs: "670×120×595–680 мм · белый · регулируемая высота",
+    description:
+      "Встраиваемый коллекторный шкаф для размещения распределительной гребёнки тёплого пола. Регулируемая глубина и высота, рамка с замком.",
+    size: [0.67, 0.68, 0.12],
+    price: 6800,
+    unit: "шт",
+    color: "#f8fafc",
+    sku: "VTc.401.0.067",
+    tags: ["VALTEC", "шкаф", "коллектор", "встраиваемый"],
+  },
+
+  // — СМЕСИТЕЛЬНЫЙ УЗЕЛ (ФИРМЕННАЯ ТЕХНОЛОГИЯ) —
+  {
+    id: "valtec-combimix",
+    category: "mixing_unit",
+    name: "Смесительный узел VALTEC COMBI / COMBIMIX",
+    brand: "VALTEC",
+    specs: "1″ · насос UPS 25-60 · до 200 м² тёплого пола",
+    description:
+      "Готовый насосно-смесительный узел для систем водяного тёплого пола. Подмешивает горячую воду из котла к обратке тёплого пола, поддерживая нужную температуру 35–55 °C. Совместим с коллекторами VTc.589/594. Фирменное решение VALTEC.",
+    size: [0.32, 0.42, 0.16],
+    price: 28500,
+    unit: "компл",
+    color: "#3b82f6",
+    sku: "VT.COMBI.0",
+    power: 200,
+    powerUnit: "л",
+    forArea: [80, 250],
+    tags: ["VALTEC", "Combimix", "смесительный узел", "тёплый пол", "циркуляционный насос"],
+  },
+
+  // — РАДИАТОРЫ —
+  {
+    id: "valtec-radiator-bimetal-500",
+    category: "radiator",
+    name: "Радиатор биметаллический VALTEC Tenrad BM 500 (10 секций)",
+    brand: "VALTEC",
+    specs: "Биметалл · 500 мм · 10 секций · 1820 Вт",
+    description:
+      "Биметаллический секционный радиатор для квартир и частных домов. Сталь + алюминий: прочность и теплоотдача. Рабочее давление 24 бар, до 110 °C.",
+    size: [0.8, 0.575, 0.08],
+    price: 7900,
+    unit: "шт",
+    color: "#f1f5f9",
+    sku: "VTBM-500-10",
+    power: 1820,
+    powerUnit: "кВт",
+    forArea: [15, 25],
+    tags: ["VALTEC", "радиатор", "биметалл", "10 секций"],
+  },
+
+  // — ШАРОВЫЕ КРАНЫ И АРМАТУРА —
+  {
+    id: "valtec-ball-base",
+    category: "valve",
+    name: "Шаровой кран VALTEC Base 1/2″ ВВ полнопроходной",
+    brand: "VALTEC",
+    specs: "Латунь CW617N · 1/2″ · PN40 · рычаг",
+    description:
+      "Полнопроходной латунный шаровой кран, никелированный. Стандарт для ВС и отопления. Серия Base — массовый сегмент.",
+    size: [0.07, 0.05, 0.04],
+    price: 380,
+    unit: "шт",
+    color: "#f59e0b",
+    sku: "VT.214.N.04",
+    tags: ["VALTEC", "шаровой кран", "латунь", "Base"],
+  },
+  {
+    id: "valtec-ball-perfect",
+    category: "valve",
+    name: "Шаровой кран VALTEC Perfect 1″ с американкой",
+    brand: "VALTEC",
+    specs: "Латунь · 1″ · PN30 · американка · ручка-бабочка",
+    description:
+      "Премиальная серия Perfect с увеличенным ресурсом (более 30 000 циклов). Американка позволяет быстро демонтировать оборудование без перепаковки соединений.",
+    size: [0.09, 0.06, 0.05],
+    price: 920,
+    unit: "шт",
+    color: "#facc15",
+    sku: "VT.343.N.06",
+    tags: ["VALTEC", "Perfect", "американка", "премиум"],
+  },
+
+  // — БАЛАНСИРОВОЧНАЯ И РЕГУЛИРУЮЩАЯ АРМАТУРА —
+  {
+    id: "valtec-balance",
+    category: "valve",
+    name: "Балансировочный клапан VALTEC VT.054 DN20",
+    brand: "VALTEC",
+    specs: "Латунь · 3/4″ · Kvs 4.2 · с измерительными ниппелями",
+    description:
+      "Ручной балансировочный клапан для гидравлической увязки контуров отопления и стояков ГВС. Измерительные ниппели для подключения расходомера.",
+    size: [0.08, 0.09, 0.04],
+    price: 2380,
+    unit: "шт",
+    color: "#7c3aed",
+    sku: "VT.054.N.05",
+    tags: ["VALTEC", "балансировочный", "увязка", "Kvs"],
+  },
+  {
+    id: "valtec-thermohead",
+    category: "valve",
+    name: "Термостатическая головка VALTEC VT.5000",
+    brand: "VALTEC",
+    specs: "Жидкостной датчик · 6–28 °C · M30×1.5",
+    description:
+      "Термоголовка для радиаторных клапанов. Автоматически поддерживает заданную температуру в комнате, экономия отопления до 20%.",
+    size: [0.05, 0.08, 0.05],
+    price: 760,
+    unit: "шт",
+    color: "#ffffff",
+    sku: "VT.5000.0.0",
+    tags: ["VALTEC", "термоголовка", "энергосбережение"],
+  },
+
+  // — ФИЛЬТРЫ И ПРИБОРЫ —
+  {
+    id: "valtec-filter-mesh",
+    category: "filter",
+    name: "Фильтр сетчатый косой VALTEC VT.191 DN20",
+    brand: "VALTEC",
+    specs: "Латунь · 3/4″ · 500 мкм · с отстойником",
+    description:
+      "Сетчатый грязевик с возможностью промывки. Защищает котёл, насос и счётчики от механических загрязнений.",
+    size: [0.08, 0.06, 0.04],
+    price: 540,
+    unit: "шт",
+    color: "#d1d5db",
+    sku: "VT.191.N.05",
+    tags: ["VALTEC", "фильтр", "грязевик", "косой"],
+  },
+  {
+    id: "valtec-manometer",
+    category: "controller",
+    name: "Манометр VALTEC MP-У 0–10 бар, 1/4″",
+    brand: "VALTEC",
+    specs: "Радиальный · D63 · класс 2.5 · 0–10 бар",
+    description:
+      "Манометр для контроля давления в системе отопления и ВС. С возможностью установки на трёхходовой кран.",
+    size: [0.063, 0.063, 0.04],
+    price: 340,
+    unit: "шт",
+    color: "#fafaf9",
+    sku: "VT.MP10.0.01002",
+    tags: ["VALTEC", "манометр", "контроль давления"],
+  },
+
+  // — РАСШИРИТЕЛЬНЫЙ БАК —
+  {
+    id: "valtec-extank-24",
+    category: "expansion_tank",
+    name: "Расширительный бак VALTEC RV.R 24 л",
+    brand: "VALTEC",
+    specs: "24 л · мембрана EPDM · 3 бар · красный",
+    description:
+      "Мембранный расширительный бак для закрытых систем отопления. Сменная мембрана из EPDM, рассчитан на температуру до 100 °C.",
+    size: [0.28, 0.4, 0.28],
+    price: 4200,
+    unit: "шт",
+    color: "#dc2626",
+    sku: "VT.RV.R.060024",
+    power: 24,
+    powerUnit: "л",
+    forArea: [100, 200],
+    tags: ["VALTEC", "расширительный бак", "EPDM"],
+  },
 ];
 
 /* ────────────────── ШАБЛОНЫ КОТЕЛЬНЫХ ────────────────── */
@@ -710,6 +962,25 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
       { equipmentId: "chimney-coax", position: [1.2, 2.0, 0.4] },
     ],
   },
+  {
+    id: "tpl-valtec-floor",
+    name: "Тёплый пол VALTEC под ключ",
+    purpose: "Водяной тёплый пол на 7 контуров с насосно-смесительным узлом",
+    forArea: "120–200 м²",
+    power: "до 12 кВт тепла",
+    roomSize: [2.5, 2.5, 1.5],
+    icon: "Thermometer",
+    layout: [
+      { equipmentId: "valtec-manifold-cabinet", position: [0.3, 0.8, 0.0] },
+      { equipmentId: "valtec-manifold-7", position: [0.5, 1.0, 0.1] },
+      { equipmentId: "valtec-combimix", position: [1.4, 1.0, 0.1] },
+      { equipmentId: "valtec-extank-24", position: [2.0, 0.5, 0.1] },
+      { equipmentId: "valtec-pex-evoh-16", position: [0.3, 0.3, 0.5], count: 600 },
+      { equipmentId: "valtec-ball-perfect", position: [1.9, 1.4, 0.1], count: 2 },
+      { equipmentId: "valtec-filter-mesh", position: [1.7, 1.3, 0.1] },
+      { equipmentId: "valtec-manometer", position: [1.6, 1.6, 0.1] },
+    ],
+  },
 ];
 
 /* ────────────────── HELPERS ────────────────── */
@@ -794,6 +1065,9 @@ export const CATEGORY_LABELS: Record<EquipmentCategory, string> = {
   controller: "Автоматика",
   chimney: "Дымоход",
   pipe: "Трубопроводы",
+  radiator: "Радиаторы",
+  floor_heating: "Тёплый пол",
+  mixing_unit: "Смесительный узел",
   gas_tank: "Газгольдер",
   gas_cylinder: "Баллон СУГ",
   gas_regulator: "Редуктор / РДНК",
