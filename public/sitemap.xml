@@ -4,14 +4,21 @@
 
   <url>
     <loc>https://roomscan-ai.ru/</loc>
-    <lastmod>2026-05-09</lastmod>
+    <lastmod>2026-05-18</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://cdn.poehali.dev/projects/ff1052f5-e1cc-4580-9acd-52ad0a25f2e7/bucket/3fe94356-7de2-4e81-867d-9664be45af42.jpg</image:loc>
-      <image:title>RoomScan AI — 3D-сканирование, планировщик, смета ремонта</image:title>
-      <image:caption>Профессиональный сервис для сканирования квартир и расчёта ремонта</image:caption>
+      <image:title>RoomScan AI — 3D-сканирование, планировщик, отделка стен, тёплый пол VALTEC</image:title>
+      <image:caption>Профессиональный ИИ-сервис для сканирования, планировки, отделки и инженерии</image:caption>
     </image:image>
+  </url>
+
+  <url>
+    <loc>https://roomscan-ai.ru/#walls</loc>
+    <lastmod>2026-05-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.92</priority>
   </url>
 
   <url>
@@ -107,9 +114,9 @@
 
   <url>
     <loc>https://roomscan-ai.ru/#engineering</loc>
-    <lastmod>2026-05-09</lastmod>
+    <lastmod>2026-05-18</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.85</priority>
+    <priority>0.92</priority>
   </url>
 
   <url>

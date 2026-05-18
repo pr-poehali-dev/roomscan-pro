@@ -24,9 +24,10 @@ import EngSidebar from "./engineering/EngSidebar";
 import { EquipmentPicker, ProjectsList } from "./engineering/EngModals";
 import EquipmentCatalog from "./engineering/EquipmentCatalog";
 import EquipmentBuilder from "./engineering/EquipmentBuilder";
+import FloorHeatingCalc from "./engineering/FloorHeatingCalc";
 import Icon from "@/components/ui/icon";
 
-type EngMode = "templates" | "catalog" | "builder";
+type EngMode = "templates" | "catalog" | "builder" | "valtec-floor";
 
 /**
  * Раздел «Инженерные узлы»: 3D + drag-and-drop + сохранение в БД + PDF + Telegram-заявка.
@@ -209,6 +210,13 @@ export default function EngineeringSection() {
           label="Конструктор"
           hint="Drag-and-drop сборка"
         />
+        <ModeButton
+          active={mode === "valtec-floor"}
+          onClick={() => setMode("valtec-floor")}
+          icon="Thermometer"
+          label="Тёплый пол VALTEC"
+          hint="Расчёт труб и узла"
+        />
       </div>
 
       {mode === "catalog" && (
@@ -217,6 +225,10 @@ export default function EngineeringSection() {
 
       {mode === "builder" && (
         <EquipmentBuilder />
+      )}
+
+      {mode === "valtec-floor" && (
+        <FloorHeatingCalc />
       )}
 
       {mode === "templates" && (
